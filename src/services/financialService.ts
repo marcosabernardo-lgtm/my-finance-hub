@@ -29,30 +29,41 @@ export class FinancialService {
   }
 
   // ===============================
-  // RESUMO DO MÊS ATUAL
+  // MÉTODO CENTRALIZADO DE DATA
+  // ===============================
+  private getMesEAnoAtual() {
+    const hoje = new Date();
+    return {
+      mesAtual: hoje.getMonth(),
+      anoAtual: hoje.getFullYear(),
+    };
+  }
+
+  // ===============================
+  // RESUMO DO MÊS ATUAL (OTIMIZADO)
   // ===============================
   public getResumoMesAtual() {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
+    const { mesAtual, anoAtual } = this.getMesEAnoAtual();
 
-    const movimentacoesMesAtual = this.movimentacoes.filter((m) => {
+    let receitas = 0;
+    let despesas = 0;
+
+    for (const m of this.movimentacoes) {
       const data = m["Data do Pagamento"];
-      if (!data) return false;
+      if (!data) continue;
 
-      return (
+      const ehMesAtual =
         data.getMonth() === mesAtual &&
-        data.getFullYear() === anoAtual
-      );
-    });
+        data.getFullYear() === anoAtual;
 
-    const receitas = movimentacoesMesAtual
-      .filter((m) => m["Tipo"] === "Receita")
-      .reduce((acc, m) => acc + m["Valor"], 0);
+      if (!ehMesAtual) continue;
 
-    const despesas = movimentacoesMesAtual
-      .filter((m) => m["Tipo"] === "Despesa")
-      .reduce((acc, m) => acc + m["Valor"], 0);
+      if (m["Tipo"] === "Receita") {
+        receitas += m["Valor"];
+      } else if (m["Tipo"] === "Despesa") {
+        despesas += m["Valor"];
+      }
+    }
 
     return {
       receitas,
@@ -76,9 +87,7 @@ export class FinancialService {
   // CONTROLE SEMANAL
   // ===============================
   public getControleSemanal(): ControleItem[] {
-    const hoje = new Date();
-    const mesAtual = hoje.getMonth();
-    const anoAtual = hoje.getFullYear();
+    const { mesAtual, anoAtual } = this.getMesEAnoAtual();
 
     const movFiltradas = this.movimentacoes.filter((m) => {
       const data = m["Data da Movimentação"];
@@ -148,7 +157,7 @@ export class FinancialService {
   }
 
   // ===============================
-  // FATURA CARTÃO (corrigido de forma simples)
+  // FATURA CARTÃO
   // ===============================
   public getFaturaCartao(
     cartao: string,
