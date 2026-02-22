@@ -16,6 +16,14 @@ type ControleItem = {
   semanas: Record<number, number>;
 };
 
+type ResumoClassificacaoItem = {
+  classificacao: string;
+  previsto: number;
+  real: number;
+  divergencia: number;
+  percentual: number;
+};
+
 export class FinancialService {
   private movimentacoes: Movimentacao[];
   private despesasConfig: DespesaConfig[];
@@ -38,9 +46,6 @@ export class FinancialService {
       ano !== undefined ? ano : hoje.getFullYear();
   }
 
-  // ===============================
-  // MÉTODO CENTRALIZADO DE DATA
-  // ===============================
   private getMesEAnoSelecionado() {
     return {
       mesAtual: this.mesSelecionado,
@@ -62,16 +67,15 @@ export class FinancialService {
       const data = m["Data do Pagamento"];
       if (!data) continue;
 
-      const ehMesAtual =
+      if (
         data.getMonth() === mesAtual &&
-        data.getFullYear() === anoAtual;
-
-      if (!ehMesAtual) continue;
-
-      if (m["Tipo"] === "Receita") {
-        receitas += m["Valor"];
-      } else if (m["Tipo"] === "Despesa") {
-        despesas += m["Valor"];
+        data.getFullYear() === anoAtual
+      ) {
+        if (m["Tipo"] === "Receita") {
+          receitas += m["Valor"];
+        } else if (m["Tipo"] === "Despesa") {
+          despesas += m["Valor"];
+        }
       }
     }
 
@@ -83,14 +87,27 @@ export class FinancialService {
   }
 
   // ===============================
-  // MOVIMENTAÇÕES ORDENADAS
+  // MOVIMENTAÇÕES FILTRADAS POR MÊS
   // ===============================
   public getMovimentacoesOrdenadas() {
-    return [...this.movimentacoes].sort(
-      (a, b) =>
-        Number(b.ID_Movimentacao) -
-        Number(a.ID_Movimentacao)
-    );
+    const { mesAtual, anoAtual } =
+      this.getMesEAnoSelecionado();
+
+    return this.movimentacoes
+      .filter((m) => {
+        const data = m["Data da Movimentação"];
+        if (!data) return false;
+
+        return (
+          data.getMonth() === mesAtual &&
+          data.getFullYear() === anoAtual
+        );
+      })
+      .sort(
+        (a, b) =>
+          Number(b.ID_Movimentacao) -
+          Number(a.ID_Movimentacao)
+      );
   }
 
   // ===============================
@@ -124,20 +141,16 @@ export class FinancialService {
       const data = m["Data da Movimentação"];
       if (!data) continue;
 
-      const ehMesAtual =
-        data.getMonth() === mesAtual &&
-        data.getFullYear() === anoAtual;
-
       if (
-        !ehMesAtual ||
+        data.getMonth() !== mesAtual ||
+        data.getFullYear() !== anoAtual ||
         m["Tipo"] !== "Despesa" ||
         m["Forma de Pagamento"] !== "À Vista"
       ) {
         continue;
       }
 
-      const categoria = m["Categoria"];
-      const item = mapaCategorias[categoria];
+      const item = mapaCategorias[m["Categoria"]];
       if (!item) continue;
 
       item.totalReal += m["Valor"];
@@ -168,30 +181,79 @@ export class FinancialService {
   }
 
   // ===============================
-  // FATURA CARTÃO (mantido igual)
+  // RESUMO GERENCIAL
   // ===============================
-  public getFaturaCartao(
-    cartao: string,
-    ano: string,
-    mes: string
-  ) {
-    const meses: Record<string, string> = {
-      Janeiro: "01",
-      Fevereiro: "02",
-      Março: "03",
-      Abril: "04",
-      Maio: "05",
-      Junho: "06",
-      Julho: "07",
-      Agosto: "08",
-      Setembro: "09",
-      Outubro: "10",
-      Novembro: "11",
-      Dezembro: "12",
-    };
+  public getResumoClassificacao(): ResumoClassificacaoItem[] {
+    const { mesAtual, anoAtual } =
+      this.getMesEAnoSelecionado();
 
-    const mesNumero = meses[mes] || mes;
-    const refPagamento = `${ano}-${mesNumero}`;
+    const mapa: Record<string, ResumoClassificacaoItem> =
+      {};
+
+    for (const desp of this.despesasConfig) {
+      const classificacao = desp.Classificação;
+
+      if (!mapa[classificacao]) {
+        mapa[classificacao] = {
+          classificacao,
+          previsto: 0,
+          real: 0,
+          divergencia: 0,
+          percentual: 0,
+        };
+      }
+
+      mapa[classificacao].previsto += desp.Limite_Gastos;
+    }
+
+    for (const m of this.movimentacoes) {
+      const data = m["Data da Movimentação"];
+      if (!data) continue;
+
+      if (
+        data.getMonth() !== mesAtual ||
+        data.getFullYear() !== anoAtual ||
+        m["Tipo"] !== "Despesa" ||
+        m["Forma de Pagamento"] !== "À Vista"
+      ) {
+        continue;
+      }
+
+      const despConfig = this.despesasConfig.find(
+        (d) => d.Categoria === m["Categoria"]
+      );
+
+      if (!despConfig) continue;
+
+      const classificacao = despConfig.Classificação;
+      mapa[classificacao].real += m["Valor"];
+    }
+
+    const totalPrevisto = Object.values(mapa).reduce(
+      (acc, item) => acc + item.previsto,
+      0
+    );
+
+    for (const item of Object.values(mapa)) {
+      item.divergencia = item.previsto - item.real;
+      item.percentual =
+        totalPrevisto > 0
+          ? (item.previsto / totalPrevisto) * 100
+          : 0;
+    }
+
+    return Object.values(mapa);
+  }
+
+  // ===============================
+  // FATURA CARTÃO (UNIFICADA COM MÊS GLOBAL)
+  // ===============================
+  public getFaturaCartao(cartao: string) {
+    const { mesAtual, anoAtual } =
+      this.getMesEAnoSelecionado();
+
+    const mesNumero = String(mesAtual + 1).padStart(2, "0");
+    const refPagamento = `${anoAtual}-${mesNumero}`;
 
     const resultado = this.movimentacoes.filter(
       (m) =>

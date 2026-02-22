@@ -23,7 +23,24 @@ type Cartao = {
   "Limite Total do Cartão": number;
 };
 
+const nomesMeses = [
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
+];
+
 export default function App() {
+  const hoje = new Date();
+
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [despesasConfig, setDespesasConfig] = useState<DespesaConfig[]>([]);
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
@@ -32,9 +49,16 @@ export default function App() {
     "resumo" | "movimentacoes" | "limites" | "semanal" | "fatura" | "gerencial"
   >("resumo");
 
+  // 🔥 Filtro global
+  const [mesSelecionado, setMesSelecionado] = useState<number>(
+    hoje.getMonth()
+  );
+  const [anoSelecionado, setAnoSelecionado] = useState<number>(
+    hoje.getFullYear()
+  );
+
+  // 🔥 Agora somente filtro de cartão
   const [cartaoFiltro, setCartaoFiltro] = useState("");
-  const [anoFiltro, setAnoFiltro] = useState("");
-  const [mesFiltro, setMesFiltro] = useState("");
 
   useEffect(() => {
     const movSalvos = localStorage.getItem("movimentacoes");
@@ -80,8 +104,13 @@ export default function App() {
   };
 
   const financialService = useMemo(() => {
-    return new FinancialService(movimentacoes, despesasConfig);
-  }, [movimentacoes, despesasConfig]);
+    return new FinancialService(
+      movimentacoes,
+      despesasConfig,
+      mesSelecionado,
+      anoSelecionado
+    );
+  }, [movimentacoes, despesasConfig, mesSelecionado, anoSelecionado]);
 
   const resumoData = useMemo(() => {
     return financialService.getResumoMesAtual();
@@ -95,15 +124,14 @@ export default function App() {
     return financialService.getMovimentacoesOrdenadas();
   }, [financialService]);
 
-  const faturaData = useMemo(() => {
-    if (!cartaoFiltro || !anoFiltro || !mesFiltro) return [];
+  const resumoClassificacaoData = useMemo(() => {
+    return financialService.getResumoClassificacao();
+  }, [financialService]);
 
-    return financialService.getFaturaCartao(
-      cartaoFiltro,
-      anoFiltro,
-      mesFiltro
-    );
-  }, [financialService, cartaoFiltro, anoFiltro, mesFiltro]);
+  const faturaData = useMemo(() => {
+    if (!cartaoFiltro) return [];
+    return financialService.getFaturaCartao(cartaoFiltro);
+  }, [financialService, cartaoFiltro]);
 
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 20 }}>
@@ -111,12 +139,34 @@ export default function App() {
 
       <UploadPlanilha onDataLoaded={handleDataLoaded} />
 
+      {/* FILTRO GLOBAL */}
+      <div style={{ marginTop: 20 }}>
+        <label>Mês: </label>
+        <select
+          value={mesSelecionado}
+          onChange={(e) => setMesSelecionado(Number(e.target.value))}
+        >
+          {nomesMeses.map((mes, index) => (
+            <option key={mes} value={index}>
+              {mes}
+            </option>
+          ))}
+        </select>
+
+        <label style={{ marginLeft: 20 }}>Ano: </label>
+        <input
+          type="number"
+          value={anoSelecionado}
+          onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+          style={{ width: 100 }}
+        />
+      </div>
+
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
         <button onClick={() => setAbaAtiva("movimentacoes")}>
           Movimentações
         </button>
-
         <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
         <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
         <button onClick={() => setAbaAtiva("gerencial")}>
@@ -139,19 +189,12 @@ export default function App() {
         <FaturaCartao
           cartoes={cartoes}
           cartaoFiltro={cartaoFiltro}
-          anoFiltro={anoFiltro}
-          mesFiltro={mesFiltro}
           setCartaoFiltro={setCartaoFiltro}
-          setAnoFiltro={setAnoFiltro}
-          setMesFiltro={setMesFiltro}
           dados={faturaData}
         />
       )}
       {abaAtiva === "gerencial" && (
-        <ResumoClassificacao
-          movimentacoes={movimentacoes}
-          despesasConfig={despesasConfig}
-        />
+        <ResumoClassificacao dados={resumoClassificacaoData} />
       )}
     </div>
   );

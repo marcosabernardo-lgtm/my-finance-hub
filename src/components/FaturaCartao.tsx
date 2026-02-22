@@ -12,25 +12,16 @@ type Cartao = {
 type Props = {
   cartoes: Cartao[];
   cartaoFiltro: string;
-  anoFiltro: string;
-  mesFiltro: string;
   setCartaoFiltro: (valor: string) => void;
-  setAnoFiltro: (valor: string) => void;
-  setMesFiltro: (valor: string) => void;
   dados: Movimentacao[];
 };
 
 export default function FaturaCartao({
   cartoes,
   cartaoFiltro,
-  anoFiltro,
-  mesFiltro,
   setCartaoFiltro,
-  setAnoFiltro,
-  setMesFiltro,
   dados,
 }: Props) {
-
   const formatarMoeda = (valor?: number) => {
     if (!valor) return "R$ 0,00";
     return valor.toLocaleString("pt-BR", {
@@ -66,7 +57,7 @@ export default function FaturaCartao({
     <>
       <h2 style={{ marginTop: 30 }}>Fatura Cartão</h2>
 
-      {/* FILTROS */}
+      {/* FILTRO APENAS POR CARTÃO */}
       <div style={{ display: "flex", gap: 15, marginBottom: 25 }}>
         <select
           value={cartaoFiltro}
@@ -83,41 +74,12 @@ export default function FaturaCartao({
             </option>
           ))}
         </select>
-
-        <input
-          type="number"
-          placeholder="Ano (ex: 2026)"
-          value={anoFiltro}
-          onChange={(e) => setAnoFiltro(e.target.value)}
-          style={{ width: 120 }}
-        />
-
-        <select
-          value={mesFiltro}
-          onChange={(e) => setMesFiltro(e.target.value)}
-          style={{ minWidth: 160 }}
-        >
-          <option value="">Selecione o Mês</option>
-          <option value="01">Janeiro</option>
-          <option value="02">Fevereiro</option>
-          <option value="03">Março</option>
-          <option value="04">Abril</option>
-          <option value="05">Maio</option>
-          <option value="06">Junho</option>
-          <option value="07">Julho</option>
-          <option value="08">Agosto</option>
-          <option value="09">Setembro</option>
-          <option value="10">Outubro</option>
-          <option value="11">Novembro</option>
-          <option value="12">Dezembro</option>
-        </select>
       </div>
 
       <h3 style={{ marginBottom: 30 }}>
         Total Fatura: {formatarMoeda(totalFatura)}
       </h3>
 
-      {/* CONTAINER PRINCIPAL */}
       <div
         style={{
           display: "flex",
@@ -169,9 +131,7 @@ export default function FaturaCartao({
                       {m["Data da Movimentação"]?.toLocaleDateString()}
                     </td>
 
-                    <td style={celulaStyle}>
-                      {m.Categoria}
-                    </td>
+                    <td style={celulaStyle}>{m.Categoria}</td>
 
                     <td style={celulaStyle}>
                       {formatarDescricao(m.Descrição)}
