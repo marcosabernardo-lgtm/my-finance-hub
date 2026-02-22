@@ -40,7 +40,7 @@ export class FinancialService {
   }
 
   // ===============================
-  // RESUMO DO MÊS ATUAL (OTIMIZADO)
+  // RESUMO DO MÊS ATUAL
   // ===============================
   public getResumoMesAtual() {
     const { mesAtual, anoAtual } = this.getMesEAnoAtual();
@@ -84,76 +84,78 @@ export class FinancialService {
   }
 
   // ===============================
-  // CONTROLE SEMANAL
+  // CONTROLE SEMANAL (OTIMIZADO)
   // ===============================
   public getControleSemanal(): ControleItem[] {
     const { mesAtual, anoAtual } = this.getMesEAnoAtual();
 
-    const movFiltradas = this.movimentacoes.filter((m) => {
+    const mapaCategorias: Record<string, ControleItem> = {};
+
+    // Inicializa categorias
+    for (const cat of this.despesasConfig) {
+      mapaCategorias[cat.Categoria] = {
+        categoria: cat.Categoria,
+        limiteMensal: cat.Limite_Gastos,
+        totalReal: 0,
+        limiteSemanal: cat.Limite_Gastos / 4.3,
+        divergencia: 0,
+        semanas: {
+          1: 0,
+          2: 0,
+          3: 0,
+          4: 0,
+          5: 0,
+        },
+      };
+    }
+
+    // Única passagem nas movimentações
+    for (const m of this.movimentacoes) {
       const data = m["Data da Movimentação"];
-      if (!data) return false;
+      if (!data) continue;
 
       const ehMesAtual =
         data.getMonth() === mesAtual &&
         data.getFullYear() === anoAtual;
 
-      return (
-        ehMesAtual &&
-        m["Tipo"] === "Despesa" &&
-        m["Forma de Pagamento"] === "À Vista"
+      if (
+        !ehMesAtual ||
+        m["Tipo"] !== "Despesa" ||
+        m["Forma de Pagamento"] !== "À Vista"
+      ) {
+        continue;
+      }
+
+      const categoria = m["Categoria"];
+      const item = mapaCategorias[categoria];
+      if (!item) continue;
+
+      item.totalReal += m["Valor"];
+
+      // cálculo da semana (mantido exatamente igual)
+      const primeiroDia = new Date(
+        data.getFullYear(),
+        data.getMonth(),
+        1
       );
-    });
 
-    return this.despesasConfig.map((cat) => {
-      const movCategoria = movFiltradas.filter(
-        (m) => m["Categoria"] === cat.Categoria
-      );
+      const offset = primeiroDia.getDay();
+      const dia = data.getDate();
+      const semana =
+        Math.floor((dia + offset - 1) / 7) + 1;
 
-      const totalReal = movCategoria.reduce(
-        (acc, m) => acc + m["Valor"],
-        0
-      );
+      if (semana >= 1 && semana <= 5) {
+        item.semanas[semana] += m["Valor"];
+      }
+    }
 
-      const limiteSemanal = cat.Limite_Gastos / 4.3;
-      const divergencia = cat.Limite_Gastos - totalReal;
+    // Calcula divergência
+    for (const categoria in mapaCategorias) {
+      const item = mapaCategorias[categoria];
+      item.divergencia = item.limiteMensal - item.totalReal;
+    }
 
-      const semanas: Record<number, number> = {
-        1: 0,
-        2: 0,
-        3: 0,
-        4: 0,
-        5: 0,
-      };
-
-      movCategoria.forEach((m) => {
-        const data = m["Data da Movimentação"];
-        if (!data) return;
-
-        const primeiroDia = new Date(
-          data.getFullYear(),
-          data.getMonth(),
-          1
-        );
-
-        const offset = primeiroDia.getDay();
-        const dia = data.getDate();
-        const semana =
-          Math.floor((dia + offset - 1) / 7) + 1;
-
-        if (semana >= 1 && semana <= 5) {
-          semanas[semana] += m["Valor"];
-        }
-      });
-
-      return {
-        categoria: cat.Categoria,
-        limiteMensal: cat.Limite_Gastos,
-        totalReal,
-        limiteSemanal,
-        divergencia,
-        semanas,
-      };
-    });
+    return Object.values(mapaCategorias);
   }
 
   // ===============================
