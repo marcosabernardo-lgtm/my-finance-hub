@@ -19,31 +19,41 @@ type ControleItem = {
 export class FinancialService {
   private movimentacoes: Movimentacao[];
   private despesasConfig: DespesaConfig[];
+  private mesSelecionado: number;
+  private anoSelecionado: number;
 
   constructor(
     movimentacoes: Movimentacao[],
-    despesasConfig: DespesaConfig[]
+    despesasConfig: DespesaConfig[],
+    mes?: number,
+    ano?: number
   ) {
+    const hoje = new Date();
+
     this.movimentacoes = movimentacoes;
     this.despesasConfig = despesasConfig;
+    this.mesSelecionado =
+      mes !== undefined ? mes : hoje.getMonth();
+    this.anoSelecionado =
+      ano !== undefined ? ano : hoje.getFullYear();
   }
 
   // ===============================
   // MÉTODO CENTRALIZADO DE DATA
   // ===============================
-  private getMesEAnoAtual() {
-    const hoje = new Date();
+  private getMesEAnoSelecionado() {
     return {
-      mesAtual: hoje.getMonth(),
-      anoAtual: hoje.getFullYear(),
+      mesAtual: this.mesSelecionado,
+      anoAtual: this.anoSelecionado,
     };
   }
 
   // ===============================
-  // RESUMO DO MÊS ATUAL
+  // RESUMO DO MÊS
   // ===============================
   public getResumoMesAtual() {
-    const { mesAtual, anoAtual } = this.getMesEAnoAtual();
+    const { mesAtual, anoAtual } =
+      this.getMesEAnoSelecionado();
 
     let receitas = 0;
     let despesas = 0;
@@ -84,14 +94,15 @@ export class FinancialService {
   }
 
   // ===============================
-  // CONTROLE SEMANAL (OTIMIZADO)
+  // CONTROLE SEMANAL
   // ===============================
   public getControleSemanal(): ControleItem[] {
-    const { mesAtual, anoAtual } = this.getMesEAnoAtual();
+    const { mesAtual, anoAtual } =
+      this.getMesEAnoSelecionado();
 
-    const mapaCategorias: Record<string, ControleItem> = {};
+    const mapaCategorias: Record<string, ControleItem> =
+      {};
 
-    // Inicializa categorias
     for (const cat of this.despesasConfig) {
       mapaCategorias[cat.Categoria] = {
         categoria: cat.Categoria,
@@ -109,7 +120,6 @@ export class FinancialService {
       };
     }
 
-    // Única passagem nas movimentações
     for (const m of this.movimentacoes) {
       const data = m["Data da Movimentação"];
       if (!data) continue;
@@ -132,7 +142,6 @@ export class FinancialService {
 
       item.totalReal += m["Valor"];
 
-      // cálculo da semana (mantido exatamente igual)
       const primeiroDia = new Date(
         data.getFullYear(),
         data.getMonth(),
@@ -149,17 +158,17 @@ export class FinancialService {
       }
     }
 
-    // Calcula divergência
     for (const categoria in mapaCategorias) {
       const item = mapaCategorias[categoria];
-      item.divergencia = item.limiteMensal - item.totalReal;
+      item.divergencia =
+        item.limiteMensal - item.totalReal;
     }
 
     return Object.values(mapaCategorias);
   }
 
   // ===============================
-  // FATURA CARTÃO
+  // FATURA CARTÃO (mantido igual)
   // ===============================
   public getFaturaCartao(
     cartao: string,
