@@ -24,6 +24,17 @@ type ResumoClassificacaoItem = {
   percentual: number;
 };
 
+type DREAnual = {
+  receitas: Record<string, number[]>;
+  despesas: Record<string, number[]>;
+  totalReceitas: number[];
+  totalDespesas: number[];
+  saldoMensal: number[];
+  mediaReceita: number;
+  mediaDespesa: number;
+  saldoTotal: number;
+};
+
 export class FinancialService {
   private movimentacoes: Movimentacao[];
   private despesasConfig: DespesaConfig[];
@@ -53,9 +64,70 @@ export class FinancialService {
     };
   }
 
-  // ===============================
-  // RESUMO DO MÊS
-  // ===============================
+  // ============================================================
+  // DRE ANUAL (MATRICIAL - JAN A DEZ)
+  // ============================================================
+  public getDREAnual(): DREAnual {
+    const ano = this.anoSelecionado;
+
+    const receitas: Record<string, number[]> = {};
+    const despesas: Record<string, number[]> = {};
+
+    const totalReceitas = Array(12).fill(0);
+    const totalDespesas = Array(12).fill(0);
+    const saldoMensal = Array(12).fill(0);
+
+    for (const mov of this.movimentacoes) {
+      const data = mov["Data da Movimentação"];
+      if (!data) continue;
+
+      if (data.getFullYear() !== ano) continue;
+
+      const mes = data.getMonth();
+      const valor = mov["Valor"] || 0;
+
+      if (mov["Tipo"] === "Receita") {
+        if (!receitas[mov["Categoria"]]) {
+          receitas[mov["Categoria"]] = Array(12).fill(0);
+        }
+
+        receitas[mov["Categoria"]][mes] += valor;
+        totalReceitas[mes] += valor;
+      }
+
+      if (mov["Tipo"] === "Despesa") {
+        if (!despesas[mov["Categoria"]]) {
+          despesas[mov["Categoria"]] = Array(12).fill(0);
+        }
+
+        despesas[mov["Categoria"]][mes] += valor;
+        totalDespesas[mes] += valor;
+      }
+    }
+
+    for (let i = 0; i < 12; i++) {
+      saldoMensal[i] = totalReceitas[i] - totalDespesas[i];
+    }
+
+    const somaReceitas = totalReceitas.reduce((a, b) => a + b, 0);
+    const somaDespesas = totalDespesas.reduce((a, b) => a + b, 0);
+
+    return {
+      receitas,
+      despesas,
+      totalReceitas,
+      totalDespesas,
+      saldoMensal,
+      mediaReceita: somaReceitas / 12,
+      mediaDespesa: somaDespesas / 12,
+      saldoTotal: somaReceitas - somaDespesas,
+    };
+  }
+
+  // ============================================================
+  // DEMAIS MÉTODOS PERMANECEM COMO ESTÃO
+  // ============================================================
+
   public getResumoMesAtual() {
     const { mesAtual, anoAtual } =
       this.getMesEAnoSelecionado();
@@ -71,11 +143,8 @@ export class FinancialService {
         data.getMonth() === mesAtual &&
         data.getFullYear() === anoAtual
       ) {
-        if (m["Tipo"] === "Receita") {
-          receitas += m["Valor"];
-        } else if (m["Tipo"] === "Despesa") {
-          despesas += m["Valor"];
-        }
+        if (m["Tipo"] === "Receita") receitas += m["Valor"];
+        if (m["Tipo"] === "Despesa") despesas += m["Valor"];
       }
     }
 
@@ -86,9 +155,6 @@ export class FinancialService {
     };
   }
 
-  // ===============================
-  // MOVIMENTAÇÕES FILTRADAS POR MÊS
-  // ===============================
   public getMovimentacoesOrdenadas() {
     const { mesAtual, anoAtual } =
       this.getMesEAnoSelecionado();
@@ -110,9 +176,6 @@ export class FinancialService {
       );
   }
 
-  // ===============================
-  // CONTROLE SEMANAL
-  // ===============================
   public getControleSemanal(): ControleItem[] {
     const { mesAtual, anoAtual } =
       this.getMesEAnoSelecionado();
@@ -127,13 +190,7 @@ export class FinancialService {
         totalReal: 0,
         limiteSemanal: cat.Limite_Gastos / 4.3,
         divergencia: 0,
-        semanas: {
-          1: 0,
-          2: 0,
-          3: 0,
-          4: 0,
-          5: 0,
-        },
+        semanas: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       };
     }
 
@@ -146,9 +203,8 @@ export class FinancialService {
         data.getFullYear() !== anoAtual ||
         m["Tipo"] !== "Despesa" ||
         m["Forma de Pagamento"] !== "À Vista"
-      ) {
+      )
         continue;
-      }
 
       const item = mapaCategorias[m["Categoria"]];
       if (!item) continue;
@@ -172,17 +228,14 @@ export class FinancialService {
     }
 
     for (const categoria in mapaCategorias) {
-      const item = mapaCategorias[categoria];
-      item.divergencia =
-        item.limiteMensal - item.totalReal;
+      mapaCategorias[categoria].divergencia =
+        mapaCategorias[categoria].limiteMensal -
+        mapaCategorias[categoria].totalReal;
     }
 
     return Object.values(mapaCategorias);
   }
 
-  // ===============================
-  // RESUMO GERENCIAL
-  // ===============================
   public getResumoClassificacao(): ResumoClassificacaoItem[] {
     const { mesAtual, anoAtual } =
       this.getMesEAnoSelecionado();
@@ -215,9 +268,8 @@ export class FinancialService {
         data.getFullYear() !== anoAtual ||
         m["Tipo"] !== "Despesa" ||
         m["Forma de Pagamento"] !== "À Vista"
-      ) {
+      )
         continue;
-      }
 
       const despConfig = this.despesasConfig.find(
         (d) => d.Categoria === m["Categoria"]
@@ -225,8 +277,8 @@ export class FinancialService {
 
       if (!despConfig) continue;
 
-      const classificacao = despConfig.Classificação;
-      mapa[classificacao].real += m["Valor"];
+      mapa[despConfig.Classificação].real +=
+        m["Valor"];
     }
 
     const totalPrevisto = Object.values(mapa).reduce(
@@ -245,9 +297,6 @@ export class FinancialService {
     return Object.values(mapa);
   }
 
-  // ===============================
-  // FATURA CARTÃO (UNIFICADA COM MÊS GLOBAL)
-  // ===============================
   public getFaturaCartao(cartao: string) {
     const { mesAtual, anoAtual } =
       this.getMesEAnoSelecionado();
@@ -255,21 +304,21 @@ export class FinancialService {
     const mesNumero = String(mesAtual + 1).padStart(2, "0");
     const refPagamento = `${anoAtual}-${mesNumero}`;
 
-    const resultado = this.movimentacoes.filter(
-      (m) =>
-        m["Método de Pagamento"] === cartao &&
-        m["Ref. Pagamento"] === refPagamento
-    );
+    return this.movimentacoes
+      .filter(
+        (m) =>
+          m["Método de Pagamento"] === cartao &&
+          m["Ref. Pagamento"] === refPagamento
+      )
+      .sort((a, b) => {
+        const dataA = a["Data da Movimentação"]
+          ? a["Data da Movimentação"].getTime()
+          : 0;
+        const dataB = b["Data da Movimentação"]
+          ? b["Data da Movimentação"].getTime()
+          : 0;
 
-    return resultado.sort((a, b) => {
-      const dataA = a["Data da Movimentação"]
-        ? a["Data da Movimentação"].getTime()
-        : 0;
-      const dataB = b["Data da Movimentação"]
-        ? b["Data da Movimentação"].getTime()
-        : 0;
-
-      return dataB - dataA;
-    });
+        return dataB - dataA;
+      });
   }
 }
