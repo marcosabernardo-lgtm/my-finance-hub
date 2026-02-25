@@ -7,8 +7,6 @@ type Props = {
     totalReceitas: number[];
     totalDespesas: number[];
     saldoMensal: number[];
-    mediaReceita: number;
-    mediaDespesa: number;
     saldoTotal: number;
   };
 };
@@ -24,154 +22,191 @@ export default function DRE({ dados }: Props) {
     valor.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
 
-  const calcularTotalLinha = (valores: number[]) =>
+  const totalLinha = (valores: number[]) =>
     valores.reduce((a, b) => a + b, 0);
 
-  const calcularMediaLinha = (valores: number[]) =>
-    calcularTotalLinha(valores) / 12;
+  const mediaLinha = (valores: number[]) =>
+    totalLinha(valores) / 12;
 
   const renderLinha = (
     nome: string,
     valores: number[],
     destaque?: boolean
-  ) => (
-    <tr
-      style={{
-        fontWeight: destaque ? 700 : 400,
-        backgroundColor: destaque ? "#1f2937" : "transparent",
-      }}
-    >
-      <td style={{ textAlign: "left", padding: "6px 10px" }}>
-        {nome}
-      </td>
+  ) => {
 
-      {valores.map((v, i) => (
-        <td
-          key={i}
-          style={{
-            textAlign: "right",
-            color: v < 0 ? "#EF4444" : "inherit",
-          }}
-        >
-          {v !== 0 ? formatarMoeda(v) : "-"}
-        </td>
-      ))}
+    const total = totalLinha(valores);
+    const media = mediaLinha(valores);
 
-      <td style={{ textAlign: "right" }}>
-        {formatarMoeda(calcularMediaLinha(valores))}
-      </td>
+    return (
+      <tr
+        style={{
+          fontWeight: destaque ? 700 : 400,
+          backgroundColor: destaque ? "#1f2937" : "transparent",
+        }}
+      >
+        <td style={tdCategoria}>{nome}</td>
 
-      <td style={{ textAlign: "right" }}>
-        {formatarMoeda(calcularTotalLinha(valores))}
-      </td>
-    </tr>
-  );
+        {valores.map((v, i) => (
+          <td key={i} style={tdMes}>
+            {v !== 0 ? formatarMoeda(v) : "–"}
+          </td>
+        ))}
+
+        <td style={tdResumo}>{formatarMoeda(media)}</td>
+        <td style={tdResumoTotal}>{formatarMoeda(total)}</td>
+      </tr>
+    );
+  };
 
   return (
-    <div style={{ marginTop: 30 }}>
-      <h2>DRE Anual</h2>
+    <div style={{ marginTop: 25 }}>
+      <h2 style={{ marginBottom: 15 }}>DRE Anual</h2>
 
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            fontSize: 13,
-          }}
-        >
-          <thead>
-            <tr style={{ backgroundColor: "#111827" }}>
-              <th style={{ textAlign: "left", padding: 10 }}>
-                Categoria
-              </th>
-              {nomesMeses.map((m) => (
-                <th key={m}>{m}</th>
-              ))}
-              <th>Média</th>
-              <th>Total</th>
-            </tr>
-          </thead>
+      <table
+        style={{
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: 12,
+        }}
+      >
+        <thead>
+          <tr style={{ backgroundColor: "#111827" }}>
+            <th style={thCategoria}>Categoria</th>
 
-          <tbody>
-            {/* RECEITAS */}
-            <tr>
-              <td
-                colSpan={15}
-                style={{
-                  paddingTop: 15,
-                  fontWeight: 700,
-                  color: "#10B981",
-                }}
-              >
-                RECEITAS
-              </td>
-            </tr>
+            {nomesMeses.map((m) => (
+              <th key={m} style={thMes}>{m}</th>
+            ))}
 
-            {Object.entries(dados.receitas).map(
-              ([categoria, valores]) =>
-                renderLinha(categoria, valores)
-            )}
+            <th style={thResumo}>Média</th>
+            <th style={thResumoTotal}>Total</th>
+          </tr>
+        </thead>
 
-            {renderLinha("Total Receitas", dados.totalReceitas, true)}
+        <tbody>
 
-            {/* DESPESAS */}
-            <tr>
-              <td
-                colSpan={15}
-                style={{
-                  paddingTop: 20,
-                  fontWeight: 700,
-                  color: "#EF4444",
-                }}
-              >
-                DESPESAS
-              </td>
-            </tr>
+          {/* RECEITAS */}
+          <tr>
+            <td colSpan={15} style={secaoReceita}>
+              RECEITAS
+            </td>
+          </tr>
 
-            {Object.entries(dados.despesas).map(
-              ([categoria, valores]) =>
-                renderLinha(categoria, valores)
-            )}
+          {Object.entries(dados.receitas).map(
+            ([categoria, valores]) =>
+              renderLinha(categoria, valores)
+          )}
 
-            {renderLinha("Total Despesas", dados.totalDespesas, true)}
+          {renderLinha("Total Receitas", dados.totalReceitas, true)}
 
-            {/* RESULTADO */}
-            <tr>
-              <td
-                colSpan={15}
-                style={{
-                  paddingTop: 20,
-                  fontWeight: 700,
-                }}
-              >
-                RESULTADO
-              </td>
-            </tr>
+          {/* DESPESAS */}
+          <tr>
+            <td colSpan={15} style={secaoDespesa}>
+              DESPESAS
+            </td>
+          </tr>
 
-            {renderLinha("Saldo Mensal", dados.saldoMensal, true)}
+          {Object.entries(dados.despesas).map(
+            ([categoria, valores]) =>
+              renderLinha(categoria, valores)
+          )}
 
-            <tr
+          {renderLinha("Total Despesas", dados.totalDespesas, true)}
+
+          {/* RESULTADO */}
+          <tr>
+            <td colSpan={15} style={secaoResultado}>
+              RESULTADO
+            </td>
+          </tr>
+
+          {renderLinha("Saldo Mensal", dados.saldoMensal, true)}
+
+          <tr style={{ backgroundColor: "#111827", fontWeight: 700 }}>
+            <td style={{ padding: 6 }}>Saldo Total</td>
+            <td colSpan={13}></td>
+            <td
               style={{
-                fontWeight: 700,
-                backgroundColor: "#111827",
+                ...tdResumoTotal,
+                color: dados.saldoTotal < 0 ? "#EF4444" : "#10B981",
               }}
             >
-              <td style={{ padding: 8 }}>Saldo Total</td>
-              <td colSpan={13}></td>
-              <td
-                style={{
-                  textAlign: "right",
-                  color: dados.saldoTotal < 0 ? "#EF4444" : "#10B981",
-                }}
-              >
-                {formatarMoeda(dados.saldoTotal)}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+              {formatarMoeda(dados.saldoTotal)}
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
     </div>
   );
 }
+
+/* ===== ESTILOS ===== */
+
+const thCategoria: React.CSSProperties = {
+  textAlign: "left",
+  padding: "6px 8px",
+};
+
+const thMes: React.CSSProperties = {
+  textAlign: "right",
+  padding: "6px 8px",
+};
+
+const thResumo: React.CSSProperties = {
+  textAlign: "right",
+  padding: "6px 12px",
+  borderLeft: "2px solid #374151",
+};
+
+const thResumoTotal: React.CSSProperties = {
+  textAlign: "right",
+  padding: "6px 14px",
+  borderLeft: "1px solid #374151",
+};
+
+const tdCategoria: React.CSSProperties = {
+  padding: "6px 8px",
+  borderBottom: "1px solid #1f2937",
+};
+
+const tdMes: React.CSSProperties = {
+  padding: "6px 8px",
+  textAlign: "right",
+  borderBottom: "1px solid #1f2937",
+};
+
+const tdResumo: React.CSSProperties = {
+  padding: "6px 12px",
+  textAlign: "right",
+  borderBottom: "1px solid #1f2937",
+  background: "#161b22",
+};
+
+const tdResumoTotal: React.CSSProperties = {
+  padding: "6px 14px",
+  textAlign: "right",
+  borderBottom: "1px solid #1f2937",
+  background: "#1c2128",
+  fontWeight: 700,
+};
+
+const secaoReceita: React.CSSProperties = {
+  paddingTop: 15,
+  fontWeight: 700,
+  color: "#10B981",
+};
+
+const secaoDespesa: React.CSSProperties = {
+  paddingTop: 20,
+  fontWeight: 700,
+  color: "#EF4444",
+};
+
+const secaoResultado: React.CSSProperties = {
+  paddingTop: 20,
+  fontWeight: 700,
+};
