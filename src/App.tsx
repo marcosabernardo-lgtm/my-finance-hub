@@ -6,6 +6,7 @@ import ControleSemanal from "./components/ControleSemanal";
 import FaturaCartao from "./components/FaturaCartao";
 import ResumoClassificacao from "./components/ResumoClassificacao";
 import Limites from "./components/Limites";
+import DRE from "./components/DRE";
 import type { Movimentacao } from "./types/movimentacao";
 import { FinancialService } from "./services/financialService";
 
@@ -46,7 +47,7 @@ export default function App() {
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
 
   const [abaAtiva, setAbaAtiva] = useState<
-    "resumo" | "movimentacoes" | "limites" | "semanal" | "fatura" | "gerencial"
+    "resumo" | "movimentacoes" | "limites" | "semanal" | "fatura" | "gerencial" | "dre"
   >("resumo");
 
   // 🔥 Filtro global
@@ -57,7 +58,6 @@ export default function App() {
     hoje.getFullYear()
   );
 
-  // 🔥 Agora somente filtro de cartão
   const [cartaoFiltro, setCartaoFiltro] = useState("");
 
   useEffect(() => {
@@ -133,6 +133,10 @@ export default function App() {
     return financialService.getFaturaCartao(cartaoFiltro);
   }, [financialService, cartaoFiltro]);
 
+  const dreData = useMemo(() => {
+    return financialService.getDREAnual();
+  }, [financialService]);
+
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: 20 }}>
       <h1>Controle Financeiro Pessoal</h1>
@@ -162,16 +166,14 @@ export default function App() {
         />
       </div>
 
+      {/* BOTÕES */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
-        <button onClick={() => setAbaAtiva("movimentacoes")}>
-          Movimentações
-        </button>
+        <button onClick={() => setAbaAtiva("movimentacoes")}>Movimentações</button>
         <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
         <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
-        <button onClick={() => setAbaAtiva("gerencial")}>
-          Resumo Gerencial
-        </button>
+        <button onClick={() => setAbaAtiva("gerencial")}>Resumo Gerencial</button>
+        <button onClick={() => setAbaAtiva("dre")}>DRE</button>
         <button onClick={() => setAbaAtiva("limites")}>Limites</button>
       </div>
 
@@ -179,9 +181,7 @@ export default function App() {
       {abaAtiva === "movimentacoes" && (
         <Movimentacoes movimentacoes={movimentacoesOrdenadas} />
       )}
-      {abaAtiva === "limites" && (
-        <Limites despesasConfig={despesasConfig} />
-      )}
+      {abaAtiva === "limites" && <Limites despesasConfig={despesasConfig} />}
       {abaAtiva === "semanal" && (
         <ControleSemanal controleData={controleSemanalData} />
       )}
@@ -196,6 +196,7 @@ export default function App() {
       {abaAtiva === "gerencial" && (
         <ResumoClassificacao dados={resumoClassificacaoData} />
       )}
+      {abaAtiva === "dre" && <DRE dados={dreData} />}
     </div>
   );
 }
