@@ -7,6 +7,7 @@ import FaturaCartao from "./components/FaturaCartao";
 import ResumoClassificacao from "./components/ResumoClassificacao";
 import Limites from "./components/Limites";
 import DRE from "./components/DRE";
+import Cartoes from "./components/Cartoes";
 import type { Movimentacao } from "./types/movimentacao";
 import { FinancialService } from "./services/financialService";
 
@@ -47,13 +48,20 @@ export default function App() {
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
 
   const [abaAtiva, setAbaAtiva] = useState<
-    "resumo" | "movimentacoes" | "limites" | "semanal" | "fatura" | "gerencial" | "dre"
+    | "resumo"
+    | "movimentacoes"
+    | "limites"
+    | "semanal"
+    | "fatura"
+    | "gerencial"
+    | "dre"
+    | "cartoes"
   >("resumo");
 
-  // 🔥 Filtro global
   const [mesSelecionado, setMesSelecionado] = useState<number>(
     hoje.getMonth()
   );
+
   const [anoSelecionado, setAnoSelecionado] = useState<number>(
     hoje.getFullYear()
   );
@@ -85,8 +93,13 @@ export default function App() {
       setMovimentacoes(convertidas);
     }
 
-    if (despSalvos) setDespesasConfig(JSON.parse(despSalvos));
-    if (cartoesSalvos) setCartoes(JSON.parse(cartoesSalvos));
+    if (despSalvos) {
+      setDespesasConfig(JSON.parse(despSalvos));
+    }
+
+    if (cartoesSalvos) {
+      setCartoes(JSON.parse(cartoesSalvos));
+    }
   }, []);
 
   const handleDataLoaded = (
@@ -103,14 +116,16 @@ export default function App() {
     localStorage.setItem("cartoes", JSON.stringify(cartoesData));
   };
 
+  // 🔥 AGORA passando cartoes no construtor
   const financialService = useMemo(() => {
     return new FinancialService(
       movimentacoes,
       despesasConfig,
+      cartoes,
       mesSelecionado,
       anoSelecionado
     );
-  }, [movimentacoes, despesasConfig, mesSelecionado, anoSelecionado]);
+  }, [movimentacoes, despesasConfig, cartoes, mesSelecionado, anoSelecionado]);
 
   const resumoData = useMemo(() => {
     return financialService.getResumoMesAtual();
@@ -135,6 +150,10 @@ export default function App() {
 
   const dreData = useMemo(() => {
     return financialService.getDREAnual();
+  }, [financialService]);
+
+  const cartoesAnualData = useMemo(() => {
+    return financialService.getCartoesAnual();
   }, [financialService]);
 
   return (
@@ -169,22 +188,33 @@ export default function App() {
       {/* BOTÕES */}
       <div style={{ marginTop: 20 }}>
         <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
-        <button onClick={() => setAbaAtiva("movimentacoes")}>Movimentações</button>
+        <button onClick={() => setAbaAtiva("movimentacoes")}>
+          Movimentações
+        </button>
         <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
         <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
-        <button onClick={() => setAbaAtiva("gerencial")}>Resumo Gerencial</button>
+        <button onClick={() => setAbaAtiva("cartoes")}>Cartões</button>
+        <button onClick={() => setAbaAtiva("gerencial")}>
+          Resumo Gerencial
+        </button>
         <button onClick={() => setAbaAtiva("dre")}>DRE</button>
         <button onClick={() => setAbaAtiva("limites")}>Limites</button>
       </div>
 
       {abaAtiva === "resumo" && <Resumo resumoData={resumoData} />}
+
       {abaAtiva === "movimentacoes" && (
         <Movimentacoes movimentacoes={movimentacoesOrdenadas} />
       )}
-      {abaAtiva === "limites" && <Limites despesasConfig={despesasConfig} />}
+
+      {abaAtiva === "limites" && (
+        <Limites despesasConfig={despesasConfig} />
+      )}
+
       {abaAtiva === "semanal" && (
         <ControleSemanal controleData={controleSemanalData} />
       )}
+
       {abaAtiva === "fatura" && (
         <FaturaCartao
           cartoes={cartoes}
@@ -193,9 +223,15 @@ export default function App() {
           dados={faturaData}
         />
       )}
+
+      {abaAtiva === "cartoes" && (
+        <Cartoes dados={cartoesAnualData} />
+      )}
+
       {abaAtiva === "gerencial" && (
         <ResumoClassificacao dados={resumoClassificacaoData} />
       )}
+
       {abaAtiva === "dre" && <DRE dados={dreData} />}
     </div>
   );

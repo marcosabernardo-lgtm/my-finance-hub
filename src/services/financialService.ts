@@ -7,6 +7,13 @@ type DespesaConfig = {
   Exemplos: string;
 };
 
+type Cartao = {
+  "Nome do Cartão": string;
+  "Data do Fechamento da Fatura": number;
+  "Data do Vencimento da Fatura": number;
+  "Limite Total do Cartão": number;
+};
+
 type ControleItem = {
   categoria: string;
   limiteMensal: number;
@@ -38,12 +45,14 @@ type DREAnual = {
 export class FinancialService {
   private movimentacoes: Movimentacao[];
   private despesasConfig: DespesaConfig[];
+  private cartoes: Cartao[];
   private mesSelecionado: number;
   private anoSelecionado: number;
 
   constructor(
     movimentacoes: Movimentacao[],
     despesasConfig: DespesaConfig[],
+    cartoes: Cartao[],
     mes?: number,
     ano?: number
   ) {
@@ -51,6 +60,7 @@ export class FinancialService {
 
     this.movimentacoes = movimentacoes;
     this.despesasConfig = despesasConfig;
+    this.cartoes = cartoes;
     this.mesSelecionado =
       mes !== undefined ? mes : hoje.getMonth();
     this.anoSelecionado =
@@ -65,15 +75,13 @@ export class FinancialService {
   }
 
   // ============================================================
-  // CONTROLE SEMANAL (CORRIGIDO COM DISTRIBUIÇÃO POR SEMANA)
+  // CONTROLE SEMANAL
   // ============================================================
 
   public getControleSemanal(): ControleItem[] {
-    const { mesAtual, anoAtual } =
-      this.getMesEAnoSelecionado();
+    const { mesAtual, anoAtual } = this.getMesEAnoSelecionado();
 
-    const mapaCategorias: Record<string, ControleItem> =
-      {};
+    const mapaCategorias: Record<string, ControleItem> = {};
 
     for (const cat of this.despesasConfig) {
       mapaCategorias[cat.Categoria] = {
@@ -103,7 +111,6 @@ export class FinancialService {
 
       item.totalReal += m["Valor"];
 
-      // 🔹 CÁLCULO DA SEMANA
       const primeiroDia = new Date(
         data.getFullYear(),
         data.getMonth(),
@@ -131,7 +138,7 @@ export class FinancialService {
   }
 
   // ============================================================
-  // RESTANTE DO ARQUIVO (INALTERADO)
+  // DRE ANUAL
   // ============================================================
 
   public getDREAnual(): DREAnual {
@@ -147,7 +154,6 @@ export class FinancialService {
     for (const mov of this.movimentacoes) {
       const data = mov["Data do Pagamento"];
       if (!data) continue;
-
       if (data.getFullYear() !== ano) continue;
 
       const mes = data.getMonth();
@@ -175,14 +181,8 @@ export class FinancialService {
         totalReceitas[i] - totalDespesas[i];
     }
 
-    const somaReceitas = totalReceitas.reduce(
-      (a, b) => a + b,
-      0
-    );
-    const somaDespesas = totalDespesas.reduce(
-      (a, b) => a + b,
-      0
-    );
+    const somaReceitas = totalReceitas.reduce((a, b) => a + b, 0);
+    const somaDespesas = totalDespesas.reduce((a, b) => a + b, 0);
 
     return {
       receitas,
@@ -196,9 +196,12 @@ export class FinancialService {
     };
   }
 
+  // ============================================================
+  // RESUMO MÊS
+  // ============================================================
+
   public getResumoMesAtual() {
-    const { mesAtual, anoAtual } =
-      this.getMesEAnoSelecionado();
+    const { mesAtual, anoAtual } = this.getMesEAnoSelecionado();
 
     let receitas = 0;
     let despesas = 0;
@@ -225,9 +228,12 @@ export class FinancialService {
     };
   }
 
+  // ============================================================
+  // MOVIMENTAÇÕES
+  // ============================================================
+
   public getMovimentacoesOrdenadas() {
-    const { mesAtual, anoAtual } =
-      this.getMesEAnoSelecionado();
+    const { mesAtual, anoAtual } = this.getMesEAnoSelecionado();
 
     return this.movimentacoes
       .filter((m) => {
@@ -246,14 +252,14 @@ export class FinancialService {
       );
   }
 
-  public getResumoClassificacao(): ResumoClassificacaoItem[] {
-    const { mesAtual, anoAtual } =
-      this.getMesEAnoSelecionado();
+  // ============================================================
+  // RESUMO CLASSIFICAÇÃO
+  // ============================================================
 
-    const mapa: Record<
-      string,
-      ResumoClassificacaoItem
-    > = {};
+  public getResumoClassificacao(): ResumoClassificacaoItem[] {
+    const { mesAtual, anoAtual } = this.getMesEAnoSelecionado();
+
+    const mapa: Record<string, ResumoClassificacaoItem> = {};
 
     for (const desp of this.despesasConfig) {
       const classificacao = desp.Classificação;
@@ -268,8 +274,7 @@ export class FinancialService {
         };
       }
 
-      mapa[classificacao].previsto +=
-        desp.Limite_Gastos;
+      mapa[classificacao].previsto += desp.Limite_Gastos;
     }
 
     for (const m of this.movimentacoes) {
@@ -284,16 +289,13 @@ export class FinancialService {
       )
         continue;
 
-      const despConfig =
-        this.despesasConfig.find(
-          (d) =>
-            d.Categoria === m["Categoria"]
-        );
+      const despConfig = this.despesasConfig.find(
+        (d) => d.Categoria === m["Categoria"]
+      );
 
       if (!despConfig) continue;
 
-      mapa[despConfig.Classificação].real +=
-        m["Valor"];
+      mapa[despConfig.Classificação].real += m["Valor"];
     }
 
     const totalPrevisto = Object.values(mapa).reduce(
@@ -302,52 +304,137 @@ export class FinancialService {
     );
 
     for (const item of Object.values(mapa)) {
-      item.divergencia =
-        item.previsto - item.real;
+      item.divergencia = item.previsto - item.real;
       item.percentual =
         totalPrevisto > 0
-          ? (item.previsto /
-              totalPrevisto) *
-            100
+          ? (item.previsto / totalPrevisto) * 100
           : 0;
     }
 
     return Object.values(mapa);
   }
 
+  // ============================================================
+  // FATURA MENSAL
+  // ============================================================
+
   public getFaturaCartao(cartao: string) {
-    const { mesAtual, anoAtual } =
-      this.getMesEAnoSelecionado();
+    const { mesAtual, anoAtual } = this.getMesEAnoSelecionado();
 
-    const mesNumero = String(
-      mesAtual + 1
-    ).padStart(2, "0");
-
+    const mesNumero = String(mesAtual + 1).padStart(2, "0");
     const refPagamento = `${anoAtual}-${mesNumero}`;
 
     return this.movimentacoes
       .filter(
         (m) =>
           m["Método de Pagamento"] === cartao &&
-          m["Ref. Pagamento"] ===
-            refPagamento
+          m["Ref. Pagamento"] === refPagamento
       )
       .sort((a, b) => {
         const dataA =
-          a["Data da Movimentação"]
-            ? a[
-                "Data da Movimentação"
-              ].getTime()
-            : 0;
-
+          a["Data da Movimentação"]?.getTime() || 0;
         const dataB =
-          b["Data da Movimentação"]
-            ? b[
-                "Data da Movimentação"
-              ].getTime()
-            : 0;
+          b["Data da Movimentação"]?.getTime() || 0;
 
         return dataB - dataA;
       });
+  }
+
+  // ============================================================
+  // CARTÕES - VISÃO ANUAL (POR DATA DO PAGAMENTO)
+  // ============================================================
+
+  public getCartoesAnual() {
+    const ano = this.anoSelecionado;
+    const nomesValidos = this.cartoes.map(
+      (c) => c["Nome do Cartão"]
+    );
+
+    const cartoesMap = new Map<
+      string,
+      {
+        meses: { pago: number; pendente: number; total: number }[];
+        totalPago: number;
+        totalPendente: number;
+        totalAnual: number;
+      }
+    >();
+
+    const totaisPorMes = Array.from({ length: 12 }, () => ({
+      pago: 0,
+      pendente: 0,
+      total: 0,
+    }));
+
+    let totalGeral = 0;
+    let totalGeralPago = 0;
+    let totalGeralPendente = 0;
+
+    for (const mov of this.movimentacoes) {
+      const dataPagamento = mov["Data do Pagamento"];
+      if (!dataPagamento) continue;
+      if (dataPagamento.getFullYear() !== ano) continue;
+
+      const nomeCartao = mov["Método de Pagamento"];
+      if (!nomesValidos.includes(nomeCartao)) continue;
+
+      const status = (mov["Situação"] || "")
+        .trim()
+        .toLowerCase();
+
+      if (status !== "faturado" && status !== "pendente")
+        continue;
+
+      const valor = mov["Valor"] || 0;
+      const mesIndex = dataPagamento.getMonth();
+
+      if (!cartoesMap.has(nomeCartao)) {
+        cartoesMap.set(nomeCartao, {
+          meses: Array.from({ length: 12 }, () => ({
+            pago: 0,
+            pendente: 0,
+            total: 0,
+          })),
+          totalPago: 0,
+          totalPendente: 0,
+          totalAnual: 0,
+        });
+      }
+
+      const cartao = cartoesMap.get(nomeCartao)!;
+
+      if (status === "pago") {
+        cartao.meses[mesIndex].pago += valor;
+        cartao.totalPago += valor;
+        totalGeralPago += valor;
+      }
+
+      if (status === "pendente") {
+        cartao.meses[mesIndex].pendente += valor;
+        cartao.totalPendente += valor;
+        totalGeralPendente += valor;
+      }
+
+      cartao.meses[mesIndex].total += valor;
+      cartao.totalAnual += valor;
+
+      totaisPorMes[mesIndex].total += valor;
+      totalGeral += valor;
+    }
+
+    const cartoes = Array.from(cartoesMap.entries()).map(
+      ([nomeCartao, dados]) => ({
+        nomeCartao,
+        ...dados,
+      })
+    );
+
+    return {
+      cartoes,
+      totaisPorMes,
+      totalGeral,
+      totalGeralPago,
+      totalGeralPendente,
+    };
   }
 }
