@@ -8,6 +8,7 @@ import ResumoClassificacao from "./components/ResumoClassificacao";
 import Limites from "./components/Limites";
 import DRE from "./components/DRE";
 import Cartoes from "./components/Cartoes";
+import Pendente from "./components/Pendente";
 import type { Movimentacao } from "./types/movimentacao";
 import { FinancialService } from "./services/financialService";
 
@@ -56,6 +57,7 @@ export default function App() {
     | "gerencial"
     | "dre"
     | "cartoes"
+    | "pendente"
   >("resumo");
 
   const [mesSelecionado, setMesSelecionado] = useState<number>(
@@ -116,7 +118,6 @@ export default function App() {
     localStorage.setItem("cartoes", JSON.stringify(cartoesData));
   };
 
-  // 🔥 AGORA passando cartoes no construtor
   const financialService = useMemo(() => {
     return new FinancialService(
       movimentacoes,
@@ -194,6 +195,7 @@ export default function App() {
         <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
         <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
         <button onClick={() => setAbaAtiva("cartoes")}>Cartões</button>
+        <button onClick={() => setAbaAtiva("pendente")}>Pendentes</button>
         <button onClick={() => setAbaAtiva("gerencial")}>
           Resumo Gerencial
         </button>
@@ -226,6 +228,10 @@ export default function App() {
 
       {abaAtiva === "cartoes" && (
         <Cartoes dados={cartoesAnualData} />
+      )}
+
+      {abaAtiva === "pendente" && (
+        <Pendente financialService={financialService} />
       )}
 
       {abaAtiva === "gerencial" && (

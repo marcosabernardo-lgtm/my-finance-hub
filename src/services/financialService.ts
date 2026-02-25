@@ -6,6 +6,7 @@ import { MovimentacoesService } from "./movimentacoesService";
 import { ResumoClassificacaoService } from "./resumoClassificacaoService";
 import { FaturaService } from "./faturaService";
 import { ControleSemanalService } from "./controleSemanalService";
+import { PendenteService } from "./pendenteService";
 
 type DespesaConfig = {
   Categoria: string;
@@ -19,34 +20,6 @@ type Cartao = {
   "Data do Fechamento da Fatura": number;
   "Data do Vencimento da Fatura": number;
   "Limite Total do Cartão": number;
-};
-
-type ControleItem = {
-  categoria: string;
-  limiteMensal: number;
-  totalReal: number;
-  limiteSemanal: number;
-  divergencia: number;
-  semanas: Record<number, number>;
-};
-
-type ResumoClassificacaoItem = {
-  classificacao: string;
-  previsto: number;
-  real: number;
-  divergencia: number;
-  percentual: number;
-};
-
-type DREAnual = {
-  receitas: Record<string, number[]>;
-  despesas: Record<string, number[]>;
-  totalReceitas: number[];
-  totalDespesas: number[];
-  saldoMensal: number[];
-  mediaReceita: number;
-  mediaDespesa: number;
-  saldoTotal: number;
 };
 
 export class FinancialService {
@@ -68,114 +41,85 @@ export class FinancialService {
     this.movimentacoes = movimentacoes;
     this.despesasConfig = despesasConfig;
     this.cartoes = cartoes;
-    this.mesSelecionado =
-      mes !== undefined ? mes : hoje.getMonth();
-    this.anoSelecionado =
-      ano !== undefined ? ano : hoje.getFullYear();
+    this.mesSelecionado = mes !== undefined ? mes : hoje.getMonth();
+    this.anoSelecionado = ano !== undefined ? ano : hoje.getFullYear();
   }
 
-  private getMesEAnoSelecionado() {
-    return {
-      mesAtual: this.mesSelecionado,
-      anoAtual: this.anoSelecionado,
-    };
+  public getPendenciasAnuais() {
+    const pendenteService = new PendenteService(this.movimentacoes);
+    return pendenteService.getPendenciasAnuais(this.anoSelecionado);
   }
 
-  // ============================================================
-  // CONTROLE SEMANAL
-  // ============================================================
-
-  public getControleSemanal() {
-  const controleSemanalService =
-    new ControleSemanalService(
-      this.movimentacoes,
-      this.despesasConfig,
-      this.mesSelecionado,
-      this.anoSelecionado
-    );
-
-  return controleSemanalService.getControleSemanal();
-}
-
-  // ============================================================
-  // DRE ANUAL
-  // ============================================================
-
- public getDREAnual() {
-  const dreService = new DreService(
-    this.movimentacoes,
-    this.anoSelecionado
-  );
-
-  return dreService.getDREAnual();
+  public getTotalPendenteAtual() {
+    const pendenteService = new PendenteService(this.movimentacoes);
+    return pendenteService.getTotalPendenteAtual();
   }
-
-  // ============================================================
-  // RESUMO MÊS ATUAL
-  // ============================================================
 
   public getResumoMesAtual() {
-  const resumoService = new ResumoService(
-    this.movimentacoes,
-    this.mesSelecionado,
-    this.anoSelecionado
-  );
-
-  return resumoService.getResumoMesAtual();
-}
-  // ============================================================
-  // MOVIMENTAÇÕES
-  // ============================================================
+    const resumoService = new ResumoService(
+      this.movimentacoes,
+      this.mesSelecionado,
+      this.anoSelecionado
+    );
+    return resumoService.getResumoMesAtual();
+  }
 
   public getMovimentacoesOrdenadas() {
-  const movimentacoesService = new MovimentacoesService(
-    this.movimentacoes,
-    this.mesSelecionado,
-    this.anoSelecionado
-  );
+    const movimentacoesService = new MovimentacoesService(
+      this.movimentacoes,
+      this.mesSelecionado,
+      this.anoSelecionado
+    );
+    return movimentacoesService.getMovimentacoesOrdenadas();
+  }
 
-  return movimentacoesService.getMovimentacoesOrdenadas();
-}
-
-  // ============================================================
-  // RESUMO CLASSIFICAÇÃO
-  // ============================================================
-
-  public getResumoClassificacao() {
-  const resumoClassificacaoService =
-    new ResumoClassificacaoService(
+  public getControleSemanal() {
+    const controleSemanalService = new ControleSemanalService(
       this.movimentacoes,
       this.despesasConfig,
       this.mesSelecionado,
       this.anoSelecionado
     );
+    return controleSemanalService.getControleSemanal();
+  }
 
-  return resumoClassificacaoService.getResumoClassificacao();
-}
-  // ============================================================
-  // FATURA CARTÕES
-  // ============================================================
+  public getResumoClassificacao() {
+    const resumoClassificacaoService =
+      new ResumoClassificacaoService(
+        this.movimentacoes,
+        this.despesasConfig,
+        this.mesSelecionado,
+        this.anoSelecionado
+      );
 
- public getFaturaCartao(cartao: string) {
-  const faturaService = new FaturaService(
-    this.movimentacoes,
-    this.mesSelecionado,
-    this.anoSelecionado
-  );
+    return resumoClassificacaoService.getResumoClassificacao();
+  }
 
-  return faturaService.getFaturaCartao(cartao);
-}
-  // ============================================================
-  // CARTÕES - VISÃO ANUAL (POR DATA DO PAGAMENTO)
-  // ============================================================
+  public getFaturaCartao(cartao: string) {
+    const faturaService = new FaturaService(
+      this.movimentacoes,
+      this.mesSelecionado,
+      this.anoSelecionado
+    );
+
+    return faturaService.getFaturaCartao(cartao);
+  }
+
+  public getDREAnual() {
+    const dreService = new DreService(
+      this.movimentacoes,
+      this.anoSelecionado
+    );
+    return dreService.getDREAnual();
+  }
 
   public getCartoesAnual() {
-  const cartaoService = new CartaoService(
-    this.movimentacoes,
-    this.cartoes,
-    this.anoSelecionado
-  );
+    const cartaoService = new CartaoService(
+      this.movimentacoes,
+      this.cartoes,
+      this.anoSelecionado
+    );
 
-  return cartaoService.getCartoesAnual();
-}
+    return cartaoService.getCartoesAnual();
+  }
 }
