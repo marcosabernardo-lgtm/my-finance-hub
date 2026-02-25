@@ -14,21 +14,12 @@ type Props = {
 };
 
 const nomesMeses = [
-  "Jan",
-  "Fev",
-  "Mar",
-  "Abr",
-  "Mai",
-  "Jun",
-  "Jul",
-  "Ago",
-  "Set",
-  "Out",
-  "Nov",
-  "Dez",
+  "Jan","Fev","Mar","Abr","Mai","Jun",
+  "Jul","Ago","Set","Out","Nov","Dez",
 ];
 
 export default function DRE({ dados }: Props) {
+
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString("pt-BR", {
       style: "currency",
@@ -57,7 +48,13 @@ export default function DRE({ dados }: Props) {
       </td>
 
       {valores.map((v, i) => (
-        <td key={i} style={{ textAlign: "right" }}>
+        <td
+          key={i}
+          style={{
+            textAlign: "right",
+            color: v < 0 ? "#EF4444" : "inherit",
+          }}
+        >
           {v !== 0 ? formatarMoeda(v) : "-"}
         </td>
       ))}
@@ -117,11 +114,7 @@ export default function DRE({ dados }: Props) {
                 renderLinha(categoria, valores)
             )}
 
-            {renderLinha(
-              "Total Receitas",
-              dados.totalReceitas,
-              true
-            )}
+            {renderLinha("Total Receitas", dados.totalReceitas, true)}
 
             {/* DESPESAS */}
             <tr>
@@ -142,11 +135,7 @@ export default function DRE({ dados }: Props) {
                 renderLinha(categoria, valores)
             )}
 
-            {renderLinha(
-              "Total Despesas",
-              dados.totalDespesas,
-              true
-            )}
+            {renderLinha("Total Despesas", dados.totalDespesas, true)}
 
             {/* RESULTADO */}
             <tr>
@@ -161,11 +150,7 @@ export default function DRE({ dados }: Props) {
               </td>
             </tr>
 
-            {renderLinha(
-              "Saldo Mensal",
-              dados.saldoMensal,
-              true
-            )}
+            {renderLinha("Saldo Mensal", dados.saldoMensal, true)}
 
             <tr
               style={{
@@ -175,7 +160,12 @@ export default function DRE({ dados }: Props) {
             >
               <td style={{ padding: 8 }}>Saldo Total</td>
               <td colSpan={13}></td>
-              <td style={{ textAlign: "right" }}>
+              <td
+                style={{
+                  textAlign: "right",
+                  color: dados.saldoTotal < 0 ? "#EF4444" : "#10B981",
+                }}
+              >
                 {formatarMoeda(dados.saldoTotal)}
               </td>
             </tr>

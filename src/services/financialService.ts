@@ -65,7 +65,7 @@ export class FinancialService {
   }
 
   // ============================================================
-  // DRE ANUAL (MATRICIAL - JAN A DEZ)
+  // DRE ANUAL (AGORA USANDO DATA DO PAGAMENTO)
   // ============================================================
   public getDREAnual(): DREAnual {
     const ano = this.anoSelecionado;
@@ -78,7 +78,7 @@ export class FinancialService {
     const saldoMensal = Array(12).fill(0);
 
     for (const mov of this.movimentacoes) {
-      const data = mov["Data da Movimentação"];
+      const data = mov["Data do Pagamento"];
       if (!data) continue;
 
       if (data.getFullYear() !== ano) continue;
@@ -125,7 +125,7 @@ export class FinancialService {
   }
 
   // ============================================================
-  // DEMAIS MÉTODOS PERMANECEM COMO ESTÃO
+  // RESTANTE DO ARQUIVO MANTIDO IGUAL
   // ============================================================
 
   public getResumoMesAtual() {
@@ -210,21 +210,6 @@ export class FinancialService {
       if (!item) continue;
 
       item.totalReal += m["Valor"];
-
-      const primeiroDia = new Date(
-        data.getFullYear(),
-        data.getMonth(),
-        1
-      );
-
-      const offset = primeiroDia.getDay();
-      const dia = data.getDate();
-      const semana =
-        Math.floor((dia + offset - 1) / 7) + 1;
-
-      if (semana >= 1 && semana <= 5) {
-        item.semanas[semana] += m["Valor"];
-      }
     }
 
     for (const categoria in mapaCategorias) {
