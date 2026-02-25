@@ -1,209 +1,116 @@
 import React from "react";
 
-type MesData = {
-  pago: number;
-  pendente: number;
-  total: number;
-};
-
-type CartaoAnual = {
-  nomeCartao: string;
-  meses: MesData[];
-  totalPago: number;
-  totalPendente: number;
-  totalAnual: number;
-};
-
 type Props = {
-  dados: {
-    cartoes: CartaoAnual[];
-    totaisPorMes: MesData[];
-    totalGeral: number;
-    totalGeralPago: number;
-    totalGeralPendente: number;
-  };
+  dados: any;
 };
 
-const nomesMeses = [
+const mesesAbreviados = [
   "Jan","Fev","Mar","Abr","Mai","Jun",
   "Jul","Ago","Set","Out","Nov","Dez"
 ];
 
-function formatar(valor: number) {
-  return valor.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  });
-}
-
 export default function Cartoes({ dados }: Props) {
-  const {
-    cartoes,
-    totaisPorMes,
-    totalGeral,
-    totalGeralPendente
-  } = dados;
 
-  const mesAtual = new Date().getMonth();
+  if (!dados || !dados.cartoes) return null;
+
+  const formatar = (valor: number) =>
+    Number(valor || 0).toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
 
   return (
-    <>
-      {/* HEADER SUPERIOR */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 20,
-        }}
-      >
-        <h2 style={{ margin: 0 }}>Cartões - Visão Anual</h2>
+    <div style={{ marginTop: 25 }}>
+      <h2 style={{ marginBottom: 15 }}>Cartões - Visão Anual</h2>
 
-        <div
-          style={{
-            background: "linear-gradient(135deg,#1f1f1f,#2b2b2b)",
-            padding: "12px 24px",
-            borderRadius: 12,
-            fontWeight: 600,
-            fontSize: 18,
-            color: "#ffcc00",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.4)"
-          }}
-        >
-          Pendente Total: {formatar(totalGeralPendente)}
-        </div>
-      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+        <thead>
+          <tr style={{ backgroundColor: "#111827" }}>
+            <th style={thLeft}>Cartão</th>
 
-      <div style={{ overflowX: "auto" }}>
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "separate",
-            borderSpacing: 0,
-            fontSize: 14,
-          }}
-        >
-          <thead>
-            <tr>
-              <th style={thStyleLeft}>Cartão</th>
-              {nomesMeses.map((mes, index) => (
-                <th
-                  key={mes}
-                  style={{
-                    ...thStyle,
-                    background:
-                      index === mesAtual
-                        ? "#2c2c2c"
-                        : "#1e1e1e",
-                  }}
-                >
-                  {mes}
-                </th>
-              ))}
-              <th style={thStyle}>Total</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {cartoes.map((cartao, rowIndex) => (
-              <tr
-                key={cartao.nomeCartao}
-                style={{
-                  background:
-                    rowIndex % 2 === 0
-                      ? "#1a1a1a"
-                      : "#161616",
-                  transition: "0.2s",
-                }}
-              >
-                <td style={tdLeft}>
-                  {cartao.nomeCartao}
-                </td>
-
-                {cartao.meses.map((mes, index) => {
-                  const somentePago =
-                    mes.total > 0 && mes.pendente === 0;
-
-                  return (
-                    <td
-                      key={index}
-                      style={{
-                        ...tdStyle,
-                        opacity: somentePago ? 0.35 : 1,
-                        color:
-                          mes.pendente > 0
-                            ? "#ffffff"
-                            : "#cfcfcf",
-                      }}
-                    >
-                      {mes.total > 0
-                        ? formatar(mes.total)
-                        : "-"}
-                    </td>
-                  );
-                })}
-
-                <td style={tdTotal}>
-                  {formatar(cartao.totalAnual)}
-                </td>
-              </tr>
+            {mesesAbreviados.map((m) => (
+              <th key={m} style={th}>{m}</th>
             ))}
 
-            {/* TOTAL MÊS */}
-            <tr
-              style={{
-                background: "#101010",
-                borderTop: "2px solid #333",
-                fontWeight: 600,
-              }}
-            >
-              <td style={tdLeft}>Total Mês</td>
+            <th style={thResumo}>Total</th>
+          </tr>
+        </thead>
 
-              {totaisPorMes.map((mes, index) => (
-                <td key={index} style={tdStyle}>
-                  {mes.total > 0
-                    ? formatar(mes.total)
-                    : "-"}
+        <tbody>
+
+          {dados.cartoes.map((cartao: any) => (
+            <tr key={cartao.nomeCartao}>
+              <td style={tdLeft}>{cartao.nomeCartao}</td>
+
+              {cartao.meses.map((mes: any, index: number) => (
+                <td key={index} style={tdValor}>
+                  {mes.total ? formatar(mes.total) : "–"}
                 </td>
               ))}
 
-              <td style={tdTotal}>
-                {formatar(totalGeral)}
+              <td style={tdResumo}>
+                {formatar(cartao.totalAnual)}
               </td>
             </tr>
-          </tbody>
-        </table>
-      </div>
-    </>
+          ))}
+
+          {/* TOTAL MÊS */}
+          <tr style={{ backgroundColor: "#1f2937", fontWeight: 700 }}>
+            <td style={tdLeft}>Total Mês</td>
+
+            {dados.totaisPorMes.map((mes: any, index: number) => (
+              <td key={index} style={tdValor}>
+                {formatar(mes.total)}
+              </td>
+            ))}
+
+            <td style={tdResumo}>
+              {formatar(dados.totalGeral)}
+            </td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
   );
 }
 
-const thStyle: React.CSSProperties = {
-  padding: "12px 10px",
-  textAlign: "right",
-  background: "#1e1e1e",
-  fontWeight: 600,
-  borderBottom: "1px solid #333",
+/* ===== ESTILOS ===== */
+
+const th = {
+  textAlign: "right" as const,
+  padding: "6px 8px",
 };
 
-const thStyleLeft: React.CSSProperties = {
-  ...thStyle,
-  textAlign: "left",
+const thLeft = {
+  textAlign: "left" as const,
+  padding: "6px 8px",
 };
 
-const tdStyle: React.CSSProperties = {
-  padding: "10px",
-  textAlign: "right",
+const thResumo = {
+  textAlign: "right" as const,
+  padding: "6px 12px",
+  borderLeft: "2px solid #374151",
 };
 
-const tdLeft: React.CSSProperties = {
-  ...tdStyle,
-  textAlign: "left",
-  fontWeight: 500,
+const tdValor = {
+  textAlign: "right" as const,
+  padding: "6px 8px",
+  borderBottom: "1px solid #1f2937",
 };
 
-const tdTotal: React.CSSProperties = {
-  ...tdStyle,
-  fontWeight: 600,
-  color: "#ffffff",
+const tdLeft = {
+  textAlign: "left" as const,
+  padding: "6px 8px",
+  borderBottom: "1px solid #1f2937",
+};
+
+const tdResumo = {
+  textAlign: "right" as const,
+  padding: "6px 12px",
+  borderBottom: "1px solid #1f2937",
+  background: "#161b22",
+  fontWeight: 700,
 };
