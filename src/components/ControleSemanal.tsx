@@ -14,98 +14,73 @@ type Props = {
 };
 
 export default function ControleSemanal({ controleData }: Props) {
+
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
 
-  function estiloDivergencia(valor: number): React.CSSProperties {
-    if (valor < 0) {
-      return {
-        backgroundColor: "#7f1d1d",
-        color: "#ffffff",
-        fontWeight: "bold",
-      };
-    }
-
-    if (valor > 0) {
-      return {
-        backgroundColor: "#064e3b",
-        color: "#ffffff",
-        fontWeight: "bold",
-      };
-    }
-
-    return {};
+  function corDivergencia(valor: number): string {
+    if (valor < 0) return "#EF4444";
+    if (valor > 0) return "#10B981";
+    return "inherit";
   }
 
-  function estiloSemana(
+  function corSemana(
     valor: number,
     limiteSemanal: number
-  ): React.CSSProperties {
-    if (valor === 0) return {};
-
-    if (valor > limiteSemanal) {
-      return {
-        backgroundColor: "#7f1d1d",
-        color: "#ffffff",
-        fontWeight: "bold",
-      };
-    }
-
-    return {
-      backgroundColor: "#064e3b",
-      color: "#ffffff",
-      fontWeight: "bold",
-    };
+  ): string {
+    if (!valor) return "inherit";
+    if (valor > limiteSemanal) return "#EF4444";
+    return "#10B981";
   }
 
   return (
-    <>
-      <h2 style={{ marginBottom: 15 }}>
-        Controle Semanal
-      </h2>
+    <div style={{ marginTop: 25 }}>
+      <h2 style={{ marginBottom: 15 }}>Controle Semanal</h2>
 
       <table
         style={{
           width: "100%",
-          borderCollapse: "separate",
-          borderSpacing: "14px 6px",
-          fontSize: "13px",
+          borderCollapse: "collapse",
+          fontSize: 12,
         }}
       >
         <thead>
-          <tr>
-            <th>Categoria</th>
-            <th>Limite Mensal</th>
-            <th>Real</th>
-            <th>Divergência</th>
-            <th>Limite Semanal</th>
-            <th>Semana 1</th>
-            <th>Semana 2</th>
-            <th>Semana 3</th>
-            <th>Semana 4</th>
-            <th>Semana 5</th>
+          <tr style={{ backgroundColor: "#111827" }}>
+            <th style={thCategoria}>Categoria</th>
+            <th style={thNumero}>Limite Mensal</th>
+            <th style={thNumero}>Real</th>
+            <th style={thNumero}>Divergência</th>
+            <th style={thNumero}>Limite Semanal</th>
+            <th style={thNumero}>Semana 1</th>
+            <th style={thNumero}>Semana 2</th>
+            <th style={thNumero}>Semana 3</th>
+            <th style={thNumero}>Semana 4</th>
+            <th style={thNumero}>Semana 5</th>
           </tr>
         </thead>
 
         <tbody>
           {controleData.map((item) => (
             <tr key={item.categoria}>
-              <td>{item.categoria}</td>
+              <td style={tdCategoria}>{item.categoria}</td>
 
-              <td style={{ textAlign: "right" }}>
+              <td style={tdNumero}>
                 {formatarMoeda(item.limiteMensal)}
               </td>
 
               <td
                 style={{
-                  textAlign: "right",
-                  ...estiloSemana(
+                  ...tdNumero,
+                  color: corSemana(
                     item.totalReal,
                     item.limiteSemanal
                   ),
+                  fontWeight: 600,
                 }}
               >
                 {formatarMoeda(item.totalReal)}
@@ -113,16 +88,17 @@ export default function ControleSemanal({ controleData }: Props) {
 
               <td
                 style={{
-                  textAlign: "right",
-                  ...estiloDivergencia(
+                  ...tdNumero,
+                  color: corDivergencia(
                     item.divergencia
                   ),
+                  fontWeight: 700,
                 }}
               >
                 {formatarMoeda(item.divergencia)}
               </td>
 
-              <td style={{ textAlign: "right" }}>
+              <td style={tdNumero}>
                 {formatarMoeda(item.limiteSemanal)}
               </td>
 
@@ -130,20 +106,44 @@ export default function ControleSemanal({ controleData }: Props) {
                 <td
                   key={s}
                   style={{
-                    textAlign: "right",
-                    ...estiloSemana(
-                      item.semanas[s],
+                    ...tdNumero,
+                    color: corSemana(
+                      item.semanas[s] || 0,
                       item.limiteSemanal
                     ),
+                    fontWeight: 600,
                   }}
                 >
-                  {formatarMoeda(item.semanas[s])}
+                  {formatarMoeda(item.semanas[s] || 0)}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
-    </>
+    </div>
   );
 }
+
+/* ===== ESTILO IDÊNTICO AO DRE ===== */
+
+const thCategoria: React.CSSProperties = {
+  textAlign: "left",
+  padding: "6px 8px",
+};
+
+const thNumero: React.CSSProperties = {
+  textAlign: "right",
+  padding: "6px 8px",
+};
+
+const tdCategoria: React.CSSProperties = {
+  padding: "6px 8px",
+  borderBottom: "1px solid #1f2937",
+};
+
+const tdNumero: React.CSSProperties = {
+  padding: "6px 8px",
+  textAlign: "right",
+  borderBottom: "1px solid #1f2937",
+};
