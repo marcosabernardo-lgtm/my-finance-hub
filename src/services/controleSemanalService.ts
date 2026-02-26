@@ -35,6 +35,8 @@ export class ControleSemanalService {
   }
 
   public getControleSemanal(): ControleItem[] {
+    const hoje = new Date();
+
     const mapaCategorias: Record<string, ControleItem> = {};
 
     // ==============================
@@ -43,9 +45,9 @@ export class ControleSemanalService {
     for (const cat of this.despesasConfig) {
       mapaCategorias[cat.Categoria] = {
         categoria: cat.Categoria,
-        limiteMensal: cat.Limite_Gastos || 0,
+        limiteMensal: cat.Limite_Gastos,
         totalReal: 0,
-        limiteSemanal: (cat.Limite_Gastos || 0) / 4.3,
+        limiteSemanal: cat.Limite_Gastos / 4.3,
         divergencia: 0,
         semanas: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
       };
@@ -55,55 +57,68 @@ export class ControleSemanalService {
     // 2️⃣ Processa movimentações
     // ==============================
     for (const m of this.movimentacoes) {
-      const data = m["Data da Movimentação"];
-      if (!data) continue;
+      const dataPagamento = m["Data do Pagamento"];
+      if (!dataPagamento) continue;
 
+      // ❌ Ignora mês diferente
       if (
-        data.getMonth() !== this.mesSelecionado ||
-        data.getFullYear() !== this.anoSelecionado ||
-        m["Tipo"] !== "Despesa" ||
-        !(
-          m["Situação"] === "Pago" ||
-          m["Situação"] === "Faturado"
-        )
-      ) {
+        dataPagamento.getMonth() !== this.mesSelecionado ||
+        dataPagamento.getFullYear() !== this.anoSelecionado
+      )
         continue;
-      }
+
+      // ❌ Não traz mês futuro
+      if (
+        this.anoSelecionado > hoje.getFullYear() ||
+        (this.anoSelecionado === hoje.getFullYear() &&
+          this.mesSelecionado > hoje.getMonth())
+      )
+        continue;
+
+      // ❌ Não traz pagamento futuro
+      if (dataPagamento > hoje) continue;
+
+      // ❌ Só despesas
+      if (m["Tipo"] !== "Despesa") continue;
+
+      // ❌ Ignora pagamento de fatura
+      if (m["Categoria"] === "Pagamento de Fatura") continue;
+
+      // ❌ Só pago ou faturado
+      if (!(m["Situação"] === "Pago" || m["Situação"] === "Faturado"))
+        continue;
 
       const item = mapaCategorias[m["Categoria"]];
       if (!item) continue;
 
       const valor = m["Valor"] || 0;
 
-      // Soma no totalReal
+      // Soma no Real
       item.totalReal += valor;
 
       // ==============================
-      // 3️⃣ Distribuição por semana
+      // ✅ USA A SEMANA DA PLANILHA
       // ==============================
-      const primeiroDia = new Date(
-        data.getFullYear(),
-        data.getMonth(),
-        1
-      );
+      const semanaTexto = m["Semana_do_Mês"];
 
-      const offset = primeiroDia.getDay();
-      const dia = data.getDate();
+      if (typeof semanaTexto === "string") {
+        const numeroSemana = Number(
+          semanaTexto.replace("Semana", "").trim()
+        );
 
-      const semana = Math.floor((dia + offset - 1) / 7) + 1;
-
-      if (semana >= 1 && semana <= 5) {
-        item.semanas[semana] += valor;
+        if (numeroSemana >= 1 && numeroSemana <= 5) {
+          item.semanas[numeroSemana] += valor;
+        }
       }
     }
 
     // ==============================
-    // 4️⃣ Calcula divergência
+    // 3️⃣ Calcula divergência
     // ==============================
     for (const categoria in mapaCategorias) {
-      const item = mapaCategorias[categoria];
-      item.divergencia =
-        item.limiteMensal - item.totalReal;
+      mapaCategorias[categoria].divergencia =
+        mapaCategorias[categoria].limiteMensal -
+        mapaCategorias[categoria].totalReal;
     }
 
     return Object.values(mapaCategorias);
