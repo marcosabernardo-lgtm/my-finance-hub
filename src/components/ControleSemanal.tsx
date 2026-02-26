@@ -29,10 +29,7 @@ export default function ControleSemanal({ controleData }: Props) {
     return "inherit";
   }
 
-  function corSemana(
-    valor: number,
-    limiteSemanal: number
-  ): string {
+  function corSemana(valor: number, limiteSemanal: number): string {
     if (!valor) return "inherit";
     if (valor > limiteSemanal) return "#EF4444";
     return "#10B981";
@@ -73,13 +70,14 @@ export default function ControleSemanal({ controleData }: Props) {
                 {formatarMoeda(item.limiteMensal)}
               </td>
 
+              {/* ✅ REAL CORRIGIDO */}
               <td
                 style={{
                   ...tdNumero,
-                  color: corSemana(
-                    item.totalReal,
-                    item.limiteSemanal
-                  ),
+                  color:
+                    item.totalReal > item.limiteMensal
+                      ? "#EF4444"
+                      : "#10B981",
                   fontWeight: 600,
                 }}
               >
@@ -89,9 +87,7 @@ export default function ControleSemanal({ controleData }: Props) {
               <td
                 style={{
                   ...tdNumero,
-                  color: corDivergencia(
-                    item.divergencia
-                  ),
+                  color: corDivergencia(item.divergencia),
                   fontWeight: 700,
                 }}
               >
@@ -102,21 +98,25 @@ export default function ControleSemanal({ controleData }: Props) {
                 {formatarMoeda(item.limiteSemanal)}
               </td>
 
-              {[1, 2, 3, 4, 5].map((s) => (
-                <td
-                  key={s}
-                  style={{
-                    ...tdNumero,
-                    color: corSemana(
-                      item.semanas[s] || 0,
-                      item.limiteSemanal
-                    ),
-                    fontWeight: 600,
-                  }}
-                >
-                  {formatarMoeda(item.semanas[s] || 0)}
-                </td>
-              ))}
+              {[1, 2, 3, 4, 5].map((s) => {
+                const valorSemana = item.semanas[s] || 0;
+
+                return (
+                  <td
+                    key={s}
+                    style={{
+                      ...tdNumero,
+                      color: corSemana(
+                        valorSemana,
+                        item.limiteSemanal
+                      ),
+                      fontWeight: 600,
+                    }}
+                  >
+                    {formatarMoeda(valorSemana)}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>
