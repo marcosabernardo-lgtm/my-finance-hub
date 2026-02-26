@@ -22,26 +22,24 @@ export default function FaturaCartao({
   setCartaoFiltro,
   dados,
 }: Props) {
+
   const [modoVisualizacao, setModoVisualizacao] =
     useState<"tabela" | "grafico">("tabela");
 
-  const formatarMoeda = (valor?: number) => {
-    if (!valor) return "R$ 0,00";
-    return valor.toLocaleString("pt-BR", {
+  const formatarMoeda = (valor?: number) =>
+    (valor || 0).toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     });
-  };
 
   const formatarDescricao = (texto?: string) => {
-    if (!texto || typeof texto !== "string") return "";
+    if (!texto) return "";
     return texto
       .toLowerCase()
       .split(" ")
-      .map(
-        (palavra) =>
-          palavra.charAt(0).toUpperCase() + palavra.slice(1)
-      )
+      .map(p => p.charAt(0).toUpperCase() + p.slice(1))
       .join(" ");
   };
 
@@ -50,34 +48,16 @@ export default function FaturaCartao({
     0
   );
 
-  const celulaStyle: React.CSSProperties = {
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    padding: "8px 4px",
-  };
-
   return (
-    <>
-      <h2 style={{ marginTop: 30 }}>Fatura Cartão</h2>
+    <div style={{ marginTop: 25 }}>
+      <h2 style={{ marginBottom: 15 }}>Fatura Cartão</h2>
 
-      {/* LINHA SUPERIOR */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 20,
-          marginBottom: 25,
-        }}
-      >
-        {/* Seletor de cartão */}
+      {/* CONTROLES */}
+      <div style={{ display: "flex", gap: 20, marginBottom: 20 }}>
         <select
           value={cartaoFiltro}
           onChange={(e) => setCartaoFiltro(e.target.value)}
-          style={{
-            minWidth: 240,
-            padding: 6,
-          }}
+          style={{ padding: 6, minWidth: 240 }}
         >
           <option value="">Selecione o Cartão</option>
           {cartoes.map((c) => (
@@ -90,7 +70,6 @@ export default function FaturaCartao({
           ))}
         </select>
 
-        {/* Toggle Tabela / Gráfico */}
         <div
           style={{
             display: "flex",
@@ -133,92 +112,90 @@ export default function FaturaCartao({
         </div>
       </div>
 
-      <h3 style={{ marginBottom: 25 }}>
+      <h3 style={{ marginBottom: 20 }}>
         Total Fatura: {formatarMoeda(totalFatura)}
       </h3>
 
-      {/* CONTEÚDO */}
       {modoVisualizacao === "tabela" ? (
         (dados || []).length === 0 ? (
           <p>Nenhuma movimentação encontrada.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                tableLayout: "fixed",
-                borderCollapse: "separate",
-                borderSpacing: "16px 10px",
-                fontSize: "13px",
-              }}
-            >
-              <thead>
-                <tr>
-                  <th style={{ width: "12%", textAlign: "left" }}>
-                    Data
-                  </th>
-                  <th style={{ width: "22%", textAlign: "left" }}>
-                    Categoria
-                  </th>
-                  <th style={{ width: "26%", textAlign: "left" }}>
-                    Descrição
-                  </th>
-                  <th style={{ width: "14%", textAlign: "right" }}>
-                    Valor
-                  </th>
-                  <th style={{ width: "16%", textAlign: "left" }}>
-                    Forma
-                  </th>
-                  <th style={{ width: "10%", textAlign: "left" }}>
-                    Parcela
-                  </th>
-                </tr>
-              </thead>
+          <table
+            style={{
+              width: "100%",
+              borderCollapse: "collapse",
+              fontSize: 12,
+            }}
+          >
+            <thead>
+              <tr style={{ backgroundColor: "#111827" }}>
+                <th style={thPadrao}>Data da Movimentação</th>
+                <th style={thPadrao}>Categoria</th>
+                <th style={thPadrao}>Descrição</th>
+                <th style={thValor}>Valor</th>
+                <th style={thPadrao}>Forma</th>
+                <th style={thPadrao}>Parcela</th>
+              </tr>
+            </thead>
 
-              <tbody>
-                {(dados || []).map((m, index) => (
-                  <tr
-                    key={m.ID_Movimentacao}
-                    style={{
-                      background:
-                        index % 2 === 0
-                          ? "#1a1a1a"
-                          : "#161616",
-                    }}
-                  >
-                    <td style={celulaStyle}>
-                      {m["Data da Movimentação"]?.toLocaleDateString()}
-                    </td>
-                    <td style={celulaStyle}>
-                      {m.Categoria}
-                    </td>
-                    <td style={celulaStyle}>
-                      {formatarDescricao(m.Descrição)}
-                    </td>
-                    <td
-                      style={{
-                        ...celulaStyle,
-                        textAlign: "right",
-                        fontWeight: 600,
-                      }}
-                    >
-                      {formatarMoeda(m.Valor)}
-                    </td>
-                    <td style={celulaStyle}>
-                      {m["Forma de Pagamento"]}
-                    </td>
-                    <td style={celulaStyle}>
-                      {m["Nº da Parcela"]}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            <tbody>
+              {dados.map((m) => (
+                <tr key={m.ID_Movimentacao}>
+                  <td style={tdPadrao}>
+                    {m["Data da Movimentação"]?.toLocaleDateString("pt-BR")}
+                  </td>
+
+                  <td style={tdPadrao}>
+                    {m.Categoria}
+                  </td>
+
+                  <td style={tdPadrao}>
+                    {formatarDescricao(m.Descrição)}
+                  </td>
+
+                  <td style={tdValor}>
+                    {formatarMoeda(m.Valor)}
+                  </td>
+
+                  <td style={tdPadrao}>
+                    {m["Forma de Pagamento"]}
+                  </td>
+
+                  <td style={tdPadrao}>
+                    {m["Nº da Parcela"]}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )
       ) : (
         <GraficoCategoria dados={dados || []} />
       )}
-    </>
+    </div>
   );
 }
+
+/* ===== ESTILO IGUAL AO DRE ===== */
+
+const thPadrao: React.CSSProperties = {
+  textAlign: "left",
+  padding: "6px 8px",
+};
+
+const thValor: React.CSSProperties = {
+  textAlign: "right",
+  padding: "6px 8px",
+};
+
+const tdPadrao: React.CSSProperties = {
+  padding: "6px 8px",
+  borderBottom: "1px solid #1f2937",
+};
+
+const tdValor: React.CSSProperties = {
+  padding: "6px 8px",
+  textAlign: "right",
+  borderBottom: "1px solid #1f2937",
+  fontWeight: 600,
+};
