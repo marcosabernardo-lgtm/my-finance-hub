@@ -14,136 +14,119 @@ type Props = {
 };
 
 export default function ControleSemanal({ controleData }: Props) {
-
   const formatarMoeda = (valor: number) =>
     valor.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
     });
 
-  function corDivergencia(valor: number): string {
-    if (valor < 0) return "#EF4444";
-    if (valor > 0) return "#10B981";
-    return "inherit";
-  }
-
-  function corSemana(valor: number, limiteSemanal: number): string {
-    if (!valor) return "inherit";
-    if (valor > limiteSemanal) return "#EF4444";
-    return "#10B981";
-  }
-
   return (
-    <div style={{ marginTop: 25 }}>
+    <div style={{ marginTop: 30 }}>
       <h2 style={{ marginBottom: 15 }}>Controle Semanal</h2>
 
       <table
         style={{
           width: "100%",
           borderCollapse: "collapse",
-          fontSize: 12,
+          marginTop: 10,
+          fontSize: "13px", // 👈 Fonte reduzida
         }}
       >
-        <thead>
-          <tr style={{ backgroundColor: "#111827" }}>
-            <th style={thCategoria}>Categoria</th>
-            <th style={thNumero}>Limite Mensal</th>
-            <th style={thNumero}>Real</th>
-            <th style={thNumero}>Divergência</th>
-            <th style={thNumero}>Limite Semanal</th>
-            <th style={thNumero}>Semana 1</th>
-            <th style={thNumero}>Semana 2</th>
-            <th style={thNumero}>Semana 3</th>
-            <th style={thNumero}>Semana 4</th>
-            <th style={thNumero}>Semana 5</th>
+        <thead style={{ backgroundColor: "#111827" }}>
+          <tr>
+            {[
+              "Categoria",
+              "Limite Mensal",
+              "Real",
+              "Divergência",
+              "Limite Semanal",
+              "Semana 1",
+              "Semana 2",
+              "Semana 3",
+              "Semana 4",
+              "Semana 5",
+            ].map((col) => (
+              <th
+                key={col}
+                style={{
+                  padding: "8px 6px",
+                  textAlign: "left",
+                  borderBottom: "1px solid #1f2937",
+                  fontWeight: 600,
+                }}
+              >
+                {col}
+              </th>
+            ))}
           </tr>
         </thead>
 
         <tbody>
-          {controleData.map((item) => (
-            <tr key={item.categoria}>
-              <td style={tdCategoria}>{item.categoria}</td>
+          {controleData.map((item, index) => {
+            const isTotal = item.categoria === "TOTAL";
 
-              <td style={tdNumero}>
-                {formatarMoeda(item.limiteMensal)}
-              </td>
-
-              {/* ✅ REAL CORRIGIDO */}
-              <td
+            return (
+              <tr
+                key={index}
                 style={{
-                  ...tdNumero,
-                  color:
-                    item.totalReal > item.limiteMensal
-                      ? "#EF4444"
-                      : "#10B981",
-                  fontWeight: 600,
+                  backgroundColor: isTotal ? "#1f2937" : "transparent",
+                  fontWeight: isTotal ? "bold" : "normal",
                 }}
               >
-                {formatarMoeda(item.totalReal)}
-              </td>
+                <td style={{ padding: "6px", borderBottom: "1px solid #1f2937" }}>
+                  {item.categoria}
+                </td>
 
-              <td
-                style={{
-                  ...tdNumero,
-                  color: corDivergencia(item.divergencia),
-                  fontWeight: 700,
-                }}
-              >
-                {formatarMoeda(item.divergencia)}
-              </td>
+                <td style={{ padding: "6px", borderBottom: "1px solid #1f2937" }}>
+                  {formatarMoeda(item.limiteMensal)}
+                </td>
 
-              <td style={tdNumero}>
-                {formatarMoeda(item.limiteSemanal)}
-              </td>
+                <td
+                  style={{
+                    padding: "6px",
+                    borderBottom: "1px solid #1f2937",
+                    color: item.totalReal > 0 ? "#EF4444" : "#10B981",
+                  }}
+                >
+                  {formatarMoeda(item.totalReal)}
+                </td>
 
-              {[1, 2, 3, 4, 5].map((s) => {
-                const valorSemana = item.semanas[s] || 0;
+                <td
+                  style={{
+                    padding: "6px",
+                    borderBottom: "1px solid #1f2937",
+                    color:
+                      item.divergencia >= 0 ? "#10B981" : "#EF4444",
+                  }}
+                >
+                  {formatarMoeda(item.divergencia)}
+                </td>
 
-                return (
-                  <td
-                    key={s}
-                    style={{
-                      ...tdNumero,
-                      color: corSemana(
-                        valorSemana,
-                        item.limiteSemanal
-                      ),
-                      fontWeight: 600,
-                    }}
-                  >
-                    {formatarMoeda(valorSemana)}
-                  </td>
-                );
-              })}
-            </tr>
-          ))}
+                <td style={{ padding: "6px", borderBottom: "1px solid #1f2937" }}>
+                  {formatarMoeda(item.limiteSemanal)}
+                </td>
+
+                {[1, 2, 3, 4, 5].map((semana) => {
+                  const valor = item.semanas[semana];
+
+                  return (
+                    <td
+                      key={semana}
+                      style={{
+                        padding: "6px",
+                        borderBottom: "1px solid #1f2937",
+                        color: valor > 0 ? "#EF4444" : "inherit",
+                      }}
+                    >
+                      {formatarMoeda(valor)}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          })}
         </tbody>
       </table>
     </div>
   );
 }
-
-/* ===== ESTILO IDÊNTICO AO DRE ===== */
-
-const thCategoria: React.CSSProperties = {
-  textAlign: "left",
-  padding: "6px 8px",
-};
-
-const thNumero: React.CSSProperties = {
-  textAlign: "right",
-  padding: "6px 8px",
-};
-
-const tdCategoria: React.CSSProperties = {
-  padding: "6px 8px",
-  borderBottom: "1px solid #1f2937",
-};
-
-const tdNumero: React.CSSProperties = {
-  padding: "6px 8px",
-  textAlign: "right",
-  borderBottom: "1px solid #1f2937",
-};

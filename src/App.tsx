@@ -11,6 +11,7 @@ import Cartoes from "./components/Cartoes";
 import Pendente from "./components/Pendente";
 import type { Movimentacao } from "./types/movimentacao";
 import { FinancialService } from "./services/financialService";
+import homeImage from "./assets/Home.jpg";
 
 type DespesaConfig = {
   Categoria: string;
@@ -31,24 +32,24 @@ const nomesMeses = [
   "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
 ];
 
+type Pagina =
+  | "home"
+  | "resumo"
+  | "movimentacoes"
+  | "limites"
+  | "semanal"
+  | "fatura"
+  | "dre"
+  | "cartoes"
+  | "pendente";
+
 export default function App() {
   const hoje = new Date();
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [despesasConfig, setDespesasConfig] = useState<DespesaConfig[]>([]);
   const [cartoes, setCartoes] = useState<Cartao[]>([]);
-
-  const [abaAtiva, setAbaAtiva] = useState<
-    | "resumo"
-    | "movimentacoes"
-    | "limites"
-    | "semanal"
-    | "fatura"
-    | "gerencial"
-    | "dre"
-    | "cartoes"
-    | "pendente"
-  >("resumo");
+  const [pagina, setPagina] = useState<Pagina>("home");
 
   const [mesSelecionado, setMesSelecionado] = useState<number>(hoje.getMonth());
   const [anoSelecionado, setAnoSelecionado] = useState<number>(hoje.getFullYear());
@@ -61,21 +62,17 @@ export default function App() {
 
     if (movSalvos) {
       const parsed: Movimentacao[] = JSON.parse(movSalvos);
-
       const convertidas = parsed.map((m) => ({
         ...m,
         "Data da Movimentação":
-          m["Data da Movimentação"] &&
           typeof m["Data da Movimentação"] === "string"
             ? new Date(m["Data da Movimentação"])
-            : null,
+            : m["Data da Movimentação"],
         "Data do Pagamento":
-          m["Data do Pagamento"] &&
           typeof m["Data do Pagamento"] === "string"
             ? new Date(m["Data do Pagamento"])
-            : null,
+            : m["Data do Pagamento"],
       }));
-
       setMovimentacoes(convertidas);
     }
 
@@ -119,10 +116,28 @@ export default function App() {
     return financialService.getFaturaCartao(cartaoFiltro);
   }, [financialService, cartaoFiltro]);
 
+  const abas: { label: string; key: Pagina }[] = [
+    { label: "Resumo", key: "resumo" },
+    { label: "Movimentações", key: "movimentacoes" },
+    { label: "Semanal", key: "semanal" },
+    { label: "Fatura Cartão", key: "fatura" },
+    { label: "Cartões", key: "cartoes" },
+    { label: "Pendentes", key: "pendente" },
+    { label: "DRE", key: "dre" },
+    { label: "Limites", key: "limites" },
+  ];
+
   const renderConteudo = () => {
-    switch (abaAtiva) {
+    switch (pagina) {
       case "resumo":
-        return <Resumo resumoData={resumoData} />;
+        return (
+          <>
+            <Resumo resumoData={resumoData} />
+            <div style={{ marginTop: 40 }}>
+              <ResumoClassificacao dados={resumoClassificacaoData} />
+            </div>
+          </>
+        );
       case "movimentacoes":
         return <Movimentacoes movimentacoes={movimentacoesOrdenadas} />;
       case "limites":
@@ -142,8 +157,6 @@ export default function App() {
         return <Cartoes dados={cartoesAnualData} />;
       case "pendente":
         return <Pendente financialService={financialService} />;
-      case "gerencial":
-        return <ResumoClassificacao dados={resumoClassificacaoData} />;
       case "dre":
         return <DRE dados={dreData} />;
       default:
@@ -151,74 +164,77 @@ export default function App() {
     }
   };
 
+  if (pagina === "home") {
+    return (
+      <div
+        style={{
+          width: "100vw",
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          backgroundImage: `url(${homeImage})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <h1 style={{ fontSize: 48, color: "white" }}>
+          CONTROLE FINANCEIRO PESSOAL
+        </h1>
+
+        <div style={{ display: "flex", gap: 15, flexWrap: "wrap", marginTop: 30 }}>
+          {abas.map((aba) => (
+            <button key={aba.key} onClick={() => setPagina(aba.key)}>
+              {aba.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div
-      style={{
-        height: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        overflow: "hidden",
-        maxWidth: 1400,
-        margin: "0 auto",
-      }}
-    >
-      {/* HEADER FIXO */}
-      <div
-        style={{
-          flexShrink: 0,
-          padding: 20,
-          borderBottom: "1px solid #1f2937",
-        }}
-      >
-        <h1>Controle Financeiro Pessoal</h1>
+    <div style={{ padding: 20 }}>
+      {/* 🔹 Navegação Interna */}
+      <div style={{ marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+        <button onClick={() => setPagina("home")}>← Início</button>
 
-        <UploadPlanilha onDataLoaded={handleDataLoaded} />
-
-        <div style={{ marginTop: 20 }}>
-          <label>Mês: </label>
-          <select
-            value={mesSelecionado}
-            onChange={(e) => setMesSelecionado(Number(e.target.value))}
-          >
-            {nomesMeses.map((mes, index) => (
-              <option key={mes} value={index}>
-                {mes}
-              </option>
-            ))}
-          </select>
-
-          <label style={{ marginLeft: 20 }}>Ano: </label>
-          <input
-            type="number"
-            value={anoSelecionado}
-            onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-            style={{ width: 100 }}
-          />
-        </div>
-
-        <div style={{ marginTop: 20 }}>
-          <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
-          <button onClick={() => setAbaAtiva("movimentacoes")}>Movimentações</button>
-          <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
-          <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
-          <button onClick={() => setAbaAtiva("cartoes")}>Cartões</button>
-          <button onClick={() => setAbaAtiva("pendente")}>Pendentes</button>
-          <button onClick={() => setAbaAtiva("gerencial")}>Resumo Gerencial</button>
-          <button onClick={() => setAbaAtiva("dre")}>DRE</button>
-          <button onClick={() => setAbaAtiva("limites")}>Limites</button>
-        </div>
+        {abas
+          .filter((aba) => aba.key !== pagina)
+          .map((aba) => (
+            <button key={aba.key} onClick={() => setPagina(aba.key)}>
+              {aba.label}
+            </button>
+          ))}
       </div>
 
-      {/* CONTEÚDO COM SCROLL */}
-      <div
-        style={{
-          flex: 1,
-          overflowY: "auto",
-          padding: 20,
-        }}
-      >
-        {renderConteudo()}
+      <h3>Filtro Global</h3>
+
+      <div style={{ marginBottom: 20 }}>
+        <label>Mês: </label>
+        <select
+          value={mesSelecionado}
+          onChange={(e) => setMesSelecionado(Number(e.target.value))}
+        >
+          {nomesMeses.map((mes, index) => (
+            <option key={mes} value={index}>
+              {mes}
+            </option>
+          ))}
+        </select>
+
+        <label style={{ marginLeft: 20 }}>Ano: </label>
+        <input
+          type="number"
+          value={anoSelecionado}
+          onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+          style={{ width: 100 }}
+        />
       </div>
+
+      {renderConteudo()}
     </div>
   );
 }
