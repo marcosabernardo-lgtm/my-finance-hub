@@ -36,7 +36,6 @@ export class ControleSemanalService {
 
   public getControleSemanal(): ControleItem[] {
     const hoje = new Date();
-
     const mapaCategorias: Record<string, ControleItem> = {};
 
     // ==============================
@@ -96,11 +95,8 @@ export class ControleSemanalService {
       // Soma no Real
       item.totalReal += valor;
 
-      // ==============================
-      // ✅ USA A SEMANA DA PLANILHA
-      // ==============================
+      // Usa semana da planilha
       const semanaTexto = m["Semana_do_Mês"];
-
       if (typeof semanaTexto === "string") {
         const numeroSemana = Number(
           semanaTexto.replace("Semana", "").trim()
@@ -121,6 +117,31 @@ export class ControleSemanalService {
         mapaCategorias[categoria].totalReal;
     }
 
-    return Object.values(mapaCategorias);
+    const lista = Object.values(mapaCategorias);
+
+    // ==============================
+    // 4️⃣ Linha TOTAL
+    // ==============================
+    const total: ControleItem = {
+      categoria: "TOTAL",
+      limiteMensal: 0,
+      totalReal: 0,
+      limiteSemanal: 0,
+      divergencia: 0,
+      semanas: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+    };
+
+    for (const item of lista) {
+      total.limiteMensal += item.limiteMensal;
+      total.totalReal += item.totalReal;
+      total.limiteSemanal += item.limiteSemanal;
+      total.divergencia += item.divergencia;
+
+      for (let i = 1; i <= 5; i++) {
+        total.semanas[i] += item.semanas[i];
+      }
+    }
+
+    return [...lista, total];
   }
 }
