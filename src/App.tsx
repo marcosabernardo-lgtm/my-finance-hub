@@ -80,20 +80,6 @@ export default function App() {
     if (cartoesSalvos) setCartoes(JSON.parse(cartoesSalvos));
   }, []);
 
-  const handleDataLoaded = (
-    movs: Movimentacao[],
-    despesas: DespesaConfig[],
-    cartoesData: Cartao[]
-  ) => {
-    setMovimentacoes(movs);
-    setDespesasConfig(despesas);
-    setCartoes(cartoesData);
-
-    localStorage.setItem("movimentacoes", JSON.stringify(movs));
-    localStorage.setItem("despesasConfig", JSON.stringify(despesas));
-    localStorage.setItem("cartoes", JSON.stringify(cartoesData));
-  };
-
   const financialService = useMemo(() => {
     return new FinancialService(
       movimentacoes,
@@ -110,11 +96,6 @@ export default function App() {
   const resumoClassificacaoData = useMemo(() => financialService.getResumoClassificacao(), [financialService]);
   const dreData = useMemo(() => financialService.getDREAnual(), [financialService]);
   const cartoesAnualData = useMemo(() => financialService.getCartoesAnual(), [financialService]);
-
-  const faturaData = useMemo(() => {
-    if (!cartaoFiltro) return [];
-    return financialService.getFaturaCartao(cartaoFiltro);
-  }, [financialService, cartaoFiltro]);
 
   const abas: { label: string; key: Pagina }[] = [
     { label: "Resumo", key: "resumo" },
@@ -138,27 +119,35 @@ export default function App() {
             </div>
           </>
         );
+
       case "movimentacoes":
         return <Movimentacoes movimentacoes={movimentacoesOrdenadas} />;
-      case "limites":
-        return <Limites despesasConfig={despesasConfig} />;
+
       case "semanal":
         return <ControleSemanal controleData={controleSemanalData} />;
+
       case "fatura":
         return (
           <FaturaCartao
             cartoes={cartoes}
             cartaoFiltro={cartaoFiltro}
             setCartaoFiltro={setCartaoFiltro}
-            dados={faturaData}
+            dados={financialService.getFaturaCartao(cartaoFiltro)}
           />
         );
+
       case "cartoes":
         return <Cartoes dados={cartoesAnualData} />;
-      case "pendente":
-        return <Pendente financialService={financialService} />;
+
       case "dre":
         return <DRE dados={dreData} />;
+
+      case "pendente":
+        return <Pendente financialService={financialService} />;
+
+      case "limites":
+        return <Limites despesasConfig={despesasConfig} />;
+
       default:
         return null;
     }
@@ -170,14 +159,13 @@ export default function App() {
         style={{
           width: "100vw",
           height: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          textAlign: "center",
           backgroundImage: `url(${homeImage})`,
           backgroundSize: "cover",
           backgroundPosition: "center",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
         }}
       >
         <h1 style={{ fontSize: 48, color: "white" }}>
@@ -196,45 +184,73 @@ export default function App() {
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      {/* 🔹 Navegação Interna */}
-      <div style={{ marginBottom: 20, display: "flex", gap: 10, flexWrap: "wrap" }}>
+    <>
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          backgroundColor: "#0f172a",
+          padding: "15px 20px",
+          zIndex: 1000,
+          borderBottom: "1px solid #1f2937",
+          display: "flex",
+          gap: 12,
+          flexWrap: "wrap",
+        }}
+      >
         <button onClick={() => setPagina("home")}>← Início</button>
 
-        {abas
-          .filter((aba) => aba.key !== pagina)
-          .map((aba) => (
-            <button key={aba.key} onClick={() => setPagina(aba.key)}>
-              {aba.label}
-            </button>
-          ))}
+        {abas.map((aba) => (
+          <button
+            key={aba.key}
+            onClick={() => setPagina(aba.key)}
+            style={{
+              backgroundColor:
+                aba.key === pagina ? "#1f2937" : "#111827",
+              border:
+                aba.key === pagina
+                  ? "2px solid #3b82f6"
+                  : "1px solid #374151",
+              color: "white",
+              padding: "8px 14px",
+              borderRadius: 6,
+              fontWeight: aba.key === pagina ? "bold" : "normal",
+            }}
+          >
+            {aba.label}
+          </button>
+        ))}
       </div>
 
-      <h3>Filtro Global</h3>
+      <div style={{ padding: "110px 20px 20px 20px" }}>
+        <h3>Filtro Global</h3>
 
-      <div style={{ marginBottom: 20 }}>
-        <label>Mês: </label>
-        <select
-          value={mesSelecionado}
-          onChange={(e) => setMesSelecionado(Number(e.target.value))}
-        >
-          {nomesMeses.map((mes, index) => (
-            <option key={mes} value={index}>
-              {mes}
-            </option>
-          ))}
-        </select>
+        <div style={{ marginBottom: 20 }}>
+          <label>Mês: </label>
+          <select
+            value={mesSelecionado}
+            onChange={(e) => setMesSelecionado(Number(e.target.value))}
+          >
+            {nomesMeses.map((mes, index) => (
+              <option key={mes} value={index}>
+                {mes}
+              </option>
+            ))}
+          </select>
 
-        <label style={{ marginLeft: 20 }}>Ano: </label>
-        <input
-          type="number"
-          value={anoSelecionado}
-          onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-          style={{ width: 100 }}
-        />
+          <label style={{ marginLeft: 20 }}>Ano: </label>
+          <input
+            type="number"
+            value={anoSelecionado}
+            onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+            style={{ width: 100 }}
+          />
+        </div>
+
+        {renderConteudo()}
       </div>
-
-      {renderConteudo()}
-    </div>
+    </>
   );
 }

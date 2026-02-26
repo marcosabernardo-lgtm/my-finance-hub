@@ -22,7 +22,6 @@ export default function FaturaCartao({
   setCartaoFiltro,
   dados,
 }: Props) {
-
   const [modoVisualizacao, setModoVisualizacao] =
     useState<"tabela" | "grafico">("tabela");
 
@@ -39,7 +38,7 @@ export default function FaturaCartao({
     return texto
       .toLowerCase()
       .split(" ")
-      .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+      .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
       .join(" ");
   };
 
@@ -49,7 +48,7 @@ export default function FaturaCartao({
   );
 
   return (
-    <div style={{ marginTop: 25 }}>
+    <div style={{ marginTop: 25, width: "100%" }}>
       <h2 style={{ marginBottom: 15 }}>Fatura Cartão</h2>
 
       {/* CONTROLES */}
@@ -129,7 +128,7 @@ export default function FaturaCartao({
           >
             <thead>
               <tr style={{ backgroundColor: "#111827" }}>
-                <th style={thPadrao}>Data da Movimentação</th>
+                <th style={thPadrao}>Data</th>
                 <th style={thPadrao}>Categoria</th>
                 <th style={thPadrao}>Descrição</th>
                 <th style={thValor}>Valor</th>
@@ -170,13 +169,15 @@ export default function FaturaCartao({
           </table>
         )
       ) : (
-        <GraficoCategoria dados={dados || []} />
+        <div style={{ width: "100%", height: 500 }}>
+          <GraficoCategoria dados={dados || []} />
+        </div>
       )}
     </div>
   );
 }
 
-/* ===== ESTILO IGUAL AO DRE ===== */
+/* ===== ESTILO PADRÃO ===== */
 
 const thPadrao: React.CSSProperties = {
   textAlign: "left",

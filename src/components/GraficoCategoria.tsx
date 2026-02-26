@@ -6,19 +6,11 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-  LabelList,
 } from "recharts";
 import type { Movimentacao } from "../types/movimentacao";
 
 type Props = {
   dados: Movimentacao[];
-};
-
-type CategoriaTotal = {
-  categoria: string;
-  total: number;
-  quantidade: number;
-  percentual: number;
 };
 
 const CORES = [
@@ -33,39 +25,22 @@ const CORES = [
 ];
 
 export default function GraficoCategoria({ dados }: Props) {
-  const agrupado: Record<
-    string,
-    { total: number; quantidade: number }
-  > = {};
+  const agrupado: Record<string, number> = {};
 
   dados.forEach((mov) => {
+    if (!mov.Categoria) return;
+
     if (!agrupado[mov.Categoria]) {
-      agrupado[mov.Categoria] = {
-        total: 0,
-        quantidade: 0,
-      };
+      agrupado[mov.Categoria] = 0;
     }
 
-    agrupado[mov.Categoria].total += mov.Valor;
-    agrupado[mov.Categoria].quantidade += 1;
+    agrupado[mov.Categoria] += mov.Valor || 0;
   });
 
-  const totalGeral = Object.values(agrupado).reduce(
-    (acc, item) => acc + item.total,
-    0
-  );
-
-  const dadosGrafico: CategoriaTotal[] = Object.entries(
-    agrupado
-  )
-    .map(([categoria, dados]) => ({
+  const dadosGrafico = Object.entries(agrupado)
+    .map(([categoria, total]) => ({
       categoria,
-      total: dados.total,
-      quantidade: dados.quantidade,
-      percentual:
-        totalGeral > 0
-          ? (dados.total / totalGeral) * 100
-          : 0,
+      total,
     }))
     .sort((a, b) => b.total - a.total);
 
@@ -75,32 +50,19 @@ export default function GraficoCategoria({ dados }: Props) {
       currency: "BRL",
     });
 
-  if (dadosGrafico.length === 0) return null;
+  if (!dadosGrafico.length) {
+    return <p>Nenhum dado para exibir.</p>;
+  }
 
-  // 🔥 Controle profissional de altura
-  const alturaPorItem = 55;
-  const alturaMinima = 300;
-
-  const alturaGrafico = Math.max(
-    dadosGrafico.length * alturaPorItem,
-    alturaMinima
-  );
+  const alturaGrafico = dadosGrafico.length * 55;
 
   return (
     <div style={{ width: "100%", height: alturaGrafico }}>
-      {/* TÍTULO + TOTAL */}
-      <div style={{ marginBottom: 20 }}>
-        <h3>Gastos por Categoria</h3>
-        <div style={{ fontSize: 14, opacity: 0.8 }}>
-          Total Geral: {formatarMoeda(totalGeral)}
-        </div>
-      </div>
-
-      <ResponsiveContainer>
+      <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={dadosGrafico}
           layout="vertical"
-          margin={{ top: 10, right: 130, left: 10, bottom: 10 }}
+          margin={{ top: 10, right: 30, left: 60, bottom: 10 }}
           barCategoryGap={18}
         >
           <XAxis type="number" hide />
@@ -108,13 +70,13 @@ export default function GraficoCategoria({ dados }: Props) {
           <YAxis
             dataKey="categoria"
             type="category"
-            width={240}
+            width={220}
             tick={{ fill: "#ffffff", fontSize: 13 }}
           />
 
           <Tooltip
-            formatter={(value: any) =>
-              formatarMoeda(Number(value))
+            formatter={(value: number) =>
+              formatarMoeda(value)
             }
             contentStyle={{
               backgroundColor: "#1f1f1f",
@@ -124,7 +86,6 @@ export default function GraficoCategoria({ dados }: Props) {
             }}
             labelStyle={{ color: "#ffffff" }}
             itemStyle={{ color: "#ffffff" }}
-            cursor={{ fill: "rgba(255,255,255,0.05)" }}
           />
 
           <Bar
@@ -138,48 +99,9 @@ export default function GraficoCategoria({ dados }: Props) {
                 fill={CORES[index % CORES.length]}
               />
             ))}
-
-            <LabelList
-              content={(props: any) => {
-                const { x, y, width, payload } = props;
-
-                if (!payload) return null;
-
-                const texto = `${formatarMoeda(
-                  payload.total
-                )} (${payload.percentual.toFixed(1)}%)`;
-
-                return (
-                  <text
-                    x={x + width + 8}
-                    y={y + 12}
-                    fill="#ffffff"
-                    fontSize={12}
-                    fontWeight={500}
-                  >
-                    {texto}
-                  </text>
-                );
-              }}
-            />
           </Bar>
         </BarChart>
       </ResponsiveContainer>
-
-      {/* QUANTIDADE DE COMPRAS */}
-      <div
-        style={{
-          marginTop: 30,
-          fontSize: 13,
-          opacity: 0.85,
-        }}
-      >
-        {dadosGrafico.map((item) => (
-          <div key={item.categoria}>
-            {item.categoria}: {item.quantidade} compras
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
