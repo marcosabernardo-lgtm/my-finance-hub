@@ -27,18 +27,8 @@ type Cartao = {
 };
 
 const nomesMeses = [
-  "Janeiro",
-  "Fevereiro",
-  "Março",
-  "Abril",
-  "Maio",
-  "Junho",
-  "Julho",
-  "Agosto",
-  "Setembro",
-  "Outubro",
-  "Novembro",
-  "Dezembro",
+  "Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+  "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro",
 ];
 
 export default function App() {
@@ -60,14 +50,8 @@ export default function App() {
     | "pendente"
   >("resumo");
 
-  const [mesSelecionado, setMesSelecionado] = useState<number>(
-    hoje.getMonth()
-  );
-
-  const [anoSelecionado, setAnoSelecionado] = useState<number>(
-    hoje.getFullYear()
-  );
-
+  const [mesSelecionado, setMesSelecionado] = useState<number>(hoje.getMonth());
+  const [anoSelecionado, setAnoSelecionado] = useState<number>(hoje.getFullYear());
   const [cartaoFiltro, setCartaoFiltro] = useState("");
 
   useEffect(() => {
@@ -95,13 +79,8 @@ export default function App() {
       setMovimentacoes(convertidas);
     }
 
-    if (despSalvos) {
-      setDespesasConfig(JSON.parse(despSalvos));
-    }
-
-    if (cartoesSalvos) {
-      setCartoes(JSON.parse(cartoesSalvos));
-    }
+    if (despSalvos) setDespesasConfig(JSON.parse(despSalvos));
+    if (cartoesSalvos) setCartoes(JSON.parse(cartoesSalvos));
   }, []);
 
   const handleDataLoaded = (
@@ -128,117 +107,118 @@ export default function App() {
     );
   }, [movimentacoes, despesasConfig, cartoes, mesSelecionado, anoSelecionado]);
 
-  const resumoData = useMemo(() => {
-    return financialService.getResumoMesAtual();
-  }, [financialService]);
-
-  const controleSemanalData = useMemo(() => {
-    return financialService.getControleSemanal();
-  }, [financialService]);
-
-  const movimentacoesOrdenadas = useMemo(() => {
-    return financialService.getMovimentacoesOrdenadas();
-  }, [financialService]);
-
-  const resumoClassificacaoData = useMemo(() => {
-    return financialService.getResumoClassificacao();
-  }, [financialService]);
+  const resumoData = useMemo(() => financialService.getResumoMesAtual(), [financialService]);
+  const controleSemanalData = useMemo(() => financialService.getControleSemanal(), [financialService]);
+  const movimentacoesOrdenadas = useMemo(() => financialService.getMovimentacoesOrdenadas(), [financialService]);
+  const resumoClassificacaoData = useMemo(() => financialService.getResumoClassificacao(), [financialService]);
+  const dreData = useMemo(() => financialService.getDREAnual(), [financialService]);
+  const cartoesAnualData = useMemo(() => financialService.getCartoesAnual(), [financialService]);
 
   const faturaData = useMemo(() => {
     if (!cartaoFiltro) return [];
     return financialService.getFaturaCartao(cartaoFiltro);
   }, [financialService, cartaoFiltro]);
 
-  const dreData = useMemo(() => {
-    return financialService.getDREAnual();
-  }, [financialService]);
-
-  const cartoesAnualData = useMemo(() => {
-    return financialService.getCartoesAnual();
-  }, [financialService]);
+  const renderConteudo = () => {
+    switch (abaAtiva) {
+      case "resumo":
+        return <Resumo resumoData={resumoData} />;
+      case "movimentacoes":
+        return <Movimentacoes movimentacoes={movimentacoesOrdenadas} />;
+      case "limites":
+        return <Limites despesasConfig={despesasConfig} />;
+      case "semanal":
+        return <ControleSemanal controleData={controleSemanalData} />;
+      case "fatura":
+        return (
+          <FaturaCartao
+            cartoes={cartoes}
+            cartaoFiltro={cartaoFiltro}
+            setCartaoFiltro={setCartaoFiltro}
+            dados={faturaData}
+          />
+        );
+      case "cartoes":
+        return <Cartoes dados={cartoesAnualData} />;
+      case "pendente":
+        return <Pendente financialService={financialService} />;
+      case "gerencial":
+        return <ResumoClassificacao dados={resumoClassificacaoData} />;
+      case "dre":
+        return <DRE dados={dreData} />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: 20 }}>
-      <h1>Controle Financeiro Pessoal</h1>
+    <div
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        overflow: "hidden",
+        maxWidth: 1400,
+        margin: "0 auto",
+      }}
+    >
+      {/* HEADER FIXO */}
+      <div
+        style={{
+          flexShrink: 0,
+          padding: 20,
+          borderBottom: "1px solid #1f2937",
+        }}
+      >
+        <h1>Controle Financeiro Pessoal</h1>
 
-      <UploadPlanilha onDataLoaded={handleDataLoaded} />
+        <UploadPlanilha onDataLoaded={handleDataLoaded} />
 
-      {/* FILTRO GLOBAL */}
-      <div style={{ marginTop: 20 }}>
-        <label>Mês: </label>
-        <select
-          value={mesSelecionado}
-          onChange={(e) => setMesSelecionado(Number(e.target.value))}
-        >
-          {nomesMeses.map((mes, index) => (
-            <option key={mes} value={index}>
-              {mes}
-            </option>
-          ))}
-        </select>
+        <div style={{ marginTop: 20 }}>
+          <label>Mês: </label>
+          <select
+            value={mesSelecionado}
+            onChange={(e) => setMesSelecionado(Number(e.target.value))}
+          >
+            {nomesMeses.map((mes, index) => (
+              <option key={mes} value={index}>
+                {mes}
+              </option>
+            ))}
+          </select>
 
-        <label style={{ marginLeft: 20 }}>Ano: </label>
-        <input
-          type="number"
-          value={anoSelecionado}
-          onChange={(e) => setAnoSelecionado(Number(e.target.value))}
-          style={{ width: 100 }}
-        />
+          <label style={{ marginLeft: 20 }}>Ano: </label>
+          <input
+            type="number"
+            value={anoSelecionado}
+            onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+            style={{ width: 100 }}
+          />
+        </div>
+
+        <div style={{ marginTop: 20 }}>
+          <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
+          <button onClick={() => setAbaAtiva("movimentacoes")}>Movimentações</button>
+          <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
+          <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
+          <button onClick={() => setAbaAtiva("cartoes")}>Cartões</button>
+          <button onClick={() => setAbaAtiva("pendente")}>Pendentes</button>
+          <button onClick={() => setAbaAtiva("gerencial")}>Resumo Gerencial</button>
+          <button onClick={() => setAbaAtiva("dre")}>DRE</button>
+          <button onClick={() => setAbaAtiva("limites")}>Limites</button>
+        </div>
       </div>
 
-      {/* BOTÕES */}
-      <div style={{ marginTop: 20 }}>
-        <button onClick={() => setAbaAtiva("resumo")}>Resumo</button>
-        <button onClick={() => setAbaAtiva("movimentacoes")}>
-          Movimentações
-        </button>
-        <button onClick={() => setAbaAtiva("semanal")}>Semanal</button>
-        <button onClick={() => setAbaAtiva("fatura")}>Fatura Cartão</button>
-        <button onClick={() => setAbaAtiva("cartoes")}>Cartões</button>
-        <button onClick={() => setAbaAtiva("pendente")}>Pendentes</button>
-        <button onClick={() => setAbaAtiva("gerencial")}>
-          Resumo Gerencial
-        </button>
-        <button onClick={() => setAbaAtiva("dre")}>DRE</button>
-        <button onClick={() => setAbaAtiva("limites")}>Limites</button>
+      {/* CONTEÚDO COM SCROLL */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          padding: 20,
+        }}
+      >
+        {renderConteudo()}
       </div>
-
-      {abaAtiva === "resumo" && <Resumo resumoData={resumoData} />}
-
-      {abaAtiva === "movimentacoes" && (
-        <Movimentacoes movimentacoes={movimentacoesOrdenadas} />
-      )}
-
-      {abaAtiva === "limites" && (
-        <Limites despesasConfig={despesasConfig} />
-      )}
-
-      {abaAtiva === "semanal" && (
-        <ControleSemanal controleData={controleSemanalData} />
-      )}
-
-      {abaAtiva === "fatura" && (
-        <FaturaCartao
-          cartoes={cartoes}
-          cartaoFiltro={cartaoFiltro}
-          setCartaoFiltro={setCartaoFiltro}
-          dados={faturaData}
-        />
-      )}
-
-      {abaAtiva === "cartoes" && (
-        <Cartoes dados={cartoesAnualData} />
-      )}
-
-      {abaAtiva === "pendente" && (
-        <Pendente financialService={financialService} />
-      )}
-
-      {abaAtiva === "gerencial" && (
-        <ResumoClassificacao dados={resumoClassificacaoData} />
-      )}
-
-      {abaAtiva === "dre" && <DRE dados={dreData} />}
     </div>
   );
 }
