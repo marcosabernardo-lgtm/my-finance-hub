@@ -15,12 +15,25 @@ export class ResumoService {
     this.anoSelecionado = anoSelecionado;
   }
 
+  private converterParaData(valor: any): Date | null {
+    if (!valor) return null;
+
+    if (valor instanceof Date) return valor;
+
+    if (typeof valor === "string") {
+      const dataConvertida = new Date(valor);
+      return isNaN(dataConvertida.getTime()) ? null : dataConvertida;
+    }
+
+    return null;
+  }
+
   public getResumoMesAtual() {
     let receitas = 0;
     let despesas = 0;
 
     for (const m of this.movimentacoes) {
-      const data = m["Data do Pagamento"];
+      const data = this.converterParaData(m["Data do Pagamento"]);
       if (!data) continue;
 
       if (
@@ -28,11 +41,11 @@ export class ResumoService {
         data.getFullYear() === this.anoSelecionado
       ) {
         if (m["Tipo"] === "Receita") {
-          receitas += m["Valor"];
+          receitas += m["Valor"] || 0;
         }
 
         if (m["Tipo"] === "Despesa") {
-          despesas += m["Valor"];
+          despesas += m["Valor"] || 0;
         }
       }
     }

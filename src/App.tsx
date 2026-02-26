@@ -62,6 +62,7 @@ export default function App() {
 
     if (movSalvos) {
       const parsed: Movimentacao[] = JSON.parse(movSalvos);
+
       const convertidas = parsed.map((m) => ({
         ...m,
         "Data da Movimentação":
@@ -73,6 +74,7 @@ export default function App() {
             ? new Date(m["Data do Pagamento"])
             : m["Data do Pagamento"],
       }));
+
       setMovimentacoes(convertidas);
     }
 
@@ -90,13 +92,6 @@ export default function App() {
     );
   }, [movimentacoes, despesasConfig, cartoes, mesSelecionado, anoSelecionado]);
 
-  const resumoData = useMemo(() => financialService.getResumoMesAtual(), [financialService]);
-  const controleSemanalData = useMemo(() => financialService.getControleSemanal(), [financialService]);
-  const movimentacoesOrdenadas = useMemo(() => financialService.getMovimentacoesOrdenadas(), [financialService]);
-  const resumoClassificacaoData = useMemo(() => financialService.getResumoClassificacao(), [financialService]);
-  const dreData = useMemo(() => financialService.getDREAnual(), [financialService]);
-  const cartoesAnualData = useMemo(() => financialService.getCartoesAnual(), [financialService]);
-
   const abas: { label: string; key: Pagina }[] = [
     { label: "Resumo", key: "resumo" },
     { label: "Movimentações", key: "movimentacoes" },
@@ -113,18 +108,18 @@ export default function App() {
       case "resumo":
         return (
           <>
-            <Resumo resumoData={resumoData} />
+            <Resumo resumoData={financialService.getResumoMesAtual()} />
             <div style={{ marginTop: 40 }}>
-              <ResumoClassificacao dados={resumoClassificacaoData} />
+              <ResumoClassificacao dados={financialService.getResumoClassificacao()} />
             </div>
           </>
         );
 
       case "movimentacoes":
-        return <Movimentacoes movimentacoes={movimentacoesOrdenadas} />;
+        return <Movimentacoes movimentacoes={financialService.getMovimentacoesOrdenadas()} />;
 
       case "semanal":
-        return <ControleSemanal controleData={controleSemanalData} />;
+        return <ControleSemanal controleData={financialService.getControleSemanal()} />;
 
       case "fatura":
         return (
@@ -137,10 +132,10 @@ export default function App() {
         );
 
       case "cartoes":
-        return <Cartoes dados={cartoesAnualData} />;
+        return <Cartoes dados={financialService.getCartoesAnual()} />;
 
       case "dre":
-        return <DRE dados={dreData} />;
+        return <DRE dados={financialService.getDREAnual()} />;
 
       case "pendente":
         return <Pendente financialService={financialService} />;
@@ -152,6 +147,8 @@ export default function App() {
         return null;
     }
   };
+
+  /* ================= HOME ================= */
 
   if (pagina === "home") {
     return (
@@ -166,15 +163,41 @@ export default function App() {
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
+          position: "relative",
         }}
       >
-        <h1 style={{ fontSize: 48, color: "white" }}>
+        <div style={{ position: "absolute", top: 20, right: 20 }}>
+          <UploadPlanilha
+            onDataLoaded={(movs, despesas, cartoesData) => {
+              setMovimentacoes(movs);
+              setDespesasConfig(despesas);
+              setCartoes(cartoesData);
+
+              localStorage.setItem("movimentacoes", JSON.stringify(movs));
+              localStorage.setItem("despesasConfig", JSON.stringify(despesas));
+              localStorage.setItem("cartoes", JSON.stringify(cartoesData));
+            }}
+          />
+        </div>
+
+        <h1 style={{ fontSize: 48, color: "white", textAlign: "center" }}>
           CONTROLE FINANCEIRO PESSOAL
         </h1>
 
-        <div style={{ display: "flex", gap: 15, flexWrap: "wrap", marginTop: 30 }}>
+        <div style={{ display: "flex", gap: 15, marginTop: 30, flexWrap: "wrap" }}>
           {abas.map((aba) => (
-            <button key={aba.key} onClick={() => setPagina(aba.key)}>
+            <button
+              key={aba.key}
+              onClick={() => setPagina(aba.key)}
+              style={{
+                padding: "10px 18px",
+                backgroundColor: "#111827",
+                border: "1px solid #374151",
+                color: "white",
+                borderRadius: 6,
+                cursor: "pointer",
+              }}
+            >
               {aba.label}
             </button>
           ))}
@@ -182,6 +205,8 @@ export default function App() {
       </div>
     );
   }
+
+  /* ================= OUTRAS PÁGINAS ================= */
 
   return (
     <>
