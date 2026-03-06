@@ -100,50 +100,24 @@ export default function UploadPlanilha({ onDataLoaded }: Props) {
 
       const movimentacoes: Movimentacao[] = jsonMov.map((row) => ({
         "ID_Movimentacao": String(row["ID_Movimentacao"] ?? ""),
-
-        "Data da Movimentação": converterData(
-          row["Data da Movimentação"]
-        ),
-
-        "Data do Pagamento": converterData(
-          row["Data do Pagamento"]
-        ),
-
+        "Data da Movimentação": converterData(row["Data da Movimentação"]),
+        "Data do Pagamento": converterData(row["Data do Pagamento"]),
         "Tipo": String(row["Tipo"] ?? ""),
         "Categoria": String(row["Categoria"] ?? ""),
         "Descrição": String(row["Descrição"] ?? ""),
         "Valor": converterValor(row["Valor"]),
-
-        "Método de Pagamento": String(
-          row["Método de Pagamento"] ?? ""
-        ),
-
+        "Método de Pagamento": String(row["Método de Pagamento"] ?? ""),
         "Conta de Origem/Destino":
           row["Conta de Origem/Destino"] === ""
             ? null
             : String(row["Conta de Origem/Destino"] ?? null),
-
-        "Forma de Pagamento": String(
-          row["Forma de Pagamento"] ?? ""
-        ),
-
+        "Forma de Pagamento": String(row["Forma de Pagamento"] ?? ""),
         "Nº da Parcela": String(row["Nº da Parcela"] ?? ""),
-
         "Situação": String(row["Situação"] ?? ""),
-
         "Ref. Pagamento": String(row["Ref. Pagamento"] ?? ""),
-
-        "Ref. Movimentação": String(
-          row["Ref. Movimentação"] ?? ""
-        ),
-
-        "Classificação.1": String(
-          row["Classificação.1"] ?? ""
-        ),
-
-        "Semana_do_Mês": String(
-          row["Semana_do_Mês"] ?? ""
-        ),
+        "Ref. Movimentação": String(row["Ref. Movimentação"] ?? ""),
+        "Classificação.1": String(row["Classificação.1"] ?? ""),
+        "Semana_do_Mês": String(row["Semana_do_Mês"] ?? ""),
       }));
 
       // ================= DESPESAS =================
@@ -182,6 +156,12 @@ export default function UploadPlanilha({ onDataLoaded }: Props) {
         ),
       }));
 
+      // 🔥 SALVAR NO LOCAL STORAGE
+      localStorage.setItem("movimentacoes", JSON.stringify(movimentacoes));
+      localStorage.setItem("despesasConfig", JSON.stringify(despesasConfig));
+      localStorage.setItem("cartoes", JSON.stringify(cartoes));
+
+      // Atualizar aplicação
       onDataLoaded(movimentacoes, despesasConfig, cartoes);
     };
 
