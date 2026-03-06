@@ -8,7 +8,7 @@ import {
   Cell,
   LabelList,
 } from "recharts";
-import type { Movimentacao } from "../types";
+import type { Movimentacao } from "../types/movimentacao";
 
 type Props = {
   dados: Movimentacao[];
