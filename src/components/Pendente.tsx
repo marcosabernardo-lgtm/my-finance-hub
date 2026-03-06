@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { FinancialService } from "../services/financialService";
 
 type Props = {

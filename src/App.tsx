@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import UploadPlanilha from "./components/UploadPlanilha";
 import Resumo from "./components/Resumo";
 import Movimentacoes from "./components/Movimentacoes";

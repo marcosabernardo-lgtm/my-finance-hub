@@ -6,8 +6,9 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  LabelList,
 } from "recharts";
-import type { Movimentacao } from "../types/movimentacao";
+import type { Movimentacao } from "../types";
 
 type Props = {
   dados: Movimentacao[];
@@ -25,78 +26,130 @@ const CORES = [
 ];
 
 export default function GraficoCategoria({ dados }: Props) {
+  // 1. Processamento (Agrupamento e Soma)
   const agrupado: Record<string, number> = {};
+  let totalGeral = 0;
 
   dados.forEach((mov) => {
     if (!mov.Categoria) return;
+    const valor = Number(mov.Valor) || 0;
+
+    // Apenas valores positivos
+    if (valor <= 0) return;
 
     if (!agrupado[mov.Categoria]) {
       agrupado[mov.Categoria] = 0;
     }
-
-    agrupado[mov.Categoria] += mov.Valor || 0;
+    agrupado[mov.Categoria] += valor;
+    totalGeral += valor;
   });
 
   const dadosGrafico = Object.entries(agrupado)
     .map(([categoria, total]) => ({
       categoria,
       total,
+      percentual: totalGeral > 0 ? (total / totalGeral) * 100 : 0,
     }))
     .sort((a, b) => b.total - a.total);
 
   const formatarMoeda = (valor: number) =>
-    valor.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
+    valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+  const formatarPercentual = (valor: number) =>
+    `${valor.toFixed(1).replace(".", ",")}%`;
 
   if (!dadosGrafico.length) {
-    return <p>Nenhum dado para exibir.</p>;
+    return <p className="text-gray-400 p-4">Nenhum dado para exibir.</p>;
   }
 
-  const alturaGrafico = dadosGrafico.length * 55;
+  // Altura baseada na quantidade de itens
+  const alturaGrafico = Math.max(dadosGrafico.length * 50, 300);
 
   return (
+    // w-full garante que ele use 100% da largura disponível na tela
     <div style={{ width: "100%", height: alturaGrafico }}>
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
           data={dadosGrafico}
           layout="vertical"
-          margin={{ top: 10, right: 30, left: 60, bottom: 10 }}
-          barCategoryGap={18}
+          // AJUSTE CRÍTICO AQUI:
+          // Reduzi right para 110 (espaço mínimo para o texto)
+          // Reduzi left para 10 (apenas respiro)
+          margin={{ top: 10, right: 110, left: 10, bottom: 10 }}
+          barCategoryGap={10}
         >
-          <XAxis type="number" hide />
+          {/* 
+             domain={[0, 'dataMax']} -> Força a maior barra a ir até o fim
+             allowDataOverflow -> Permite desenhar até o pixel final
+          */}
+          <XAxis type="number" domain={[0, 'dataMax']} hide />
 
           <YAxis
             dataKey="categoria"
             type="category"
-            width={220}
-            tick={{ fill: "#ffffff", fontSize: 13 }}
+            // Reduzi a largura reservada para o nome da categoria
+            width={140}
+            tick={{ fill: "#e5e7eb", fontSize: 12, fontWeight: 500 }}
+            tickLine={false}
+            axisLine={false}
+            // Se o nome for muito longo, ele quebra ou corta, dando espaço pra barra
+            interval={0} 
           />
 
           <Tooltip
-            formatter={(value: number) =>
-              formatarMoeda(value)
-            }
-            contentStyle={{
-              backgroundColor: "#1f1f1f",
-              border: "1px solid #333",
-              borderRadius: 8,
-              color: "#ffffff",
+            cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+            content={({ active, payload }) => {
+              if (active && payload && payload.length) {
+                const data = payload[0].payload;
+                return (
+                  <div className="bg-gray-800 border border-gray-700 rounded p-2 shadow-lg z-50">
+                    <p className="text-white font-bold text-sm">{data.categoria}</p>
+                    <p className="text-emerald-400 text-xs">
+                      {formatarMoeda(data.total)}
+                    </p>
+                    <p className="text-gray-400 text-xs">
+                       {formatarPercentual(data.percentual)} do total
+                    </p>
+                  </div>
+                );
+              }
+              return null;
             }}
-            labelStyle={{ color: "#ffffff" }}
-            itemStyle={{ color: "#ffffff" }}
           />
 
           <Bar
             dataKey="total"
-            radius={[6, 6, 6, 6]}
-            barSize={26}
+            radius={[0, 4, 4, 0]}
+            barSize={20} // Altura da barra fina para ficar elegante
           >
+            <LabelList
+              dataKey="total"
+              position="right"
+              content={(props: any) => {
+                const { x, y, width, height, value, index } = props;
+                const item = dadosGrafico[index];
+                const yPos = y + height / 2 + 4;
+
+                return (
+                  <text
+                    x={x + width + 8} // Cola texto 8px depois da barra
+                    y={yPos}
+                    fill="#fff"
+                    fontSize="11" // Fonte levemente menor para caber melhor
+                    fontWeight="500"
+                    textAnchor="start"
+                  >
+                    {`${formatarMoeda(value)} (${formatarPercentual(item.percentual)})`}
+                  </text>
+                );
+              }}
+            />
+
             {dadosGrafico.map((_, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={CORES[index % CORES.length]}
+                strokeWidth={0}
               />
             ))}
           </Bar>
