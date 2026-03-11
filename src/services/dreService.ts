@@ -12,6 +12,7 @@ type DREAnual = {
 };
 
 export class DreService {
+
   private movimentacoes: Movimentacao[];
   private anoSelecionado: number;
 
@@ -24,6 +25,7 @@ export class DreService {
   }
 
   public getDREAnual(): DREAnual {
+
     const receitas: Record<string, number[]> = {};
     const despesas: Record<string, number[]> = {};
 
@@ -32,30 +34,57 @@ export class DreService {
     const saldoMensal = Array(12).fill(0);
 
     for (const mov of this.movimentacoes) {
+
       const data = mov["Data do Pagamento"];
       if (!data) continue;
+
       if (data.getFullYear() !== this.anoSelecionado)
         continue;
 
-      const mes = data.getMonth();
-      const valor = mov["Valor"] || 0;
+      const situacao = (mov["Situação"] || "").trim();
+      if (situacao !== "Pago") continue;
 
-      if (mov["Tipo"] === "Receita") {
-        if (!receitas[mov["Categoria"]]) {
-          receitas[mov["Categoria"]] = Array(12).fill(0);
+      const categoria = mov["Categoria"];
+      const tipo = mov["Tipo"];
+      const mes = data.getMonth();
+      const valor = Number(mov["Valor"]) || 0;
+
+      // =============================
+      // RECEITAS
+      // =============================
+
+      if (tipo === "Receita") {
+
+        if (!receitas[categoria]) {
+          receitas[categoria] = Array(12).fill(0);
         }
-        receitas[mov["Categoria"]][mes] += valor;
+
+        receitas[categoria][mes] += valor;
         totalReceitas[mes] += valor;
       }
 
-      if (mov["Tipo"] === "Despesa") {
-        if (!despesas[mov["Categoria"]]) {
-          despesas[mov["Categoria"]] = Array(12).fill(0);
+      // =============================
+      // DESPESAS
+      // =============================
+
+      if (
+        tipo === "Despesa" ||
+        categoria === "Pagamento de Fatura"
+      ) {
+
+        if (!despesas[categoria]) {
+          despesas[categoria] = Array(12).fill(0);
         }
-        despesas[mov["Categoria"]][mes] += valor;
+
+        despesas[categoria][mes] += valor;
         totalDespesas[mes] += valor;
       }
+
     }
+
+    // =============================
+    // SALDO MENSAL
+    // =============================
 
     for (let i = 0; i < 12; i++) {
       saldoMensal[i] =
@@ -66,6 +95,7 @@ export class DreService {
       (a, b) => a + b,
       0
     );
+
     const somaDespesas = totalDespesas.reduce(
       (a, b) => a + b,
       0
@@ -81,5 +111,7 @@ export class DreService {
       mediaDespesa: somaDespesas / 12,
       saldoTotal: somaReceitas - somaDespesas,
     };
+
   }
+
 }

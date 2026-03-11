@@ -20,6 +20,10 @@ export default function Pendente({ financialService }: Props) {
     return financialService.getTotalPendenteAtual();
   }, [financialService]);
 
+  const proximos7 = useMemo(() => {
+    return financialService.getPendentesProximosDias(7);
+  }, [financialService]);
+
   if (!dados) return null;
 
   const formatar = (valor: number) =>
@@ -32,91 +36,176 @@ export default function Pendente({ financialService }: Props) {
 
   return (
     <div style={{ marginTop: 25 }}>
+
       <h2 style={{ marginBottom: 10 }}>
         Despesas Pendentes - {dados.ano}
       </h2>
 
-      <div style={{ marginBottom: 15, fontWeight: 700 }}>
-        Total Pendente Atual: {formatar(totalAtual)}
+      {/* INDICADORES */}
+      <div
+        style={{
+          marginBottom: 20,
+          fontWeight: 700,
+          display: "flex",
+          gap: 40,
+        }}
+      >
+        <div>🔴 Vencidas: {formatar(totalAtual)}</div>
+        <div>🟡 Próximos 7 dias: {formatar(proximos7)}</div>
+        <div>⚪ Total pendente do ano: {formatar(dados.totalGeral)}</div>
       </div>
 
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
-        <thead>
-          <tr style={{ backgroundColor: "#111827" }}>
-            <th style={thLeft}>Categoria</th>
+      {/* SCROLL DA TABELA */}
+      <div
+        style={{
+          maxHeight: 600,
+          overflow: "auto",
+          border: "1px solid #1f2937"
+        }}
+      >
 
-            {mesesAbreviados.map((m) => (
-              <th key={m} style={th}>{m}</th>
-            ))}
+        <table
+          style={{
+            borderCollapse: "collapse",
+            width: "100%",
+            minWidth: 1100,
+            fontSize: 12
+          }}
+        >
 
-            <th style={thResumo}>Total</th>
-          </tr>
-        </thead>
+          <thead>
 
-        <tbody>
+            <tr>
 
-          {dados.categorias?.map((categoria: string) => (
-            <tr key={categoria}>
-              <td style={tdLeft}>{categoria}</td>
+              <th style={thCategoria}>Categoria</th>
 
-              {dados.meses?.map((mes: string) => (
-                <td key={mes} style={tdValor}>
-                  {dados.valores?.[categoria]?.[mes]
-                    ? formatar(dados.valores[categoria][mes])
-                    : "–"}
-                </td>
+              {mesesAbreviados.map((m) => (
+                <th key={m} style={thMes}>{m}</th>
               ))}
 
-              <td style={tdResumo}>
-                {formatar(dados.totalPorCategoria?.[categoria] || 0)}
-              </td>
+              <th style={thTotal}>Total</th>
+
             </tr>
-          ))}
 
-          <tr style={{ backgroundColor: "#1f2937", fontWeight: 700 }}>
-            <td style={tdLeft}>Total Mês</td>
+          </thead>
 
-            {dados.meses?.map((mes: string) => (
-              <td key={mes} style={tdValor}>
-                {formatar(dados.totalPorMes?.[mes] || 0)}
-              </td>
+          <tbody>
+
+            {dados.categorias?.map((categoria: string) => (
+
+              <tr key={categoria}>
+
+                <td style={tdCategoria}>
+                  {categoria}
+                </td>
+
+                {dados.meses?.map((mes: string) => (
+
+                  <td key={mes} style={tdValor}>
+
+                    {dados.valores?.[categoria]?.[mes]
+                      ? formatar(dados.valores[categoria][mes])
+                      : "–"}
+
+                  </td>
+
+                ))}
+
+                <td style={tdTotal}>
+
+                  {formatar(dados.totalPorCategoria?.[categoria] || 0)}
+
+                </td>
+
+              </tr>
+
             ))}
 
-            <td style={tdResumo}>
-              {formatar(dados.totalGeral || 0)}
-            </td>
-          </tr>
+            {/* TOTAL DO ANO */}
 
-        </tbody>
-      </table>
+            <tr style={{ background: "#1f2937", fontWeight: 700 }}>
+
+              <td style={tdCategoria}>Total Mês</td>
+
+              {dados.meses?.map((mes: string) => (
+
+                <td key={mes} style={tdValor}>
+
+                  {formatar(dados.totalPorMes?.[mes] || 0)}
+
+                </td>
+
+              ))}
+
+              <td style={tdTotal}>
+                {formatar(dados.totalGeral)}
+              </td>
+
+            </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
     </div>
   );
 }
 
-const th = { textAlign: "right" as const, padding: "6px 8px" };
-const thLeft = { textAlign: "left" as const, padding: "6px 8px" };
-const thResumo = {
+/* ========================= */
+/* ESTILOS */
+/* ========================= */
+
+const thMes = {
+  position: "sticky" as const,
+  top: 0,
+  background: "#111827",
+  textAlign: "right" as const,
+  padding: "6px 8px",
+  zIndex: 5
+};
+
+const thCategoria = {
+  position: "sticky" as const,
+  top: 0,
+  left: 0,
+  background: "#111827",
+  textAlign: "left" as const,
+  padding: "6px 8px",
+  zIndex: 10
+};
+
+const thTotal = {
+  position: "sticky" as const,
+  top: 0,
+  background: "#111827",
   textAlign: "right" as const,
   padding: "6px 12px",
   borderLeft: "2px solid #374151",
+  zIndex: 6
 };
 
 const tdValor = {
   textAlign: "right" as const,
   padding: "6px 8px",
-  borderBottom: "1px solid #1f2937",
+  borderBottom: "1px solid #1f2937"
 };
 
-const tdLeft = {
+const tdCategoria = {
+  position: "sticky" as const,
+  left: 0,
+  background: "#161b22",
   textAlign: "left" as const,
   padding: "6px 8px",
   borderBottom: "1px solid #1f2937",
+  zIndex: 4
 };
 
-const tdResumo = {
+const tdTotal = {
   textAlign: "right" as const,
   padding: "6px 12px",
   borderBottom: "1px solid #1f2937",
   background: "#161b22",
-  fontWeight: 700,
+  fontWeight: 700
 };

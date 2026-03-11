@@ -18,12 +18,17 @@ export class MovimentacoesService {
   public getMovimentacoesOrdenadas() {
     return this.movimentacoes
       .filter((m) => {
-        const data = m["Data da Movimentação"];
-        if (!data) return false;
+        const dataPagamento = m["Data do Pagamento"];
+        if (!dataPagamento) return false;
+
+        const data = new Date(dataPagamento);
+
+        const mes = data.getMonth();
+        const ano = data.getFullYear();
 
         return (
-          data.getMonth() === this.mesSelecionado &&
-          data.getFullYear() === this.anoSelecionado
+          mes === this.mesSelecionado &&
+          ano === this.anoSelecionado
         );
       })
       .sort(
