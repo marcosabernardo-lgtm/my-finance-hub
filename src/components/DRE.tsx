@@ -32,8 +32,17 @@ export default function DRE({ dados }: Props) {
   const totalLinha = (valores: number[]) =>
     valores.reduce((a, b) => a + b, 0);
 
-  const mediaLinha = (valores: number[]) =>
-    totalLinha(valores) / 12;
+ const mediaLinha = (valores: number[]) => {
+
+  const total = totalLinha(valores);
+
+  const mesesComMovimento = valores.filter(v => v > 0).length;
+
+  if (mesesComMovimento === 0) return 0;
+
+  return total / mesesComMovimento;
+
+};
 
   const renderLinha = (
     nome: string,
