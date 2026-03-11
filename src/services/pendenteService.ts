@@ -18,16 +18,21 @@ export class PendenteService {
   }
 
   public getPendenciasAnuais(ano: number): PendenciaAnualDTO {
+
     const pendentes = this.movimentacoes.filter((m) => {
+
       const situacao = m["Situação"]?.toString().trim().toLowerCase()
       const tipo = m["Tipo"]?.toString().trim().toLowerCase()
+      const categoria = m["Categoria"]?.toString().trim().toLowerCase()
       const dataPagamento = m["Data do Pagamento"]
 
       if (situacao !== "pendente") return false
       if (tipo !== "despesa") return false
+      if (categoria === "pagamento de fatura") return false
       if (!dataPagamento) return false
 
       return dataPagamento.getFullYear() === ano
+
     })
 
     const meses = Array.from({ length: 12 }, (_, i) => {
@@ -46,6 +51,7 @@ export class PendenteService {
     })
 
     pendentes.forEach((m) => {
+
       const categoria = m["Categoria"]
       const dataPagamento = m["Data do Pagamento"]!
       const mes = `${ano}-${String(
@@ -55,17 +61,22 @@ export class PendenteService {
       const valor = Number(m["Valor"]) || 0
 
       if (!valores[categoria]) {
+
         valores[categoria] = {}
+
         meses.forEach((mes) => {
           valores[categoria][mes] = 0
         })
+
         totalPorCategoria[categoria] = 0
+
       }
 
       valores[categoria][mes] += valor
       totalPorMes[mes] += valor
       totalPorCategoria[categoria] += valor
       totalGeral += valor
+
     })
 
     const categorias = Object.keys(valores).sort()
@@ -79,24 +90,60 @@ export class PendenteService {
       totalPorCategoria,
       totalGeral,
     }
+
   }
 
-  // 🔥 NOVO MÉTODO
+  // 🔴 Contas vencidas
   public getTotalPendenteAtual(): number {
+
     const hoje = new Date()
 
     return this.movimentacoes
       .filter((m) => {
+
         const situacao = m["Situação"]?.toString().trim().toLowerCase()
         const tipo = m["Tipo"]?.toString().trim().toLowerCase()
+        const categoria = m["Categoria"]?.toString().trim().toLowerCase()
         const dataPagamento = m["Data do Pagamento"]
 
         if (situacao !== "pendente") return false
         if (tipo !== "despesa") return false
+        if (categoria === "pagamento de fatura") return false
         if (!dataPagamento) return false
 
         return dataPagamento <= hoje
+
       })
       .reduce((total, m) => total + (Number(m["Valor"]) || 0), 0)
+
   }
+
+  // 🟡 Contas que vencem nos próximos dias
+  public getPendentesProximosDias(dias: number): number {
+
+    const hoje = new Date()
+
+    const limite = new Date()
+    limite.setDate(hoje.getDate() + dias)
+
+    return this.movimentacoes
+      .filter((m) => {
+
+        const situacao = m["Situação"]?.toString().trim().toLowerCase()
+        const tipo = m["Tipo"]?.toString().trim().toLowerCase()
+        const categoria = m["Categoria"]?.toString().trim().toLowerCase()
+        const dataPagamento = m["Data do Pagamento"]
+
+        if (situacao !== "pendente") return false
+        if (tipo !== "despesa") return false
+        if (categoria === "pagamento de fatura") return false
+        if (!dataPagamento) return false
+
+        return dataPagamento > hoje && dataPagamento <= limite
+
+      })
+      .reduce((total, m) => total + (Number(m["Valor"]) || 0), 0)
+
+  }
+
 }

@@ -6,67 +6,137 @@ type Props = {
 };
 
 export default function Movimentacoes({ movimentacoes }: Props) {
-  const [filtroSituacao, setFiltroSituacao] = useState<string>("Todas");
 
-  /* =====================================
-     ORDENAÇÃO IGUAL AO EXCEL (ID DESC)
-  ===================================== */
+  const [filtroSituacao, setFiltroSituacao] = useState("Todas");
+  const [filtroTipo, setFiltroTipo] = useState("Todos");
+  const [filtroCategoria, setFiltroCategoria] = useState("Todas");
+  const [filtroMetodo, setFiltroMetodo] = useState("Todos");
+
+  /* =============================
+     LIMPAR FILTROS
+  ============================= */
+
+  const limparFiltros = () => {
+    setFiltroSituacao("Todas");
+    setFiltroTipo("Todos");
+    setFiltroCategoria("Todas");
+    setFiltroMetodo("Todos");
+  };
+
+  /* =============================
+     ORDENAÇÃO
+  ============================= */
+
   const movimentacoesOrdenadas = useMemo(() => {
     return [...movimentacoes].sort(
-      (a, b) =>
-        Number(b.ID_Movimentacao) -
-        Number(a.ID_Movimentacao)
+      (a, b) => Number(b.ID_Movimentacao) - Number(a.ID_Movimentacao)
     );
   }, [movimentacoes]);
 
-  /* =====================================
-     SITUAÇÕES DISPONÍVEIS (ROBUSTO)
-  ===================================== */
-  const situacoesDisponiveis = useMemo(() => {
-    const normalizadas = movimentacoes.map((m) =>
-      (m.Situação || "").trim()
-    );
+  /* =============================
+     FILTROS BASE
+  ============================= */
 
-    const unicas = Array.from(new Set(normalizadas))
-      .filter(Boolean)
-      .sort((a, b) => a.localeCompare(b));
-
-    return ["Todas", ...unicas];
-  }, [movimentacoes]);
-
-  /* =====================================
-     FILTRO POR SITUAÇÃO
-  ===================================== */
-  const movimentacoesFiltradas = useMemo(() => {
-    if (filtroSituacao === "Todas")
-      return movimentacoesOrdenadas;
+  const filtradoSituacao = useMemo(() => {
+    if (filtroSituacao === "Todas") return movimentacoesOrdenadas;
 
     return movimentacoesOrdenadas.filter(
-      (m) =>
-        (m.Situação || "").trim() ===
-        filtroSituacao
+      m => (m.Situação || "").trim() === filtroSituacao
     );
   }, [movimentacoesOrdenadas, filtroSituacao]);
 
-  /* =====================================
+  const filtradoTipo = useMemo(() => {
+    if (filtroTipo === "Todos") return filtradoSituacao;
+
+    return filtradoSituacao.filter(
+      m => m.Tipo === filtroTipo
+    );
+  }, [filtradoSituacao, filtroTipo]);
+
+  const filtradoCategoria = useMemo(() => {
+    if (filtroCategoria === "Todas") return filtradoTipo;
+
+    return filtradoTipo.filter(
+      m => m.Categoria === filtroCategoria
+    );
+  }, [filtradoTipo, filtroCategoria]);
+
+  const movimentacoesFiltradas = useMemo(() => {
+    if (filtroMetodo === "Todos") return filtradoCategoria;
+
+    return filtradoCategoria.filter(
+      m => m["Método de Pagamento"] === filtroMetodo
+    );
+  }, [filtradoCategoria, filtroMetodo]);
+
+  /* =============================
+     LISTAS DINÂMICAS FILTROS
+  ============================= */
+
+  const situacoes = useMemo(() => {
+    return [
+      "Todas",
+      ...Array.from(
+        new Set(movimentacoes.map(m => (m.Situação || "").trim()))
+      )
+    ];
+  }, [movimentacoes]);
+
+  const tipos = useMemo(() => {
+    return [
+      "Todos",
+      ...Array.from(new Set(filtradoSituacao.map(m => m.Tipo)))
+    ];
+  }, [filtradoSituacao]);
+
+  const categorias = useMemo(() => {
+    return [
+      "Todas",
+      ...Array.from(new Set(filtradoTipo.map(m => m.Categoria)))
+    ];
+  }, [filtradoTipo]);
+
+  const metodos = useMemo(() => {
+    return [
+      "Todos",
+      ...Array.from(
+        new Set(filtradoCategoria.map(m => m["Método de Pagamento"]))
+      )
+    ];
+  }, [filtradoCategoria]);
+
+  /* =============================
+     TOTAIS
+  ============================= */
+
+  const totalReceitas = useMemo(() => {
+    return movimentacoesFiltradas
+      .filter(m => m.Tipo === "Receita")
+      .reduce((s, m) => s + Number(m.Valor || 0), 0);
+  }, [movimentacoesFiltradas]);
+
+  const totalDespesas = useMemo(() => {
+    return movimentacoesFiltradas
+      .filter(m => m.Tipo === "Despesa")
+      .reduce((s, m) => s + Number(m.Valor || 0), 0);
+  }, [movimentacoesFiltradas]);
+
+  const saldo = totalReceitas - totalDespesas;
+
+  /* =============================
      FORMATADORES
-  ===================================== */
-  const formatarMoeda = (valor: number) =>
-    Number(valor || 0).toLocaleString("pt-BR", {
+  ============================= */
+
+  const moeda = (v: number) =>
+    v.toLocaleString("pt-BR", {
       style: "currency",
-      currency: "BRL",
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      currency: "BRL"
     });
 
-  const formatarData = (data: Date | null) =>
-    data
-      ? new Date(data).toLocaleDateString("pt-BR")
-      : "-";
+  const data = (d: Date | null) =>
+    d ? new Date(d).toLocaleDateString("pt-BR") : "-";
 
-  const corSituacao = (situacao: string) => {
-    const s = (situacao || "").trim();
-
+  const corSituacao = (s: string) => {
     if (s === "Pendente") return "#EF4444";
     if (s === "Pago") return "#10B981";
     if (s === "Faturado") return "#F59E0B";
@@ -75,173 +145,197 @@ export default function Movimentacoes({ movimentacoes }: Props) {
 
   return (
     <div style={{ marginTop: 25 }}>
-      <h2 style={{ marginBottom: 15 }}>
-        Todas as Movimentações
-      </h2>
+
+      <h2>Todas as Movimentações</h2>
 
       {/* =============================
-         FILTRO
+         FILTROS
       ============================= */}
-      <div style={{ marginBottom: 15 }}>
-        <label>Situação: </label>
-        <select
-          value={filtroSituacao}
-          onChange={(e) =>
-            setFiltroSituacao(e.target.value)
-          }
+
+      <div
+        style={{
+          display: "flex",
+          gap: 20,
+          flexWrap: "wrap",
+          marginBottom: 20,
+          alignItems: "flex-end"
+        }}
+      >
+
+        <div>
+          <label>Situação</label><br />
+          <select
+            value={filtroSituacao}
+            onChange={e => setFiltroSituacao(e.target.value)}
+          >
+            {situacoes.map(s => (
+              <option key={s}>{s}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Tipo</label><br />
+          <select
+            value={filtroTipo}
+            onChange={e => setFiltroTipo(e.target.value)}
+          >
+            {tipos.map(t => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Categoria</label><br />
+          <select
+            value={filtroCategoria}
+            onChange={e => setFiltroCategoria(e.target.value)}
+          >
+            {categorias.map(c => (
+              <option key={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label>Método</label><br />
+          <select
+            value={filtroMetodo}
+            onChange={e => setFiltroMetodo(e.target.value)}
+          >
+            {metodos.map(m => (
+              <option key={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+
+        <button
+          onClick={limparFiltros}
+          style={{
+            height: 30,
+            padding: "0 14px",
+            backgroundColor: "#1f2937",
+            color: "white",
+            border: "1px solid #374151",
+            borderRadius: 4,
+            cursor: "pointer"
+          }}
         >
-          {situacoesDisponiveis.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
+          Limpar filtros
+        </button>
+
+      </div>
+
+      {/* =============================
+         RESUMO
+      ============================= */}
+
+      <div style={{ marginBottom: 20, fontSize: 15 }}>
+
+        <b>Receitas:</b>
+        <span style={{ color: "#10B981", marginLeft: 5 }}>
+          {moeda(totalReceitas)}
+        </span>
+
+        <span style={{ marginLeft: 30 }}>
+          <b>Despesas:</b>
+          <span style={{ color: "#EF4444", marginLeft: 5 }}>
+            {moeda(totalDespesas)}
+          </span>
+        </span>
+
+        <span style={{ marginLeft: 30 }}>
+          <b>Saldo:</b>
+          <span
+            style={{
+              color: saldo >= 0 ? "#10B981" : "#EF4444",
+              marginLeft: 5
+            }}
+          >
+            {moeda(saldo)}
+          </span>
+        </span>
+
       </div>
 
       {/* =============================
          TABELA
       ============================= */}
+
       <div
         style={{
-          maxHeight: 500,
+          height: 500,
           overflowY: "auto",
-          border: "1px solid #1f2937",
+          border: "1px solid #1f2937"
         }}
       >
+
         <table
           style={{
             width: "100%",
             borderCollapse: "collapse",
-            fontSize: 12,
+            fontSize: 12
           }}
         >
+
           <thead>
-            <tr
-              style={{
-                backgroundColor: "#111827",
-                position: "sticky",
-                top: 0,
-                zIndex: 1,
-              }}
-            >
-              <th style={thLeft}>ID</th>
-              <th style={thLeft}>
-                Data da Movimentação
-              </th>
-              <th style={thLeft}>
-                Data do Pagamento
-              </th>
-              <th style={thLeft}>Tipo</th>
-              <th style={thLeft}>Categoria</th>
-              <th style={thLeft}>Descrição</th>
-              <th style={thRight}>Valor</th>
-              <th style={thLeft}>Método</th>
-              <th style={thLeft}>Situação</th>
+            <tr style={{ backgroundColor: "#111827" }}>
+              <th style={{ minWidth: 70 }}>ID</th>
+              <th style={{ minWidth: 130 }}>Data Mov.</th>
+              <th style={{ minWidth: 130 }}>Data Pag.</th>
+              <th style={{ minWidth: 100 }}>Tipo</th>
+              <th style={{ minWidth: 160 }}>Categoria</th>
+              <th style={{ minWidth: 300 }}>Descrição</th>
+              <th style={{ minWidth: 110 }}>Valor</th>
+              <th style={{ minWidth: 150 }}>Método</th>
+              <th style={{ minWidth: 110 }}>Situação</th>
             </tr>
           </thead>
 
           <tbody>
-            {movimentacoesFiltradas.map((m) => {
-              const pendente =
-                (m.Situação || "").trim() ===
-                "Pendente";
 
-              return (
-                <tr
-                  key={m.ID_Movimentacao}
+            {movimentacoesFiltradas.map(m => (
+
+              <tr key={m.ID_Movimentacao}>
+
+                <td>{m.ID_Movimentacao}</td>
+                <td>{data(m["Data da Movimentação"])}</td>
+                <td>{data(m["Data do Pagamento"])}</td>
+                <td>{m.Tipo}</td>
+                <td>{m.Categoria}</td>
+                <td>{m.Descrição}</td>
+
+                <td
                   style={{
-                    backgroundColor: pendente
-                      ? "rgba(239, 68, 68, 0.08)"
-                      : "transparent",
+                    color: m.Tipo === "Despesa" ? "#EF4444" : "#10B981",
+                    fontWeight: 600
                   }}
                 >
-                  <td style={tdLeft}>
-                    {m.ID_Movimentacao}
-                  </td>
+                  {moeda(m.Valor)}
+                </td>
 
-                  <td style={tdLeft}>
-                    {formatarData(
-                      m["Data da Movimentação"]
-                    )}
-                  </td>
+                <td>{m["Método de Pagamento"]}</td>
 
-                  <td style={tdLeft}>
-                    {formatarData(
-                      m["Data do Pagamento"]
-                    )}
-                  </td>
+                <td
+                  style={{
+                    color: corSituacao(m.Situação),
+                    fontWeight: 600
+                  }}
+                >
+                  {m.Situação}
+                </td>
 
-                  <td style={tdLeft}>
-                    {m.Tipo}
-                  </td>
+              </tr>
 
-                  <td style={tdLeft}>
-                    {m.Categoria}
-                  </td>
+            ))}
 
-                  <td style={tdLeft}>
-                    {m.Descrição}
-                  </td>
-
-                  <td
-                    style={{
-                      ...tdRight,
-                      color:
-                        m.Tipo === "Despesa"
-                          ? "#EF4444"
-                          : "#10B981",
-                      fontWeight: 600,
-                    }}
-                  >
-                    {formatarMoeda(m.Valor)}
-                  </td>
-
-                  <td style={tdLeft}>
-                    {m["Método de Pagamento"]}
-                  </td>
-
-                  <td
-                    style={{
-                      ...tdLeft,
-                      fontWeight: 600,
-                      color: corSituacao(
-                        m.Situação
-                      ),
-                    }}
-                  >
-                    {m.Situação}
-                  </td>
-                </tr>
-              );
-            })}
           </tbody>
+
         </table>
+
       </div>
+
     </div>
   );
 }
-
-/* =============================
-   PADRÃO VISUAL
-============================= */
-
-const thLeft: React.CSSProperties = {
-  textAlign: "left",
-  padding: "6px 8px",
-};
-
-const thRight: React.CSSProperties = {
-  textAlign: "right",
-  padding: "6px 8px",
-};
-
-const tdLeft: React.CSSProperties = {
-  padding: "6px 8px",
-  borderBottom: "1px solid #1f2937",
-};
-
-const tdRight: React.CSSProperties = {
-  padding: "6px 8px",
-  textAlign: "right",
-  borderBottom: "1px solid #1f2937",
-};

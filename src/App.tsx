@@ -9,9 +9,21 @@ import Limites from "./components/Limites";
 import DRE from "./components/DRE";
 import Cartoes from "./components/Cartoes";
 import Pendente from "./components/Pendente";
+
 import type { Movimentacao } from "./types/movimentacao";
 import { FinancialService } from "./services/financialService";
+
 import homeImage from "./assets/Home.jpg";
+
+import {
+  BarChart3,
+  List,
+  Calendar,
+  CreditCard,
+  Wallet,
+  FileText,
+  Settings
+} from "lucide-react";
 
 type DespesaConfig = {
   Categoria: string;
@@ -43,7 +55,40 @@ type Pagina =
   | "cartoes"
   | "pendente";
 
+/* =========================
+   CONVERSOR DATA BR
+========================= */
+
+function parseDataBR(data: any): Date | null {
+
+  if (!data) return null;
+
+  if (data instanceof Date) return data;
+
+  if (typeof data === "string") {
+
+    const partes = data.split("/");
+
+    if (partes.length === 3) {
+
+      const dia = Number(partes[0]);
+      const mes = Number(partes[1]) - 1;
+      const ano = Number(partes[2]);
+
+      return new Date(ano, mes, dia);
+
+    }
+
+    return new Date(data);
+
+  }
+
+  return null;
+
+}
+
 export default function App() {
+
   const hoje = new Date();
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
@@ -56,33 +101,32 @@ export default function App() {
   const [cartaoFiltro, setCartaoFiltro] = useState("");
 
   useEffect(() => {
+
     const movSalvos = localStorage.getItem("movimentacoes");
     const despSalvos = localStorage.getItem("despesasConfig");
     const cartoesSalvos = localStorage.getItem("cartoes");
 
     if (movSalvos) {
+
       const parsed: Movimentacao[] = JSON.parse(movSalvos);
 
       const convertidas = parsed.map((m) => ({
         ...m,
-        "Data da Movimentação":
-          typeof m["Data da Movimentação"] === "string"
-            ? new Date(m["Data da Movimentação"])
-            : m["Data da Movimentação"],
-        "Data do Pagamento":
-          typeof m["Data do Pagamento"] === "string"
-            ? new Date(m["Data do Pagamento"])
-            : m["Data do Pagamento"],
+        "Data da Movimentação": parseDataBR(m["Data da Movimentação"]),
+        "Data do Pagamento": parseDataBR(m["Data do Pagamento"]),
       }));
 
       setMovimentacoes(convertidas);
+
     }
 
     if (despSalvos) setDespesasConfig(JSON.parse(despSalvos));
     if (cartoesSalvos) setCartoes(JSON.parse(cartoesSalvos));
+
   }, []);
 
   const financialService = useMemo(() => {
+
     return new FinancialService(
       movimentacoes,
       despesasConfig,
@@ -90,36 +134,54 @@ export default function App() {
       mesSelecionado,
       anoSelecionado
     );
+
   }, [movimentacoes, despesasConfig, cartoes, mesSelecionado, anoSelecionado]);
 
-  const abas: { label: string; key: Pagina }[] = [
-    { label: "Resumo", key: "resumo" },
-    { label: "Movimentações", key: "movimentacoes" },
-    { label: "Semanal", key: "semanal" },
-    { label: "Fatura Cartão", key: "fatura" },
-    { label: "Cartões", key: "cartoes" },
-    { label: "Pendentes", key: "pendente" },
-    { label: "DRE", key: "dre" },
-    { label: "Limites", key: "limites" },
+  /* =========================
+     ABAS COM ÍCONES
+  ========================= */
+
+  const abas = [
+    { label: "Resumo", key: "resumo", icon: BarChart3 },
+    { label: "Movimentações", key: "movimentacoes", icon: List },
+    { label: "Pendentes", key: "pendente", icon: Calendar },
+    { label: "Semanal", key: "semanal", icon: Calendar },
+    { label: "Fatura Cartão", key: "fatura", icon: CreditCard },
+    { label: "Cartões", key: "cartoes", icon: Wallet },
+    { label: "DRE", key: "dre", icon: FileText },
+    { label: "Limites", key: "limites", icon: Settings },
   ];
 
   const renderConteudo = () => {
+
     switch (pagina) {
+
       case "resumo":
-        return (
-          <>
-            <Resumo resumoData={financialService.getResumoMesAtual()} />
-            <div style={{ marginTop: 40 }}>
-              <ResumoClassificacao dados={financialService.getResumoClassificacao()} />
-            </div>
-          </>
-        );
+  return (
+    <>
+      <Resumo resumoData={financialService.getResumoMesAtual()} />
+
+      <div style={{ marginTop: 40 }}>
+        <ResumoClassificacao
+          financialService={financialService}
+        />
+      </div>
+    </>
+  );
 
       case "movimentacoes":
-        return <Movimentacoes movimentacoes={financialService.getMovimentacoesOrdenadas()} />;
+        return (
+          <Movimentacoes
+            movimentacoes={financialService.getMovimentacoesOrdenadas()}
+          />
+        );
 
       case "semanal":
-        return <ControleSemanal controleData={financialService.getControleSemanal()} />;
+        return (
+          <ControleSemanal
+            controleData={financialService.getControleSemanal()}
+          />
+        );
 
       case "fatura":
         return (
@@ -132,25 +194,36 @@ export default function App() {
         );
 
       case "cartoes":
-        return <Cartoes dados={financialService.getCartoesAnual()} />;
+        return (
+          <Cartoes dados={financialService.getCartoesAnual()} />
+        );
 
       case "dre":
-        return <DRE dados={financialService.getDREAnual()} />;
+        return (
+          <DRE dados={financialService.getDREAnual()} />
+        );
 
       case "pendente":
-        return <Pendente financialService={financialService} />;
+        return (
+          <Pendente financialService={financialService} />
+        );
 
       case "limites":
-        return <Limites despesasConfig={despesasConfig} />;
+        return (
+          <Limites despesasConfig={despesasConfig} />
+        );
 
       default:
         return null;
+
     }
+
   };
 
   /* ================= HOME ================= */
 
   if (pagina === "home") {
+
     return (
       <div
         style={{
@@ -166,9 +239,11 @@ export default function App() {
           position: "relative",
         }}
       >
+
         <div style={{ position: "absolute", top: 20, right: 20 }}>
           <UploadPlanilha
             onDataLoaded={(movs, despesas, cartoesData) => {
+
               setMovimentacoes(movs);
               setDespesasConfig(despesas);
               setCartoes(cartoesData);
@@ -176,6 +251,7 @@ export default function App() {
               localStorage.setItem("movimentacoes", JSON.stringify(movs));
               localStorage.setItem("despesasConfig", JSON.stringify(despesas));
               localStorage.setItem("cartoes", JSON.stringify(cartoesData));
+
             }}
           />
         </div>
@@ -184,26 +260,47 @@ export default function App() {
           CONTROLE FINANCEIRO PESSOAL
         </h1>
 
-        <div style={{ display: "flex", gap: 15, marginTop: 30, flexWrap: "wrap" }}>
-          {abas.map((aba) => (
-            <button
-              key={aba.key}
-              onClick={() => setPagina(aba.key)}
-              style={{
-                padding: "10px 18px",
-                backgroundColor: "#111827",
-                border: "1px solid #374151",
-                color: "white",
-                borderRadius: 6,
-                cursor: "pointer",
-              }}
-            >
-              {aba.label}
-            </button>
-          ))}
+        <div
+          style={{
+            display: "flex",
+            gap: 15,
+            marginTop: 30,
+            flexWrap: "wrap"
+          }}
+        >
+
+          {abas.map((aba) => {
+
+            const Icon = aba.icon;
+
+            return (
+              <button
+                key={aba.key}
+                onClick={() => setPagina(aba.key as Pagina)}
+                style={{
+                  padding: "10px 18px",
+                  backgroundColor: "#111827",
+                  border: "1px solid #374151",
+                  color: "white",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8
+                }}
+              >
+                <Icon size={18} />
+                {aba.label}
+              </button>
+            );
+
+          })}
+
         </div>
+
       </div>
     );
+
   }
 
   /* ================= OUTRAS PÁGINAS ================= */
@@ -225,56 +322,82 @@ export default function App() {
           flexWrap: "wrap",
         }}
       >
+
         <button onClick={() => setPagina("home")}>← Início</button>
 
-        {abas.map((aba) => (
-          <button
-            key={aba.key}
-            onClick={() => setPagina(aba.key)}
-            style={{
-              backgroundColor:
-                aba.key === pagina ? "#1f2937" : "#111827",
-              border:
-                aba.key === pagina
-                  ? "2px solid #3b82f6"
-                  : "1px solid #374151",
-              color: "white",
-              padding: "8px 14px",
-              borderRadius: 6,
-              fontWeight: aba.key === pagina ? "bold" : "normal",
-            }}
-          >
-            {aba.label}
-          </button>
-        ))}
+        {abas.map((aba) => {
+
+          const Icon = aba.icon;
+
+          return (
+            <button
+              key={aba.key}
+              onClick={() => setPagina(aba.key as Pagina)}
+              style={{
+                backgroundColor:
+                  aba.key === pagina ? "#1f2937" : "#111827",
+                border:
+                  aba.key === pagina
+                    ? "2px solid #3b82f6"
+                    : "1px solid #374151",
+                color: "white",
+                padding: "8px 14px",
+                borderRadius: 6,
+                fontWeight:
+                  aba.key === pagina ? "bold" : "normal",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                cursor: "pointer"
+              }}
+            >
+              <Icon size={16} />
+              {aba.label}
+            </button>
+          );
+
+        })}
+
       </div>
 
       <div style={{ padding: "110px 20px 20px 20px" }}>
+
         <h3>Filtro Global</h3>
 
         <div style={{ marginBottom: 20 }}>
+
           <label>Mês: </label>
+
           <select
             value={mesSelecionado}
-            onChange={(e) => setMesSelecionado(Number(e.target.value))}
+            onChange={(e) =>
+              setMesSelecionado(Number(e.target.value))
+            }
           >
+
             {nomesMeses.map((mes, index) => (
               <option key={mes} value={index}>
                 {mes}
               </option>
             ))}
+
           </select>
 
           <label style={{ marginLeft: 20 }}>Ano: </label>
+
           <input
             type="number"
             value={anoSelecionado}
-            onChange={(e) => setAnoSelecionado(Number(e.target.value))}
+            onChange={(e) =>
+              setAnoSelecionado(Number(e.target.value))
+            }
             style={{ width: 100 }}
           />
+
         </div>
 
         {renderConteudo()}
+
       </div>
     </>
   );

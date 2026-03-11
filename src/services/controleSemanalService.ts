@@ -34,8 +34,33 @@ export class ControleSemanalService {
     this.anoSelecionado = anoSelecionado;
   }
 
+  // ==============================
+  // CALCULAR SEMANA IGUAL AO EXCEL
+  // ==============================
+  private getWeekNumber(date: Date): number {
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+    );
+
+    const dayNum = d.getUTCDay() || 7;
+
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  }
+
+  private calcularSemanaMes(data: Date): number {
+    const inicioMes = new Date(data.getFullYear(), data.getMonth(), 1);
+
+    const semanaAnoData = this.getWeekNumber(data);
+    const semanaAnoInicio = this.getWeekNumber(inicioMes);
+
+    return semanaAnoData - semanaAnoInicio + 1;
+  }
+
   public getControleSemanal(): ControleItem[] {
-    const hoje = new Date();
     const mapaCategorias: Record<string, ControleItem> = {};
 
     // ==============================
@@ -56,60 +81,45 @@ export class ControleSemanalService {
     // 2️⃣ Processa movimentações
     // ==============================
     for (const m of this.movimentacoes) {
-      const dataPagamento = m["Data do Pagamento"];
-      if (!dataPagamento) continue;
+      const dataMov = m["Data da Movimentação"];
 
-      // ❌ Ignora mês diferente
+      if (!dataMov) continue;
+
+      // mês selecionado
       if (
-        dataPagamento.getMonth() !== this.mesSelecionado ||
-        dataPagamento.getFullYear() !== this.anoSelecionado
+        dataMov.getMonth() !== this.mesSelecionado ||
+        dataMov.getFullYear() !== this.anoSelecionado
       )
         continue;
 
-      // ❌ Não traz mês futuro
-      if (
-        this.anoSelecionado > hoje.getFullYear() ||
-        (this.anoSelecionado === hoje.getFullYear() &&
-          this.mesSelecionado > hoje.getMonth())
-      )
-        continue;
-
-      // ❌ Não traz pagamento futuro
-      if (dataPagamento > hoje) continue;
-
-      // ❌ Só despesas
+      // só despesas
       if (m["Tipo"] !== "Despesa") continue;
 
-      // ❌ Ignora pagamento de fatura
+      // ignora pagamento de fatura
       if (m["Categoria"] === "Pagamento de Fatura") continue;
 
-      // ❌ Só pago ou faturado
-      if (!(m["Situação"] === "Pago" || m["Situação"] === "Faturado"))
-        continue;
+      // ignora faturado e previsto
+      if (m["Situação"] === "Faturado") continue;
+      if (m["Situação"] === "Previsto") continue;
 
       const item = mapaCategorias[m["Categoria"]];
       if (!item) continue;
 
       const valor = m["Valor"] || 0;
 
-      // Soma no Real
+      // soma no real
       item.totalReal += valor;
 
-      // Usa semana da planilha
-      const semanaTexto = m["Semana_do_Mês"];
-      if (typeof semanaTexto === "string") {
-        const numeroSemana = Number(
-          semanaTexto.replace("Semana", "").trim()
-        );
+      // calcula semana automaticamente
+      const semana = this.calcularSemanaMes(dataMov);
 
-        if (numeroSemana >= 1 && numeroSemana <= 5) {
-          item.semanas[numeroSemana] += valor;
-        }
+      if (semana >= 1 && semana <= 5) {
+        item.semanas[semana] += valor;
       }
     }
 
     // ==============================
-    // 3️⃣ Calcula divergência
+    // 3️⃣ Divergência
     // ==============================
     for (const categoria in mapaCategorias) {
       mapaCategorias[categoria].divergencia =

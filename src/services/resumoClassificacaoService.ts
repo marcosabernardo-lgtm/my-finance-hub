@@ -7,15 +7,16 @@ type DespesaConfig = {
   Exemplos: string;
 };
 
-type ResumoClassificacaoItem = {
+type ResumoItem = {
   classificacao: string;
   previsto: number;
+  percentual: number;
   real: number;
   divergencia: number;
-  percentual: number;
 };
 
 export class ResumoClassificacaoService {
+
   private movimentacoes: Movimentacao[];
   private despesasConfig: DespesaConfig[];
   private mesSelecionado: number;
@@ -33,91 +34,117 @@ export class ResumoClassificacaoService {
     this.anoSelecionado = anoSelecionado;
   }
 
-  public getResumoClassificacao(): ResumoClassificacaoItem[] {
-    const hoje = new Date();
+  public getResumoClassificacao(): ResumoItem[] {
 
-    const mapa: Record<string, ResumoClassificacaoItem> = {};
+    const mapaClassificacao: Record<string, ResumoItem> = {};
 
-    // ============================
-    // 1️⃣ Carrega previsto
-    // ============================
-    for (const desp of this.despesasConfig) {
-      const classificacao = desp.Classificação;
+    let totalPrevisto = 0;
 
-      if (!mapa[classificacao]) {
-        mapa[classificacao] = {
-          classificacao,
+    /* ======================
+       PREVISTO
+    ====================== */
+
+    for (const cfg of this.despesasConfig) {
+
+      const classe = cfg.Classificação?.trim();
+
+      if (!classe) continue;
+
+      if (!mapaClassificacao[classe]) {
+        mapaClassificacao[classe] = {
+          classificacao: classe,
           previsto: 0,
-          real: 0,
-          divergencia: 0,
           percentual: 0,
+          real: 0,
+          divergencia: 0
         };
       }
 
-      mapa[classificacao].previsto += desp.Limite_Gastos;
+      mapaClassificacao[classe].previsto += cfg.Limite_Gastos;
+      totalPrevisto += cfg.Limite_Gastos;
     }
 
-    // ============================
-    // 2️⃣ Calcula realizado (MESMA REGRA DO CONTROLE SEMANAL)
-    // ============================
-    for (const m of this.movimentacoes) {
-      const dataPagamento = m["Data do Pagamento"];
-      if (!dataPagamento) continue;
+    /* ======================
+       REAL
+       (MESMA REGRA DO SEMANAL)
+    ====================== */
 
-      // ❌ Ignora mês diferente
+    for (const mov of this.movimentacoes) {
+
+      const data = mov["Data da Movimentação"];
+
+      if (!data) continue;
+
       if (
-        dataPagamento.getMonth() !== this.mesSelecionado ||
-        dataPagamento.getFullYear() !== this.anoSelecionado
-      )
-        continue;
+        data.getMonth() !== this.mesSelecionado ||
+        data.getFullYear() !== this.anoSelecionado
+      ) continue;
 
-      // ❌ Não traz mês futuro
-      if (
-        this.anoSelecionado > hoje.getFullYear() ||
-        (this.anoSelecionado === hoje.getFullYear() &&
-          this.mesSelecionado > hoje.getMonth())
-      )
-        continue;
+      if (mov["Tipo"] !== "Despesa") continue;
 
-      // ❌ Não traz pagamento futuro
-      if (dataPagamento > hoje) continue;
+      if (mov["Categoria"] === "Pagamento de Fatura") continue;
 
-      // ❌ Só despesas
-      if (m["Tipo"] !== "Despesa") continue;
+      const situacao = mov["Situação"]?.trim();
 
-      // ❌ Ignora pagamento de fatura
-      if (m["Categoria"] === "Pagamento de Fatura") continue;
+      // MESMA REGRA DO CONTROLE SEMANAL
+      if (situacao === "Faturado") continue;
+      if (situacao === "Previsto") continue;
 
-      // ❌ Só pago ou faturado
-      if (!(m["Situação"] === "Pago" || m["Situação"] === "Faturado"))
-        continue;
+      const categoria = mov["Categoria"];
 
-      const despConfig = this.despesasConfig.find(
-        (d) => d.Categoria === m["Categoria"]
+      const config = this.despesasConfig.find(
+        c => c.Categoria === categoria
       );
 
-      if (!despConfig) continue;
+      if (!config) continue;
 
-      mapa[despConfig.Classificação].real += m["Valor"] || 0;
+      const classe = config.Classificação?.trim();
+
+      if (!classe) continue;
+
+      const valor = Number(mov["Valor"]) || 0;
+
+      mapaClassificacao[classe].real += valor;
     }
 
-    const totalPrevisto = Object.values(mapa).reduce(
-      (acc, item) => acc + item.previsto,
+    /* ======================
+       CALCULOS
+    ====================== */
+
+    const lista = Object.values(mapaClassificacao);
+
+    for (const item of lista) {
+
+      item.divergencia = item.previsto - item.real;
+
+      item.percentual = totalPrevisto
+        ? (item.previsto / totalPrevisto) * 100
+        : 0;
+
+    }
+
+    /* ======================
+       TOTAL
+    ====================== */
+
+    const totalReal = lista.reduce(
+      (s, i) => s + i.real,
       0
     );
 
-    // ============================
-    // 3️⃣ Finaliza cálculo
-    // ============================
-    for (const item of Object.values(mapa)) {
-      item.divergencia = item.previsto - item.real;
+    const totalDivergencia = lista.reduce(
+      (s, i) => s + i.divergencia,
+      0
+    );
 
-      item.percentual =
-        totalPrevisto > 0
-          ? (item.previsto / totalPrevisto) * 100
-          : 0;
-    }
+    lista.push({
+      classificacao: "TOTAL",
+      previsto: totalPrevisto,
+      percentual: 100,
+      real: totalReal,
+      divergencia: totalDivergencia
+    });
 
-    return Object.values(mapa);
+    return lista;
   }
 }
