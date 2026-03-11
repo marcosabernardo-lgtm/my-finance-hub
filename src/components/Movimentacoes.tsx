@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { Movimentacao } from "../types/movimentacao";
 
 type Props = {
