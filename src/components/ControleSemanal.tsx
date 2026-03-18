@@ -141,14 +141,18 @@ export default function ControleSemanal({ controleData }: Props) {
 
                     const valor = item.semanas[semana];
 
-                    const passouDoLimite = valor > item.limiteSemanal;
+                    const percentual = item.limiteSemanal > 0
+                      ? valor / item.limiteSemanal
+                      : 0;
 
                     let cor = "#10B981"; // verde
 
                     if (valor === 0) {
-                      cor = "#9CA3AF"; // cinza claro
-                    } else if (passouDoLimite) {
+                      cor = "#9CA3AF"; // cinza
+                    } else if (percentual > 1) {
                       cor = "#EF4444"; // vermelho
+                    } else if (percentual >= 0.8) {
+                      cor = "#F59E0B"; // amarelo
                     }
 
                     return (
