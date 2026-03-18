@@ -257,7 +257,7 @@ export default function App() {
         </div>
 
         <h1 style={{ fontSize: 48, color: "white", textAlign: "center" }}>
-          CONTROLE FINANCEIRO PESSOAL
+          CONTROLE FINANCEIRO PESSOAL TESTE
         </h1>
 
         <div
