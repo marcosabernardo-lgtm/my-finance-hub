@@ -141,12 +141,23 @@ export default function ControleSemanal({ controleData }: Props) {
 
                     const valor = item.semanas[semana];
 
+                    const passouDoLimite = valor > item.limiteSemanal;
+
+                    let cor = "#10B981"; // verde
+
+                    if (valor === 0) {
+                      cor = "#9CA3AF"; // cinza claro
+                    } else if (passouDoLimite) {
+                      cor = "#EF4444"; // vermelho
+                    }
+
                     return (
                       <td
                         key={semana}
                         style={{
                           ...td,
-                          color: valor > 0 ? "#EF4444" : "inherit",
+                          color: cor,
+                          fontWeight: 600,
                         }}
                       >
                         {formatarMoeda(valor)}
