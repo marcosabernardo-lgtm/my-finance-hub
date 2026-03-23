@@ -662,10 +662,6 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           const pct = linha.limite > 0 ? v / linha.limite : null
           const aberto = drillEstaAberto(m)
 
-          // Detecta situações presentes nessa célula para badge
-          const temPendente = v > 0 && lancamentosDrill.some(l => l.situacao === 'Pendente') && aberto
-          const temPrevisto = v > 0 && lancamentosDrill.some(l => l.situacao === 'Previsto') && aberto
-
           let corValor = '#d1d5db'
           if (v > 0) {
             if (!isReceita && pct !== null) {
