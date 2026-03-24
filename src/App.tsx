@@ -9,13 +9,13 @@ import DRE from "./components/DRE";
 import Cartoes from "./components/Cartoes";
 import Cadastros from "./components/Cadastros";
 import Lancamento from "./components/Lancamento";
-import ConfirmarDebito from "./components/ConfirmarDebito";
+import Pendentes from "./components/Pendentes"; // Nova tela
 
 import homeImage from "./assets/Home.jpg";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle
+  FileText, Database, PlusCircle, BellRing
 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,13 +23,13 @@ import {
 type Pagina =
   | "home" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar"
+  | "cadastros" | "lancamento" | "pendentes"
 
 // ─── Abas ─────────────────────────────────────────────────────────────────────
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Lançar",           key: "lancamento",   icon: PlusCircle  },
-  { label: "Confirmar Débitos",key: "confirmar",    icon: CheckCircle },
+  { label: "Pendentes",        key: "pendentes",    icon: BellRing    }, // Substituindo o antigo confirmar
   { label: "Resumo",           key: "resumo",       icon: BarChart3   },
   { label: "Movimentações",    key: "movimentacoes",icon: List        },
   { label: "Semanal",          key: "semanal",      icon: Calendar    },
@@ -47,7 +47,7 @@ function AppContent({ signOut }: { signOut: () => void }) {
   const renderConteudo = () => {
     switch (pagina) {
       case "lancamento":   return <Lancamento />
-      case "confirmar":    return <ConfirmarDebito />
+      case "pendentes":    return <Pendentes />
       case "resumo":       return <Resumo />
       case "movimentacoes":return <Movimentacoes />
       case "semanal":      return <ControleSemanal />
@@ -81,11 +81,18 @@ function AppContent({ signOut }: { signOut: () => void }) {
           Sair
         </button>
 
-        <h1 style={{ fontSize: 48, color: "white", textAlign: "center", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-          CONTROLE FINANCEIRO PESSOAL
+        <h1 style={{ 
+          fontSize: 48, 
+          color: "white", 
+          textAlign: "center", 
+          textShadow: "0 2px 10px rgba(0,0,0,0.7)",
+          fontWeight: 800,
+          maxWidth: "800px"
+        }}>
+          FINANCE HUB
         </h1>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 32, flexWrap: "wrap", justifyContent: "center" }}>
+        <div style={{ display: "flex", gap: 12, marginTop: 32, flexWrap: "wrap", justifyContent: "center", maxWidth: "900px" }}>
           {abas.map((aba) => {
             const Icon = aba.icon
             return (
@@ -93,12 +100,15 @@ function AppContent({ signOut }: { signOut: () => void }) {
                 key={aba.key}
                 onClick={() => setPagina(aba.key)}
                 style={{
-                  padding: "10px 18px", backgroundColor: "#111827",
+                  padding: "12px 20px", backgroundColor: "#111827",
                   border: "1px solid #374151", color: "white",
-                  borderRadius: 8, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 8,
-                  fontSize: 14, fontWeight: 500,
+                  borderRadius: 10, cursor: "pointer",
+                  display: "flex", alignItems: "center", gap: 10,
+                  fontSize: 14, fontWeight: 600,
+                  transition: "transform 0.1s"
                 }}
+                onMouseOver={(e) => e.currentTarget.style.transform = "scale(1.05)"}
+                onMouseOut={(e) => e.currentTarget.style.transform = "scale(1)"}
               >
                 <Icon size={18} />
                 {aba.label}
@@ -112,21 +122,21 @@ function AppContent({ signOut }: { signOut: () => void }) {
 
   // ── App shell ──────────────────────────────────────────────────────────────
   return (
-    <>
+    <div style={{ backgroundColor: "#f8fafc", minHeight: "100vh" }}>
       {/* Navbar fixa */}
       <div style={{
         position: "fixed", top: 0, left: 0, width: "100%",
-        backgroundColor: "#0f172a", padding: "12px 20px",
+        backgroundColor: "#0f172a", padding: "10px 20px",
         zIndex: 1000, borderBottom: "1px solid #1f2937",
-        display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center",
+        display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
         boxSizing: "border-box",
       }}>
         <button
           onClick={() => setPagina("home")}
           style={{
-            backgroundColor: "transparent", border: "1px solid #374151",
-            color: "#9ca3af", padding: "7px 12px", borderRadius: 6,
-            cursor: "pointer", fontSize: 13, marginRight: 8,
+            backgroundColor: "#1e293b", border: "1px solid #374151",
+            color: "#fff", padding: "8px 14px", borderRadius: 8,
+            cursor: "pointer", fontSize: 13, marginRight: 10, fontWeight: 600
           }}
         >
           ← Início
@@ -140,17 +150,17 @@ function AppContent({ signOut }: { signOut: () => void }) {
               key={aba.key}
               onClick={() => setPagina(aba.key)}
               style={{
-                backgroundColor: ativa ? "#1e3a5f" : "#111827",
-                border: ativa ? "2px solid #3b82f6" : "1px solid #374151",
-                color: ativa ? "#60a5fa" : "#d1d5db",
-                padding: "7px 13px", borderRadius: 6,
-                fontWeight: ativa ? 700 : 400,
-                display: "flex", alignItems: "center", gap: 6,
+                backgroundColor: ativa ? "#2563eb" : "transparent",
+                border: "none",
+                color: ativa ? "#fff" : "#94a3b8",
+                padding: "8px 14px", borderRadius: 8,
+                fontWeight: ativa ? 700 : 500,
+                display: "flex", alignItems: "center", gap: 8,
                 cursor: "pointer", fontSize: 13,
-                transition: "all 0.15s",
+                transition: "all 0.2s",
               }}
             >
-              <Icon size={15} />
+              <Icon size={16} />
               {aba.label}
             </button>
           )
@@ -160,19 +170,19 @@ function AppContent({ signOut }: { signOut: () => void }) {
           onClick={signOut}
           style={{
             marginLeft: "auto", backgroundColor: "#ef4444",
-            border: "none", color: "white", padding: "7px 14px",
-            borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 13,
+            border: "none", color: "white", padding: "8px 16px",
+            borderRadius: 8, cursor: "pointer", fontWeight: "bold", fontSize: 13,
           }}
         >
           Sair
         </button>
       </div>
 
-      {/* Conteúdo */}
-      <div style={{ paddingTop: 72 }}>
+      {/* Conteúdo com fundo claro para as telas internas */}
+      <div style={{ paddingTop: 80 }}>
         {renderConteudo()}
       </div>
-    </>
+    </div>
   )
 }
 
@@ -185,7 +195,7 @@ export default function App() {
     <div style={{
       color: "white", backgroundColor: "#0f172a",
       width: "100vw", height: "100vh",
-      display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18
+      display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18, fontFamily: "sans-serif"
     }}>
       Carregando...
     </div>
