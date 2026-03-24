@@ -59,7 +59,6 @@ function AppContent({ signOut }: { signOut: () => void }) {
     }
   }
 
-  // ── Home ───────────────────────────────────────────────────────────────────
   if (pagina === "home") {
     return (
       <div style={{
@@ -110,10 +109,8 @@ function AppContent({ signOut }: { signOut: () => void }) {
     )
   }
 
-  // ── App shell ──────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Navbar fixa */}
       <div style={{
         position: "fixed", top: 0, left: 0, width: "100%",
         backgroundColor: "#0f172a", padding: "12px 20px",
@@ -168,15 +165,12 @@ function AppContent({ signOut }: { signOut: () => void }) {
         </button>
       </div>
 
-      {/* Conteúdo */}
       <div style={{ paddingTop: 72 }}>
         {renderConteudo()}
       </div>
     </>
   )
 }
-
-// ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
