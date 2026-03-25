@@ -12,6 +12,7 @@ interface Movimentacao {
   descricao: string
   valor: number
   metodo_pagamento: string | null
+  numero_parcela: string | null
   data_movimentacao: string
   data_pagamento: string | null
 }
@@ -98,7 +99,7 @@ export default function Resumo() {
 
     const { data } = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,data_movimentacao,data_pagamento')
+      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento')
       .eq('household_id', householdId)
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
@@ -112,24 +113,33 @@ export default function Resumo() {
 
   // ── Cálculos dos cards ───────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movimentacoes.filter(m => m.tipo === 'Receita' && ['Pago', 'Faturado'].includes(m.situacao))
+    movimentacoes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago')
       .reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 
   const totalDespesas = useMemo(() =>
-    movimentacoes.filter(m => m.tipo === 'Despesa' && ['Pago', 'Faturado'].includes(m.situacao))
+    movimentacoes.filter(m => entraNoReal(m))
       .reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 
   const totalPendente = useMemo(() =>
-    movimentacoes.filter(m => m.tipo === 'Despesa' && m.situacao === 'Pendente')
+    movimentacoes.filter(m => m.tipo === 'Despesa' && m.situacao === 'Pendente' && m.numero_parcela !== 'Parcela 1/1')
       .reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 
   const saldo = totalReceitas - totalDespesas
+
+  // Helper: despesa entra no "Real" se Pago, ou Pendente com Parcela 1/1 (à vista no cartão)
+  // Faturado NÃO entra — são compras de meses anteriores
+  const entraNoReal = (m: Movimentacao) => {
+    if (m.tipo !== 'Despesa') return false
+    if (m.situacao === 'Pago') return true
+    if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
+    return false
+  }
 
   // ── Tabela de classificação ──────────────────────────────────────────────────
   // Previsto = soma dos limites das categorias de despesa daquela classificação
@@ -148,11 +158,10 @@ export default function Resumo() {
       // Previsto = soma dos limites mensais das categorias
       const previsto = catsClassif.reduce((s, c) => s + (Number(c.limite_gastos) || 0), 0)
 
-      // Real = Pago + Faturado do mês nessa classificação
+      // Real = Pago + Faturado + Pendente Parcela 1/1 do mês nessa classificação
       const real = movimentacoes
         .filter(m => {
-          if (m.tipo !== 'Despesa') return false
-          if (!['Pago', 'Faturado'].includes(m.situacao)) return false
+          if (!entraNoReal(m)) return false
           if (!m.categoria_id) return false
           const cat = catMap[m.categoria_id]
           return cat?.classificacao === classif
@@ -164,18 +173,14 @@ export default function Resumo() {
       // Categorias detalhadas para drill-down
       const categoriasDrill = catsClassif.map(cat => {
         const realCat = movimentacoes
-          .filter(m => m.tipo === 'Despesa' && ['Pago', 'Faturado'].includes(m.situacao) && m.categoria_id === cat.id)
+          .filter(m => entraNoReal(m) && m.categoria_id === cat.id)
           .reduce((s, m) => s + Number(m.valor), 0)
         return {
           cat,
           real: realCat,
           previsto: Number(cat.limite_gastos) || 0,
           divergencia: (Number(cat.limite_gastos) || 0) - realCat,
-          movs: movimentacoes.filter(m =>
-            m.tipo === 'Despesa' &&
-            ['Pago', 'Faturado'].includes(m.situacao) &&
-            m.categoria_id === cat.id
-          )
+          movs: movimentacoes.filter(m => entraNoReal(m) && m.categoria_id === cat.id)
         }
       }).filter(d => d.real > 0 || d.previsto > 0)
 
@@ -481,7 +486,7 @@ export default function Resumo() {
       {!loading && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
-          <span>* Real = Pago + Faturado · Previsto = soma dos limites mensais das categorias</span>
+          <span>* Real = Pago + Pendente À Vista (Parcela 1/1) · Faturado não entra (compras de meses anteriores) · Previsto = soma dos limites mensais</span>
         </div>
       )}
 
