@@ -11,161 +11,294 @@ import Cadastros from "./components/Cadastros";
 import Lancamento from "./components/Lancamento";
 import ConfirmarDebito from "./components/ConfirmarDebito";
 
-import homeImage from "./assets/Home.jpg";
-
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle
+  FileText, Database, PlusCircle, CheckCircle, Layers
 } from "lucide-react";
-
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Pagina =
   | "home" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar"
 
-// ─── Abas ─────────────────────────────────────────────────────────────────────
-
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
-  { label: "Lançar",           key: "lancamento",   icon: PlusCircle  },
-  { label: "Confirmar Débitos",key: "confirmar",    icon: CheckCircle },
-  { label: "Resumo",           key: "resumo",       icon: BarChart3   },
-  { label: "Movimentações",    key: "movimentacoes",icon: List        },
-  { label: "Semanal",          key: "semanal",      icon: Calendar    },
-  { label: "Fatura Cartão",    key: "fatura",       icon: CreditCard  },
-  { label: "Cartões",          key: "cartoes",      icon: Wallet      },
-  { label: "DRE",              key: "dre",          icon: FileText    },
-  { label: "Cadastros",        key: "cadastros",    icon: Database    },
+  { label: "Lançar",            key: "lancamento",    icon: PlusCircle  },
+  { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle },
+  { label: "Resumo",            key: "resumo",        icon: BarChart3   },
+  { label: "Movimentações",     key: "movimentacoes", icon: List        },
+  { label: "Semanal",           key: "semanal",       icon: Calendar    },
+  { label: "Fatura Cartão",     key: "fatura",        icon: CreditCard  },
+  { label: "Cartões",           key: "cartoes",       icon: Wallet      },
+  { label: "DRE",               key: "dre",           icon: FileText    },
+  { label: "Cadastros",         key: "cadastros",     icon: Database    },
 ]
 
-// ─── AppContent ───────────────────────────────────────────────────────────────
+const cardConfig: {
+  key: Pagina
+  label: string
+  desc: string
+  icon: React.ElementType
+  accent: string
+  iconBg: string
+  iconColor: string
+  group: "lancamentos" | "analises"
+}[] = [
+  {
+    key: "lancamento", label: "Lançar", group: "lancamentos",
+    desc: "Registre despesas, receitas e transferências",
+    icon: PlusCircle, accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa",
+  },
+  {
+    key: "confirmar", label: "Confirmar Débitos", group: "lancamentos",
+    desc: "Confirme lançamentos previstos em aberto",
+    icon: CheckCircle, accent: "#22c55e", iconBg: "#14532d", iconColor: "#4ade80",
+  },
+  {
+    key: "fatura", label: "Fatura Cartão", group: "lancamentos",
+    desc: "Gerencie e pague faturas dos cartões",
+    icon: CreditCard, accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24",
+  },
+  {
+    key: "resumo", label: "Resumo", group: "analises",
+    desc: "Visão geral de receitas, despesas e saldo",
+    icon: BarChart3, accent: "#8b5cf6", iconBg: "#2e1065", iconColor: "#a78bfa",
+  },
+  {
+    key: "semanal", label: "Controle Semanal", group: "analises",
+    desc: "Despesas por semana e categoria",
+    icon: Calendar, accent: "#06b6d4", iconBg: "#083344", iconColor: "#22d3ee",
+  },
+  {
+    key: "dre", label: "DRE", group: "analises",
+    desc: "Demonstrativo anual com projeções",
+    icon: FileText, accent: "#ec4899", iconBg: "#500724", iconColor: "#f472b6",
+  },
+  {
+    key: "cartoes", label: "Cartões", group: "analises",
+    desc: "Visão anual e comprometimento de limite",
+    icon: Wallet, accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa",
+  },
+  {
+    key: "movimentacoes", label: "Movimentações", group: "analises",
+    desc: "Histórico completo com filtros avançados",
+    icon: List, accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf",
+  },
+  {
+    key: "cadastros", label: "Cadastros", group: "analises",
+    desc: "Categorias, cartões e contas",
+    icon: Database, accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8",
+  },
+]
 
-function AppContent({ signOut }: { signOut: () => void }) {
+const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
+const mesFormatado = mes.charAt(0).toUpperCase() + mes.slice(1)
+
+function Home({ onNavigate, onSignOut, email }: {
+  onNavigate: (p: Pagina) => void
+  onSignOut: () => void
+  email: string
+}) {
+  const lancamentos = cardConfig.filter(c => c.group === "lancamentos")
+  const analises    = cardConfig.filter(c => c.group === "analises")
+
+  return (
+    <div style={{ background: "#0b1120", minHeight: "100vh", color: "white" }}>
+
+      {/* Topbar */}
+      <div style={{
+        background: "#0d1526", borderBottom: "1px solid #1e2d45",
+        padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, background: "#2563eb", borderRadius: 8,
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            <Layers size={17} color="white" />
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: "white" }}>Finance Hub</div>
+            <div style={{ fontSize: 11, color: "#64748b" }}>Controle Financeiro Pessoal</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{
+            background: "#1e2d45", border: "1px solid #2a3f5f",
+            padding: "5px 14px", borderRadius: 20, fontSize: 12, color: "#94a3b8"
+          }}>
+            {email}
+          </div>
+          <button onClick={onSignOut} style={{
+            background: "#7f1d1d", border: "none", color: "#fca5a5",
+            padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600
+          }}>
+            Sair
+          </button>
+        </div>
+      </div>
+
+      {/* Hero */}
+      <div style={{ padding: "36px 32px 24px", borderBottom: "1px solid #1e2d45" }}>
+        <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>
+          Painel Principal
+        </div>
+        <div style={{ fontSize: 26, fontWeight: 700, color: "white" }}>
+          Bem-vindo de volta 👋
+        </div>
+        <div style={{ fontSize: 13, color: "#64748b", marginTop: 4 }}>
+          Selecione um módulo para começar
+        </div>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: "#1e2d45", border: "1px solid #2a3f5f",
+          padding: "4px 12px", borderRadius: 6, fontSize: 11, color: "#94a3b8", marginTop: 12
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
+          {mesFormatado} · Sistema online
+        </div>
+      </div>
+
+      {/* Cards */}
+      <div style={{ padding: "24px 32px" }}>
+
+        {/* Lançamentos */}
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 14 }}>
+          Lançamentos
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
+          {lancamentos.map(c => (
+            <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />
+          ))}
+        </div>
+
+        {/* Análises */}
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 14 }}>
+          Análises
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {analises.map(c => (
+            <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />
+          ))}
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+function CardBtn({ card, onClick }: { card: typeof cardConfig[0]; onClick: () => void }) {
+  const [hovered, setHovered] = useState(false)
+  const Icon = card.icon
+
+  return (
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered ? "#111d35" : "#0d1526",
+        border: `1px solid ${hovered ? card.accent : "#1e2d45"}`,
+        borderRadius: 12, padding: "18px 20px", cursor: "pointer",
+        position: "relative", overflow: "hidden",
+        transition: "border-color .2s, background .2s",
+      }}
+    >
+      {/* Accent bar */}
+      <div style={{
+        position: "absolute", top: 0, left: 0,
+        width: 3, height: "100%", background: card.accent,
+        borderRadius: "12px 0 0 12px"
+      }} />
+
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 10,
+          background: card.iconBg,
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <Icon size={20} color={card.iconColor} />
+        </div>
+        <span style={{ color: card.accent, fontSize: 18, opacity: hovered ? 1 : 0, transition: "opacity .2s" }}>→</span>
+      </div>
+
+      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500, marginBottom: 3 }}>Módulo</div>
+      <div style={{ fontSize: 15, fontWeight: 600, color: "white" }}>{card.label}</div>
+      <div style={{ fontSize: 11, color: "#475569", marginTop: 6, lineHeight: 1.5 }}>{card.desc}</div>
+    </div>
+  )
+}
+
+function AppContent({ signOut, email }: { signOut: () => void; email: string }) {
   const [pagina, setPagina] = useState<Pagina>("home")
 
   const renderConteudo = () => {
     switch (pagina) {
-      case "lancamento":   return <Lancamento />
-      case "confirmar":    return <ConfirmarDebito />
-      case "resumo":       return <Resumo />
-      case "movimentacoes":return <Movimentacoes />
-      case "semanal":      return <ControleSemanal />
-      case "fatura":       return <FaturaCartao />
-      case "cartoes":      return <Cartoes />
-      case "dre":          return <DRE />
-      case "cadastros":    return <Cadastros />
-      default:             return null
+      case "lancamento":    return <Lancamento />
+      case "confirmar":     return <ConfirmarDebito />
+      case "resumo":        return <Resumo />
+      case "movimentacoes": return <Movimentacoes />
+      case "semanal":       return <ControleSemanal />
+      case "fatura":        return <FaturaCartao />
+      case "cartoes":       return <Cartoes />
+      case "dre":           return <DRE />
+      case "cadastros":     return <Cadastros />
+      default:              return null
     }
   }
 
   if (pagina === "home") {
-    return (
-      <div style={{
-        width: "100vw", height: "100vh",
-        backgroundImage: `url(${homeImage})`,
-        backgroundSize: "cover", backgroundPosition: "center",
-        display: "flex", flexDirection: "column",
-        justifyContent: "center", alignItems: "center",
-        position: "relative",
-      }}>
-        <button
-          onClick={signOut}
-          style={{
-            position: "absolute", top: 20, right: 20,
-            backgroundColor: "#ef4444", border: "none", color: "white",
-            padding: "8px 14px", borderRadius: 6, cursor: "pointer", fontWeight: "bold"
-          }}
-        >
-          Sair
-        </button>
-
-        <h1 style={{ fontSize: 48, color: "white", textAlign: "center", textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-          CONTROLE FINANCEIRO PESSOAL
-        </h1>
-
-        <div style={{ display: "flex", gap: 12, marginTop: 32, flexWrap: "wrap", justifyContent: "center" }}>
-          {abas.map((aba) => {
-            const Icon = aba.icon
-            return (
-              <button
-                key={aba.key}
-                onClick={() => setPagina(aba.key)}
-                style={{
-                  padding: "10px 18px", backgroundColor: "#111827",
-                  border: "1px solid #374151", color: "white",
-                  borderRadius: 8, cursor: "pointer",
-                  display: "flex", alignItems: "center", gap: 8,
-                  fontSize: 14, fontWeight: 500,
-                }}
-              >
-                <Icon size={18} />
-                {aba.label}
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )
+    return <Home onNavigate={setPagina} onSignOut={signOut} email={email} />
   }
 
   return (
     <>
+      {/* Navbar */}
       <div style={{
         position: "fixed", top: 0, left: 0, width: "100%",
-        backgroundColor: "#0f172a", padding: "12px 20px",
-        zIndex: 1000, borderBottom: "1px solid #1f2937",
-        display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center",
+        backgroundColor: "#0d1526", padding: "10px 20px",
+        zIndex: 1000, borderBottom: "1px solid #1e2d45",
+        display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
         boxSizing: "border-box",
       }}>
-        <button
-          onClick={() => setPagina("home")}
-          style={{
-            backgroundColor: "transparent", border: "1px solid #374151",
-            color: "#9ca3af", padding: "7px 12px", borderRadius: 6,
-            cursor: "pointer", fontSize: 13, marginRight: 8,
-          }}
-        >
-          ← Início
+        <button onClick={() => setPagina("home")} style={{
+          backgroundColor: "transparent", border: "1px solid #2a3f5f",
+          color: "#94a3b8", padding: "6px 12px", borderRadius: 6,
+          cursor: "pointer", fontSize: 12, marginRight: 6,
+          display: "flex", alignItems: "center", gap: 6,
+        }}>
+          <Layers size={14} /> Finance Hub
         </button>
 
         {abas.map((aba) => {
           const Icon = aba.icon
           const ativa = aba.key === pagina
           return (
-            <button
-              key={aba.key}
-              onClick={() => setPagina(aba.key)}
-              style={{
-                backgroundColor: ativa ? "#1e3a5f" : "#111827",
-                border: ativa ? "2px solid #3b82f6" : "1px solid #374151",
-                color: ativa ? "#60a5fa" : "#d1d5db",
-                padding: "7px 13px", borderRadius: 6,
-                fontWeight: ativa ? 700 : 400,
-                display: "flex", alignItems: "center", gap: 6,
-                cursor: "pointer", fontSize: 13,
-                transition: "all 0.15s",
-              }}
-            >
-              <Icon size={15} />
+            <button key={aba.key} onClick={() => setPagina(aba.key)} style={{
+              backgroundColor: ativa ? "#1e3a5f" : "transparent",
+              border: ativa ? "1px solid #2563eb" : "1px solid #1e2d45",
+              color: ativa ? "#60a5fa" : "#94a3b8",
+              padding: "6px 12px", borderRadius: 6,
+              fontWeight: ativa ? 600 : 400,
+              display: "flex", alignItems: "center", gap: 5,
+              cursor: "pointer", fontSize: 12,
+              transition: "all 0.15s",
+            }}>
+              <Icon size={13} />
               {aba.label}
             </button>
           )
         })}
 
-        <button
-          onClick={signOut}
-          style={{
-            marginLeft: "auto", backgroundColor: "#ef4444",
-            border: "none", color: "white", padding: "7px 14px",
-            borderRadius: 6, cursor: "pointer", fontWeight: "bold", fontSize: 13,
-          }}
-        >
+        <button onClick={signOut} style={{
+          marginLeft: "auto", backgroundColor: "#7f1d1d",
+          border: "none", color: "#fca5a5", padding: "6px 14px",
+          borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12,
+        }}>
           Sair
         </button>
       </div>
 
-      <div style={{ paddingTop: 72 }}>
+      <div style={{ paddingTop: 68, background: "#0b1120", minHeight: "100vh" }}>
         {renderConteudo()}
       </div>
     </>
@@ -177,7 +310,7 @@ export default function App() {
 
   if (loading) return (
     <div style={{
-      color: "white", backgroundColor: "#0f172a",
+      color: "white", backgroundColor: "#0b1120",
       width: "100vw", height: "100vh",
       display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18
     }}>
@@ -187,5 +320,5 @@ export default function App() {
 
   if (!user) return <Login />
 
-  return <AppContent signOut={signOut} />
+  return <AppContent signOut={signOut} email={user.email ?? ""} />
 }
