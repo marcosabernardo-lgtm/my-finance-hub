@@ -254,16 +254,16 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       {/* Navbar */}
       <div style={{
         position: "fixed", top: 0, left: 0, width: "100%",
-        backgroundColor: "#0d1526", padding: "10px 20px",
-        zIndex: 1000, borderBottom: "1px solid #1e2d45",
+        backgroundColor: "#ffffff", padding: "10px 20px",
+        zIndex: 1000, borderBottom: "1px solid #e5e7eb",
         display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center",
         boxSizing: "border-box",
       }}>
         <button onClick={() => setPagina("home")} style={{
-          backgroundColor: "transparent", border: "1px solid #2a3f5f",
-          color: "#94a3b8", padding: "6px 12px", borderRadius: 6,
+          backgroundColor: "#0d1526", border: "none",
+          color: "#ffffff", padding: "6px 12px", borderRadius: 6,
           cursor: "pointer", fontSize: 12, marginRight: 6,
-          display: "flex", alignItems: "center", gap: 6,
+          display: "flex", alignItems: "center", gap: 6, fontWeight: 600,
         }}>
           <Layers size={14} /> Finance Hub
         </button>
@@ -273,9 +273,9 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
           const ativa = aba.key === pagina
           return (
             <button key={aba.key} onClick={() => setPagina(aba.key)} style={{
-              backgroundColor: ativa ? "#1e3a5f" : "transparent",
-              border: ativa ? "1px solid #2563eb" : "1px solid #1e2d45",
-              color: ativa ? "#60a5fa" : "#94a3b8",
+              backgroundColor: ativa ? "#eff6ff" : "transparent",
+              border: ativa ? "1px solid #2563eb" : "1px solid #e5e7eb",
+              color: ativa ? "#1d4ed8" : "#374151",
               padding: "6px 12px", borderRadius: 6,
               fontWeight: ativa ? 600 : 400,
               display: "flex", alignItems: "center", gap: 5,
@@ -289,8 +289,8 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
         })}
 
         <button onClick={signOut} style={{
-          marginLeft: "auto", backgroundColor: "#7f1d1d",
-          border: "none", color: "#fca5a5", padding: "6px 14px",
+          marginLeft: "auto", backgroundColor: "#fee2e2",
+          border: "none", color: "#991b1b", padding: "6px 14px",
           borderRadius: 6, cursor: "pointer", fontWeight: 600, fontSize: 12,
         }}>
           Sair
