@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 
 type Categoria = { id: number; nome: string; classificacao: string; limite_gastos: number; exemplos: string }
 type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number; limite_total: number; ativo: boolean }
-type Conta = { id: number; nome: string; saldo_inicial: number; ativo: boolean }
+type Conta = { id: number; nome: string; saldo_inicial: number; data_inicial: string | null; ativo: boolean }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
@@ -49,6 +49,7 @@ export default function Cadastros() {
 
   const [nomeConta, setNomeConta] = useState('')
   const [saldoInicial, setSaldoInicial] = useState('')
+  const [dataInicial, setDataInicial] = useState('')
   const [editandoConta, setEditandoConta] = useState<number | null>(null)
 
   const [mensagem, setMensagem] = useState('')
@@ -169,31 +170,37 @@ export default function Cadastros() {
     setLoading(true)
     if (editandoConta) {
       const { error } = await supabase.from('contas').update({
-        nome: nomeConta, saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
+        nome: nomeConta,
+        saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
+        data_inicial: dataInicial || null,
       }).eq('id', editandoConta)
       if (error) setMensagem('Erro: ' + error.message)
       else { setMensagem('Conta atualizada!'); setEditandoConta(null) }
     } else {
       const { error } = await supabase.from('contas').insert({
-        nome: nomeConta, saldo_inicial: saldoInicial ? Number(saldoInicial) : 0, ativo: true,
+        nome: nomeConta,
+        saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
+        data_inicial: dataInicial || null,
+        ativo: true,
       })
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Conta salva!')
     }
-    setNomeConta(''); setSaldoInicial('')
+    setNomeConta(''); setSaldoInicial(''); setDataInicial('')
     setLoading(false); carregarTudo()
   }
 
   const editarConta = (c: Conta) => {
     setEditandoConta(c.id); setNomeConta(c.nome)
-    setSaldoInicial(c.saldo_inicial ? String(c.saldo_inicial) : ''); setMensagem('')
+    setSaldoInicial(c.saldo_inicial ? String(c.saldo_inicial) : '')
+    setDataInicial(c.data_inicial ?? ''); setMensagem('')
   }
 
   const cancelarEdicao = () => {
     setEditandoCategoriaDespesa(null); setNomeCategoriaDespesa(''); setLimiteGastosDespesa(''); setExemplosDespesa('')
     setEditandoCategoriaReceita(null); setNomeCategoriaReceita(''); setLimiteGastosReceita('')
     setEditandoCartao(null); setNomeCartao(''); setDataFechamento(''); setDataVencimento(''); setLimiteTotal('')
-    setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setMensagem('')
+    setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setDataInicial(''); setMensagem('')
   }
 
   const abas = [
@@ -372,6 +379,12 @@ export default function Cadastros() {
               <label style={labelStyle}>Saldo Inicial (R$)</label>
               <input style={inputStyle} type="number" value={saldoInicial}
                 onChange={e => setSaldoInicial(e.target.value)} placeholder="Ex: 1500" />
+              <label style={labelStyle}>Data Inicial</label>
+              <input style={inputStyle} type="date" value={dataInicial}
+                onChange={e => setDataInicial(e.target.value)} />
+              <p style={{ color: '#6b7280', fontSize: 11, marginBottom: 10, marginTop: -6 }}>
+                Data a partir da qual os cálculos de saldo serão feitos
+              </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnStyle} onClick={salvarConta} disabled={loading}>
                   {loading ? 'Salvando...' : editandoConta ? 'Atualizar' : '+ Salvar'}
@@ -409,7 +422,11 @@ export default function Cadastros() {
             )}
             {aba === 'contas' && (contas.length === 0
               ? <p style={{ color: '#9ca3af' }}>Nenhuma conta cadastrada.</p>
-              : contas.map(c => itemRow(c.nome, c.saldo_inicial > 0 ? `Saldo inicial: R$ ${c.saldo_inicial}` : '', c.id, 'contas', () => editarConta(c)))
+              : contas.map(c => itemRow(
+                  c.nome,
+                  [c.saldo_inicial > 0 ? `Saldo: R$ ${c.saldo_inicial}` : '', c.data_inicial ? `Início: ${new Date(c.data_inicial + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''].filter(Boolean).join(' · '),
+                  c.id, 'contas', () => editarConta(c)
+                ))
             )}
           </div>
         </div>
