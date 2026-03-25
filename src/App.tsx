@@ -44,6 +44,11 @@ const cardConfig: {
   group: "lancamentos" | "analises"
 }[] = [
   {
+    key: "cadastros", label: "Cadastros", group: "lancamentos",
+    desc: "Categorias, cartões e contas",
+    icon: Database, accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8",
+  },
+  {
     key: "lancamento", label: "Lançar", group: "lancamentos",
     desc: "Registre despesas, receitas e transferências",
     icon: PlusCircle, accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa",
@@ -83,11 +88,7 @@ const cardConfig: {
     desc: "Histórico completo com filtros avançados",
     icon: List, accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf",
   },
-  {
-    key: "cadastros", label: "Cadastros", group: "analises",
-    desc: "Categorias, cartões e contas",
-    icon: Database, accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8",
-  },
+
 ]
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })

@@ -19,49 +19,62 @@ export default function Lancamento() {
   useEffect(() => {
     supabase.from('household_members').select('household_id').single()
       .then(({ data }) => { if (data) setHouseholdId(data.household_id) })
-
     supabase.from('categorias').select('id, nome, classificacao').order('nome')
       .then(({ data }) => data && setCategorias(data))
-
     supabase.from('cartoes').select('id, nome, data_fechamento, data_vencimento').order('nome')
       .then(({ data }) => data && setCartoes(data))
-
     supabase.from('contas').select('id, nome').order('nome')
       .then(({ data }) => data && setContas(data))
   }, [])
 
   const abas = [
-    { key: 'despesa', label: '💸 Despesa' },
-    { key: 'receita', label: '💰 Receita' },
-    { key: 'previsto', label: '🔮 Previsto' },
-    { key: 'fatura', label: '💳 Pag. Fatura' },
+    { key: 'despesa', label: 'Despesa' },
+    { key: 'receita', label: 'Receita' },
+    { key: 'previsto', label: 'Previsto' },
+    { key: 'fatura', label: 'Pag. Fatura' },
   ] as const
 
+  const abaColors: Record<string, string> = {
+    despesa: '#ef4444',
+    receita: '#22c55e',
+    previsto: '#8b5cf6',
+    fatura: '#f59e0b',
+  }
+
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <h2 style={{ color: 'white', marginBottom: 24 }}>💸 Lançamentos</h2>
+    <div style={{ maxWidth: 600, margin: '0 auto', padding: '24px 24px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Lançamentos</h1>
+        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferências</p>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        {abas.map(a => (
-          <button key={a.key} onClick={() => setAba(a.key)} style={{
-            padding: '8px 16px',
-            backgroundColor: aba === a.key ? '#3b82f6' : '#1e293b',
-            color: 'white', border: '1px solid #334155',
-            borderRadius: 6, cursor: 'pointer', fontWeight: aba === a.key ? 'bold' : 'normal'
-          }}>
-            {a.label}
-          </button>
-        ))}
+        {abas.map(a => {
+          const ativa = aba === a.key
+          return (
+            <button key={a.key} onClick={() => setAba(a.key)} style={{
+              padding: '8px 18px',
+              backgroundColor: ativa ? abaColors[a.key] : '#f9fafb',
+              color: ativa ? 'white' : '#374151',
+              border: `1px solid ${ativa ? abaColors[a.key] : '#e5e7eb'}`,
+              borderRadius: 6, cursor: 'pointer',
+              fontWeight: ativa ? 600 : 400,
+              fontSize: 13, transition: 'all 0.15s'
+            }}>
+              {a.label}
+            </button>
+          )
+        })}
       </div>
 
       {!householdId ? (
         <p style={{ color: '#ef4444' }}>Carregando dados...</p>
       ) : (
         <>
-          {aba === 'despesa' && <LancamentoDespesa householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
-          {aba === 'receita' && <LancamentoReceita householdId={householdId} categorias={categorias} contas={contas} />}
+          {aba === 'despesa'  && <LancamentoDespesa  householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
+          {aba === 'receita'  && <LancamentoReceita  householdId={householdId} categorias={categorias} contas={contas} />}
           {aba === 'previsto' && <LancamentoPrevisto householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
-          {aba === 'fatura' && <LancamentoFatura householdId={householdId} cartoes={cartoes} contas={contas} />}
+          {aba === 'fatura'   && <LancamentoFatura   householdId={householdId} cartoes={cartoes} contas={contas} />}
         </>
       )}
     </div>

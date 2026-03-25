@@ -7,46 +7,46 @@ type Conta = { id: number; nome: string; saldo_inicial: number; ativo: boolean }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#0f172a', border: '1px solid #334155',
-  color: 'white', boxSizing: 'border-box' as const, marginBottom: 10
+  background: '#fff', border: '1px solid #d1d5db',
+  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10,
+  fontSize: 13,
 }
-const labelStyle: React.CSSProperties = { color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 4 }
+const labelStyle: React.CSSProperties = {
+  color: '#374151', fontSize: 12, fontWeight: 600,
+  display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
+}
 const btnStyle: React.CSSProperties = {
-  padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white',
-  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', width: '100%'
+  padding: '9px 20px', backgroundColor: '#2563eb', color: 'white',
+  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+  width: '100%', fontSize: 13,
 }
 
 type Aba = 'cat-despesa' | 'cat-receita' | 'cartoes' | 'contas'
 
 export default function Cadastros() {
   const [aba, setAba] = useState<Aba>('cat-despesa')
-
   const [categoriasDespesa, setCategoriasDespesa] = useState<Categoria[]>([])
   const [categoriasReceita, setCategoriasReceita] = useState<Categoria[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [contas, setContas] = useState<Conta[]>([])
 
-  // Campos categoria despesa
   const [nomeCategoriaDespesa, setNomeCategoriaDespesa] = useState('')
   const [classificacaoDespesa, setClassificacaoDespesa] = useState('Despesas Essenciais')
   const [limiteGastosDespesa, setLimiteGastosDespesa] = useState('')
   const [exemplosDespesa, setExemplosDespesa] = useState('')
   const [editandoCategoriaDespesa, setEditandoCategoriaDespesa] = useState<number | null>(null)
 
-  // Campos categoria receita
   const [nomeCategoriaReceita, setNomeCategoriaReceita] = useState('')
   const [classificacaoReceita, setClassificacaoReceita] = useState('Renda Ativa')
   const [limiteGastosReceita, setLimiteGastosReceita] = useState('')
   const [editandoCategoriaReceita, setEditandoCategoriaReceita] = useState<number | null>(null)
 
-  // Campos cartão
   const [nomeCartao, setNomeCartao] = useState('')
   const [dataFechamento, setDataFechamento] = useState('')
   const [dataVencimento, setDataVencimento] = useState('')
   const [limiteTotal, setLimiteTotal] = useState('')
   const [editandoCartao, setEditandoCartao] = useState<number | null>(null)
 
-  // Campos conta
   const [nomeConta, setNomeConta] = useState('')
   const [saldoInicial, setSaldoInicial] = useState('')
   const [editandoConta, setEditandoConta] = useState<number | null>(null)
@@ -57,17 +57,14 @@ export default function Cadastros() {
   useEffect(() => { carregarTudo() }, [])
 
   const carregarTudo = () => {
-    supabase.from('categorias').select('*').order('nome')
-      .then(({ data }) => {
-        if (data) {
-          setCategoriasDespesa(data.filter(c => c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'))
-          setCategoriasReceita(data.filter(c => c.classificacao === 'Renda Ativa' || c.classificacao === 'Renda Passiva'))
-        }
-      })
-    supabase.from('cartoes').select('*').order('nome')
-      .then(({ data }) => data && setCartoes(data))
-    supabase.from('contas').select('*').order('nome')
-      .then(({ data }) => data && setContas(data))
+    supabase.from('categorias').select('*').order('nome').then(({ data }) => {
+      if (data) {
+        setCategoriasDespesa(data.filter(c => c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'))
+        setCategoriasReceita(data.filter(c => c.classificacao === 'Renda Ativa' || c.classificacao === 'Renda Passiva'))
+      }
+    })
+    supabase.from('cartoes').select('*').order('nome').then(({ data }) => data && setCartoes(data))
+    supabase.from('contas').select('*').order('nome').then(({ data }) => data && setContas(data))
   }
 
   const excluir = async (tabela: string, id: number) => {
@@ -76,12 +73,9 @@ export default function Cadastros() {
     carregarTudo()
   }
 
-  // ==================== SALVAR / EDITAR ====================
-
   const salvarCategoriaDespesa = async () => {
     if (!nomeCategoriaDespesa) return setMensagem('Informe o nome da categoria')
     setLoading(true)
-
     if (editandoCategoriaDespesa) {
       const { error } = await supabase.from('categorias').update({
         nome: nomeCategoriaDespesa, classificacao: classificacaoDespesa,
@@ -99,25 +93,20 @@ export default function Cadastros() {
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Categoria salva!')
     }
-
     setNomeCategoriaDespesa(''); setLimiteGastosDespesa(''); setExemplosDespesa('')
-    setLoading(false)
-    carregarTudo()
+    setLoading(false); carregarTudo()
   }
 
   const editarCategoriaDespesa = (c: Categoria) => {
-    setEditandoCategoriaDespesa(c.id)
-    setNomeCategoriaDespesa(c.nome)
+    setEditandoCategoriaDespesa(c.id); setNomeCategoriaDespesa(c.nome)
     setClassificacaoDespesa(c.classificacao)
     setLimiteGastosDespesa(c.limite_gastos ? String(c.limite_gastos) : '')
-    setExemplosDespesa(c.exemplos ?? '')
-    setMensagem('')
+    setExemplosDespesa(c.exemplos ?? ''); setMensagem('')
   }
 
   const salvarCategoriaReceita = async () => {
     if (!nomeCategoriaReceita) return setMensagem('Informe o nome da categoria')
     setLoading(true)
-
     if (editandoCategoriaReceita) {
       const { error } = await supabase.from('categorias').update({
         nome: nomeCategoriaReceita, classificacao: classificacaoReceita,
@@ -128,31 +117,25 @@ export default function Cadastros() {
     } else {
       const { error } = await supabase.from('categorias').insert({
         nome: nomeCategoriaReceita, classificacao: classificacaoReceita,
-        limite_gastos: limiteGastosReceita ? Number(limiteGastosReceita) : 0,
-        exemplos: null,
+        limite_gastos: limiteGastosReceita ? Number(limiteGastosReceita) : 0, exemplos: null,
       })
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Categoria salva!')
     }
-
     setNomeCategoriaReceita(''); setLimiteGastosReceita('')
-    setLoading(false)
-    carregarTudo()
+    setLoading(false); carregarTudo()
   }
 
   const editarCategoriaReceita = (c: Categoria) => {
-    setEditandoCategoriaReceita(c.id)
-    setNomeCategoriaReceita(c.nome)
+    setEditandoCategoriaReceita(c.id); setNomeCategoriaReceita(c.nome)
     setClassificacaoReceita(c.classificacao)
-    setLimiteGastosReceita(c.limite_gastos ? String(c.limite_gastos) : '')
-    setMensagem('')
+    setLimiteGastosReceita(c.limite_gastos ? String(c.limite_gastos) : ''); setMensagem('')
   }
 
   const salvarCartao = async () => {
     if (!nomeCartao || !dataFechamento || !dataVencimento)
       return setMensagem('Preencha nome, fechamento e vencimento')
     setLoading(true)
-
     if (editandoCartao) {
       const { error } = await supabase.from('cartoes').update({
         nome: nomeCartao, data_fechamento: Number(dataFechamento),
@@ -170,25 +153,20 @@ export default function Cadastros() {
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Cartão salvo!')
     }
-
     setNomeCartao(''); setDataFechamento(''); setDataVencimento(''); setLimiteTotal('')
-    setLoading(false)
-    carregarTudo()
+    setLoading(false); carregarTudo()
   }
 
   const editarCartao = (c: Cartao) => {
-    setEditandoCartao(c.id)
-    setNomeCartao(c.nome)
+    setEditandoCartao(c.id); setNomeCartao(c.nome)
     setDataFechamento(String(c.data_fechamento))
     setDataVencimento(String(c.data_vencimento))
-    setLimiteTotal(c.limite_total ? String(c.limite_total) : '')
-    setMensagem('')
+    setLimiteTotal(c.limite_total ? String(c.limite_total) : ''); setMensagem('')
   }
 
   const salvarConta = async () => {
     if (!nomeConta) return setMensagem('Informe o nome da conta')
     setLoading(true)
-
     if (editandoConta) {
       const { error } = await supabase.from('contas').update({
         nome: nomeConta, saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
@@ -202,118 +180,130 @@ export default function Cadastros() {
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Conta salva!')
     }
-
     setNomeConta(''); setSaldoInicial('')
-    setLoading(false)
-    carregarTudo()
+    setLoading(false); carregarTudo()
   }
 
   const editarConta = (c: Conta) => {
-    setEditandoConta(c.id)
-    setNomeConta(c.nome)
-    setSaldoInicial(c.saldo_inicial ? String(c.saldo_inicial) : '')
-    setMensagem('')
+    setEditandoConta(c.id); setNomeConta(c.nome)
+    setSaldoInicial(c.saldo_inicial ? String(c.saldo_inicial) : ''); setMensagem('')
   }
 
   const cancelarEdicao = () => {
     setEditandoCategoriaDespesa(null); setNomeCategoriaDespesa(''); setLimiteGastosDespesa(''); setExemplosDespesa('')
     setEditandoCategoriaReceita(null); setNomeCategoriaReceita(''); setLimiteGastosReceita('')
     setEditandoCartao(null); setNomeCartao(''); setDataFechamento(''); setDataVencimento(''); setLimiteTotal('')
-    setEditandoConta(null); setNomeConta(''); setSaldoInicial('')
-    setMensagem('')
+    setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setMensagem('')
   }
 
   const abas = [
-    { key: 'cat-despesa', label: '📂 Categorias Despesas' },
-    { key: 'cat-receita', label: '💰 Categorias Receitas' },
-    { key: 'cartoes', label: '💳 Cartões' },
-    { key: 'contas', label: '🏦 Contas' },
+    { key: 'cat-despesa', label: 'Categorias Despesas' },
+    { key: 'cat-receita', label: 'Categorias Receitas' },
+    { key: 'cartoes',     label: 'Cartões' },
+    { key: 'contas',      label: 'Contas' },
   ] as const
+
+  const isEditando = editandoCategoriaDespesa || editandoCategoriaReceita || editandoCartao || editandoConta
 
   const itemRow = (nome: string, detalhe: string, id: number, tabela: string, onEdit: () => void) => (
     <div key={id} style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      backgroundColor: '#0f172a', padding: '8px 12px', borderRadius: 6
+      background: '#f9fafb', padding: '8px 12px', borderRadius: 6,
+      border: '1px solid #f3f4f6',
     }}>
       <div style={{ flex: 1 }}>
-        <span style={{ color: 'white', fontWeight: 'bold' }}>{nome}</span>
-        {detalhe && <span style={{ color: '#64748b', fontSize: 12, marginLeft: 8 }}>{detalhe}</span>}
+        <span style={{ color: '#111827', fontWeight: 600, fontSize: 13 }}>{nome}</span>
+        {detalhe && <span style={{ color: '#9ca3af', fontSize: 11, marginLeft: 8 }}>{detalhe}</span>}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={onEdit} style={{
-          backgroundColor: '#f59e0b', border: 'none', color: 'white',
-          padding: '4px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 12
-        }}>✏️</button>
+          backgroundColor: '#fef3c7', border: '1px solid #fde68a', color: '#92400e',
+          padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600
+        }}>Editar</button>
         <button onClick={() => excluir(tabela, id)} style={{
-          backgroundColor: '#ef4444', border: 'none', color: 'white',
-          padding: '4px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 12
-        }}>✕</button>
+          backgroundColor: '#fee2e2', border: '1px solid #fecaca', color: '#991b1b',
+          padding: '4px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 12, fontWeight: 600
+        }}>Excluir</button>
       </div>
     </div>
   )
 
-  const isEditando = editandoCategoriaDespesa || editandoCategoriaReceita || editandoCartao || editandoConta
+  const titulosForm: Record<Aba, string> = {
+    'cat-despesa': isEditando ? 'Editando Categoria' : 'Nova Categoria de Despesa',
+    'cat-receita': isEditando ? 'Editando Categoria' : 'Nova Categoria de Receita',
+    'cartoes':     isEditando ? 'Editando Cartão'    : 'Novo Cartão',
+    'contas':      isEditando ? 'Editando Conta'     : 'Nova Conta',
+  }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <h2 style={{ color: 'white', marginBottom: 24 }}>⚙️ Cadastros</h2>
+    <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px' }}>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Cadastros</h1>
+        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Gerencie categorias, cartões e contas</p>
+      </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
-        {abas.map(a => (
-          <button key={a.key} onClick={() => { setAba(a.key); cancelarEdicao() }} style={{
-            padding: '8px 16px',
-            backgroundColor: aba === a.key ? '#3b82f6' : '#1e293b',
-            color: 'white', border: '1px solid #334155',
-            borderRadius: 6, cursor: 'pointer', fontWeight: aba === a.key ? 'bold' : 'normal'
-          }}>
-            {a.label}
-          </button>
-        ))}
+        {abas.map(a => {
+          const ativa = aba === a.key
+          return (
+            <button key={a.key} onClick={() => { setAba(a.key); cancelarEdicao() }} style={{
+              padding: '8px 16px',
+              backgroundColor: ativa ? '#2563eb' : '#f9fafb',
+              color: ativa ? 'white' : '#374151',
+              border: `1px solid ${ativa ? '#2563eb' : '#e5e7eb'}`,
+              borderRadius: 6, cursor: 'pointer',
+              fontWeight: ativa ? 600 : 400, fontSize: 13,
+            }}>
+              {a.label}
+            </button>
+          )
+        })}
       </div>
 
       {mensagem && (
-        <p style={{
-          color: mensagem.startsWith('Erro') ? '#ef4444' : '#22c55e',
-          marginBottom: 16, padding: 10, backgroundColor: '#1e293b', borderRadius: 6
-        }}>{mensagem}</p>
+        <div style={{
+          color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
+          background: mensagem.startsWith('Erro') ? '#fee2e2' : '#dcfce7',
+          border: `1px solid ${mensagem.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          marginBottom: 16, padding: '10px 14px', borderRadius: 6, fontSize: 13
+        }}>{mensagem}</div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
 
         {/* FORMULÁRIO */}
-        <div style={{ backgroundColor: '#1e293b', padding: 24, borderRadius: 12, border: `1px solid ${isEditando ? '#f59e0b' : '#334155'}` }}>
+        <div style={{
+          background: '#fff', padding: 24, borderRadius: 12,
+          border: `1px solid ${isEditando ? '#fde68a' : '#e5e7eb'}`,
+          boxShadow: isEditando ? '0 0 0 2px #fef3c7' : 'none'
+        }}>
+          <h3 style={{ color: isEditando ? '#92400e' : '#111827', marginBottom: 20, fontSize: 15, fontWeight: 600 }}>
+            {titulosForm[aba]}
+          </h3>
 
           {aba === 'cat-despesa' && (
             <>
-              <h3 style={{ color: isEditando ? '#f59e0b' : 'white', marginBottom: 16 }}>
-                {editandoCategoriaDespesa ? '✏️ Editando Categoria' : '📂 Nova Categoria de Despesa'}
-              </h3>
-
               <label style={labelStyle}>Nome *</label>
               <input style={inputStyle} value={nomeCategoriaDespesa}
                 onChange={e => setNomeCategoriaDespesa(e.target.value)} placeholder="Ex: Alimentação" />
-
               <label style={labelStyle}>Classificação</label>
               <select style={inputStyle} value={classificacaoDespesa} onChange={e => setClassificacaoDespesa(e.target.value)}>
                 <option>Despesas Essenciais</option>
                 <option>Despesas Não Essenciais</option>
                 <option>Metas / Investimentos</option>
               </select>
-
               <label style={labelStyle}>Limite de Gastos (R$)</label>
               <input style={inputStyle} type="number" value={limiteGastosDespesa}
                 onChange={e => setLimiteGastosDespesa(e.target.value)} placeholder="Ex: 800" />
-
               <label style={labelStyle}>Exemplos</label>
               <input style={inputStyle} value={exemplosDespesa}
                 onChange={e => setExemplosDespesa(e.target.value)} placeholder="Ex: Mercado, Restaurante" />
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnStyle} onClick={salvarCategoriaDespesa} disabled={loading}>
-                  {loading ? 'Salvando...' : editandoCategoriaDespesa ? '✏️ Atualizar' : '+ Salvar'}
+                  {loading ? 'Salvando...' : editandoCategoriaDespesa ? 'Atualizar' : '+ Salvar'}
                 </button>
                 {editandoCategoriaDespesa && (
-                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#64748b', width: 'auto', padding: '10px 16px' }}>
+                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#6b7280', width: 'auto', padding: '9px 16px' }}>
                     Cancelar
                   </button>
                 )}
@@ -323,30 +313,23 @@ export default function Cadastros() {
 
           {aba === 'cat-receita' && (
             <>
-              <h3 style={{ color: isEditando ? '#f59e0b' : 'white', marginBottom: 16 }}>
-                {editandoCategoriaReceita ? '✏️ Editando Categoria' : '💰 Nova Categoria de Receita'}
-              </h3>
-
               <label style={labelStyle}>Nome *</label>
               <input style={inputStyle} value={nomeCategoriaReceita}
                 onChange={e => setNomeCategoriaReceita(e.target.value)} placeholder="Ex: Salário, Freelance" />
-
               <label style={labelStyle}>Classificação</label>
               <select style={inputStyle} value={classificacaoReceita} onChange={e => setClassificacaoReceita(e.target.value)}>
                 <option>Renda Ativa</option>
                 <option>Renda Passiva</option>
               </select>
-
               <label style={labelStyle}>Valor Previsto (R$)</label>
               <input style={inputStyle} type="number" value={limiteGastosReceita}
                 onChange={e => setLimiteGastosReceita(e.target.value)} placeholder="Ex: 8000" />
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnStyle} onClick={salvarCategoriaReceita} disabled={loading}>
-                  {loading ? 'Salvando...' : editandoCategoriaReceita ? '✏️ Atualizar' : '+ Salvar'}
+                  {loading ? 'Salvando...' : editandoCategoriaReceita ? 'Atualizar' : '+ Salvar'}
                 </button>
                 {editandoCategoriaReceita && (
-                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#64748b', width: 'auto', padding: '10px 16px' }}>
+                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#6b7280', width: 'auto', padding: '9px 16px' }}>
                     Cancelar
                   </button>
                 )}
@@ -356,32 +339,24 @@ export default function Cadastros() {
 
           {aba === 'cartoes' && (
             <>
-              <h3 style={{ color: isEditando ? '#f59e0b' : 'white', marginBottom: 16 }}>
-                {editandoCartao ? '✏️ Editando Cartão' : '💳 Novo Cartão'}
-              </h3>
-
               <label style={labelStyle}>Nome do Cartão *</label>
               <input style={inputStyle} value={nomeCartao}
                 onChange={e => setNomeCartao(e.target.value)} placeholder="Ex: Nubank" />
-
               <label style={labelStyle}>Dia de Fechamento *</label>
               <input style={inputStyle} type="number" min="1" max="31" value={dataFechamento}
                 onChange={e => setDataFechamento(e.target.value)} placeholder="Ex: 23" />
-
               <label style={labelStyle}>Dia de Vencimento *</label>
               <input style={inputStyle} type="number" min="1" max="31" value={dataVencimento}
                 onChange={e => setDataVencimento(e.target.value)} placeholder="Ex: 2" />
-
               <label style={labelStyle}>Limite Total (R$)</label>
               <input style={inputStyle} type="number" value={limiteTotal}
                 onChange={e => setLimiteTotal(e.target.value)} placeholder="Ex: 5000" />
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnStyle} onClick={salvarCartao} disabled={loading}>
-                  {loading ? 'Salvando...' : editandoCartao ? '✏️ Atualizar' : '+ Salvar'}
+                  {loading ? 'Salvando...' : editandoCartao ? 'Atualizar' : '+ Salvar'}
                 </button>
                 {editandoCartao && (
-                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#64748b', width: 'auto', padding: '10px 16px' }}>
+                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#6b7280', width: 'auto', padding: '9px 16px' }}>
                     Cancelar
                   </button>
                 )}
@@ -391,24 +366,18 @@ export default function Cadastros() {
 
           {aba === 'contas' && (
             <>
-              <h3 style={{ color: isEditando ? '#f59e0b' : 'white', marginBottom: 16 }}>
-                {editandoConta ? '✏️ Editando Conta' : '🏦 Nova Conta'}
-              </h3>
-
               <label style={labelStyle}>Nome da Conta *</label>
               <input style={inputStyle} value={nomeConta}
                 onChange={e => setNomeConta(e.target.value)} placeholder="Ex: Nubank" />
-
               <label style={labelStyle}>Saldo Inicial (R$)</label>
               <input style={inputStyle} type="number" value={saldoInicial}
                 onChange={e => setSaldoInicial(e.target.value)} placeholder="Ex: 1500" />
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <button style={btnStyle} onClick={salvarConta} disabled={loading}>
-                  {loading ? 'Salvando...' : editandoConta ? '✏️ Atualizar' : '+ Salvar'}
+                  {loading ? 'Salvando...' : editandoConta ? 'Atualizar' : '+ Salvar'}
                 </button>
                 {editandoConta && (
-                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#64748b', width: 'auto', padding: '10px 16px' }}>
+                  <button onClick={cancelarEdicao} style={{ ...btnStyle, backgroundColor: '#6b7280', width: 'auto', padding: '9px 16px' }}>
                     Cancelar
                   </button>
                 )}
@@ -418,50 +387,29 @@ export default function Cadastros() {
         </div>
 
         {/* LISTA */}
-        <div style={{ backgroundColor: '#1e293b', padding: 24, borderRadius: 12, border: '1px solid #334155' }}>
-          <h3 style={{ color: 'white', marginBottom: 16 }}>
+        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+          <h3 style={{ color: '#111827', marginBottom: 16, fontSize: 15, fontWeight: 600 }}>
             {aba === 'cat-despesa' && `Categorias Despesas (${categoriasDespesa.length})`}
             {aba === 'cat-receita' && `Categorias Receitas (${categoriasReceita.length})`}
-            {aba === 'cartoes' && `Cartões (${cartoes.length})`}
-            {aba === 'contas' && `Contas (${contas.length})`}
+            {aba === 'cartoes'     && `Cartões (${cartoes.length})`}
+            {aba === 'contas'      && `Contas (${contas.length})`}
           </h3>
-
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 450, overflowY: 'auto' }}>
-            {aba === 'cat-despesa' && (
-              categoriasDespesa.length === 0
-                ? <p style={{ color: '#64748b' }}>Nenhuma categoria cadastrada.</p>
-                : categoriasDespesa.map(c => itemRow(
-                    c.nome,
-                    `${c.classificacao}${c.limite_gastos > 0 ? ` · Limite: R$ ${c.limite_gastos}` : ''}`,
-                    c.id, 'categorias', () => editarCategoriaDespesa(c)
-                  ))
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 450, overflowY: 'auto' }}>
+            {aba === 'cat-despesa' && (categoriasDespesa.length === 0
+              ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
+              : categoriasDespesa.map(c => itemRow(c.nome, `${c.classificacao}${c.limite_gastos > 0 ? ` · Limite: R$ ${c.limite_gastos}` : ''}`, c.id, 'categorias', () => editarCategoriaDespesa(c)))
             )}
-            {aba === 'cat-receita' && (
-              categoriasReceita.length === 0
-                ? <p style={{ color: '#64748b' }}>Nenhuma categoria cadastrada.</p>
-                : categoriasReceita.map(c => itemRow(
-                    c.nome,
-                    `${c.classificacao}${c.limite_gastos > 0 ? ` · Previsto: R$ ${c.limite_gastos}` : ''}`,
-                    c.id, 'categorias', () => editarCategoriaReceita(c)
-                  ))
+            {aba === 'cat-receita' && (categoriasReceita.length === 0
+              ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
+              : categoriasReceita.map(c => itemRow(c.nome, `${c.classificacao}${c.limite_gastos > 0 ? ` · Previsto: R$ ${c.limite_gastos}` : ''}`, c.id, 'categorias', () => editarCategoriaReceita(c)))
             )}
-            {aba === 'cartoes' && (
-              cartoes.length === 0
-                ? <p style={{ color: '#64748b' }}>Nenhum cartão cadastrado.</p>
-                : cartoes.map(c => itemRow(
-                    c.nome,
-                    `Fecha dia ${c.data_fechamento} · Vence dia ${c.data_vencimento}${c.limite_total ? ` · Limite: R$ ${c.limite_total}` : ''}`,
-                    c.id, 'cartoes', () => editarCartao(c)
-                  ))
+            {aba === 'cartoes' && (cartoes.length === 0
+              ? <p style={{ color: '#9ca3af' }}>Nenhum cartão cadastrado.</p>
+              : cartoes.map(c => itemRow(c.nome, `Fecha dia ${c.data_fechamento} · Vence dia ${c.data_vencimento}${c.limite_total ? ` · Limite: R$ ${c.limite_total}` : ''}`, c.id, 'cartoes', () => editarCartao(c)))
             )}
-            {aba === 'contas' && (
-              contas.length === 0
-                ? <p style={{ color: '#64748b' }}>Nenhuma conta cadastrada.</p>
-                : contas.map(c => itemRow(
-                    c.nome,
-                    c.saldo_inicial > 0 ? `Saldo inicial: R$ ${c.saldo_inicial}` : '',
-                    c.id, 'contas', () => editarConta(c)
-                  ))
+            {aba === 'contas' && (contas.length === 0
+              ? <p style={{ color: '#9ca3af' }}>Nenhuma conta cadastrada.</p>
+              : contas.map(c => itemRow(c.nome, c.saldo_inicial > 0 ? `Saldo inicial: R$ ${c.saldo_inicial}` : '', c.id, 'contas', () => editarConta(c)))
             )}
           </div>
         </div>
