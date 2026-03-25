@@ -10,16 +10,17 @@ import Cartoes from "./components/Cartoes";
 import Cadastros from "./components/Cadastros";
 import Lancamento from "./components/Lancamento";
 import ConfirmarDebito from "./components/ConfirmarDebito";
+import ExtratoConta from "./components/ExtratoConta";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle, Layers
+  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen
 } from "lucide-react";
 
 type Pagina =
   | "home" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato"
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Cadastros",         key: "cadastros",     icon: Database    },
@@ -29,6 +30,7 @@ const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Movimentações",     key: "movimentacoes", icon: List        },
   { label: "Semanal",           key: "semanal",       icon: Calendar    },
   { label: "Fatura Cartão",     key: "fatura",        icon: CreditCard  },
+  { label: "Extrato Conta",     key: "extrato",       icon: BookOpen    },
   { label: "Cartões",           key: "cartoes",       icon: Wallet      },
   { label: "DRE",               key: "dre",           icon: FileText    },
 ]
@@ -82,6 +84,11 @@ const cardConfig: {
     key: "cartoes", label: "Cartões", group: "analises",
     desc: "Visão anual e comprometimento de limite",
     icon: Wallet, accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa",
+  },
+  {
+    key: "extrato", label: "Extrato Conta", group: "analises",
+    desc: "Entradas, saídas e saldo por conta bancária",
+    icon: BookOpen, accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee",
   },
   {
     key: "movimentacoes", label: "Movimentações", group: "analises",
@@ -250,6 +257,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "movimentacoes": return <Movimentacoes />
       case "semanal":       return <ControleSemanal />
       case "fatura":        return <FaturaCartao />
+      case "extrato":       return <ExtratoConta />
       case "cartoes":       return <Cartoes />
       case "dre":           return <DRE />
       case "cadastros":     return <Cadastros />
