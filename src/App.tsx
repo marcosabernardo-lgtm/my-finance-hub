@@ -41,10 +41,10 @@ const cardConfig: {
   accent: string
   iconBg: string
   iconColor: string
-  group: "lancamentos" | "analises"
+  group: "configuracao" | "lancamentos" | "analises"
 }[] = [
   {
-    key: "cadastros", label: "Cadastros", group: "lancamentos",
+    key: "cadastros", label: "Cadastros", group: "configuracao",
     desc: "Categorias, cartões e contas",
     icon: Database, accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8",
   },
@@ -99,8 +99,9 @@ function Home({ onNavigate, onSignOut, email }: {
   onSignOut: () => void
   email: string
 }) {
-  const lancamentos = cardConfig.filter(c => c.group === "lancamentos")
-  const analises    = cardConfig.filter(c => c.group === "analises")
+  const configuracao = cardConfig.filter(c => c.group === "configuracao")
+  const lancamentos  = cardConfig.filter(c => c.group === "lancamentos")
+  const analises     = cardConfig.filter(c => c.group === "analises")
 
   return (
     <div style={{ background: "#0b1120", minHeight: "100vh", color: "white" }}>
@@ -161,6 +162,16 @@ function Home({ onNavigate, onSignOut, email }: {
 
       {/* Cards */}
       <div style={{ padding: "24px 32px" }}>
+
+        {/* Configuração */}
+        <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 14 }}>
+          Configuração
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
+          {configuracao.map(c => (
+            <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />
+          ))}
+        </div>
 
         {/* Lançamentos */}
         <div style={{ fontSize: 11, fontWeight: 600, color: "#475569", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 14 }}>
