@@ -221,7 +221,6 @@ function CardBtn({ card, onClick }: { card: typeof cardConfig[0]; onClick: () =>
         <span style={{ color: card.accent, fontSize: 18, opacity: hovered ? 1 : 0, transition: "opacity .2s" }}>→</span>
       </div>
 
-      <div style={{ fontSize: 11, color: "#64748b", fontWeight: 500, marginBottom: 3 }}>Módulo</div>
       <div style={{ fontSize: 15, fontWeight: 600, color: "white" }}>{card.label}</div>
       <div style={{ fontSize: 11, color: "#475569", marginTop: 6, lineHeight: 1.5 }}>{card.desc}</div>
     </div>
@@ -299,7 +298,9 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       </div>
 
       <div style={{ paddingTop: 68, background: "#0b1120", minHeight: "100vh" }}>
-        {renderConteudo()}
+        <div style={{ background: "#fff", minHeight: "calc(100vh - 68px)" }}>
+          {renderConteudo()}
+        </div>
       </div>
     </>
   )
