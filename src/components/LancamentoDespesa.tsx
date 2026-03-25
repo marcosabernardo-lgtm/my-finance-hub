@@ -7,13 +7,17 @@ type Conta = { id: number; nome: string }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#0f172a', border: '1px solid #334155',
-  color: 'white', boxSizing: 'border-box' as const, marginBottom: 10
+  backgroundColor: '#fff', border: '1px solid #d1d5db',
+  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
 }
-const labelStyle: React.CSSProperties = { color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 4 }
+const labelStyle: React.CSSProperties = {
+  color: '#374151', fontSize: 12, fontWeight: 600, display: 'block',
+  marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
+}
 const btnPrimary: React.CSSProperties = {
-  padding: '10px 20px', backgroundColor: '#3b82f6', color: 'white',
-  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', width: '100%', marginTop: 8
+  padding: '10px 20px', backgroundColor: '#ef4444', color: 'white',
+  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+  width: '100%', marginTop: 8, fontSize: 13,
 }
 
 type Props = { householdId: string; categorias: Categoria[]; cartoes: Cartao[]; contas: Conta[] }
@@ -39,8 +43,8 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     supabase.from('movimentacoes').select('descricao').eq('categoria_id', Number(categoriaId))
       .then(({ data }) => {
         if (data) {
-          const unicas = [...new Set(data.map(d => d.descricao).filter(Boolean))]
-          setDescricoesCategoria(unicas)
+          const unicas = [...new Set(data.map((d: any) => d.descricao).filter(Boolean))]
+          setDescricoesCategoria(unicas as string[])
         }
       })
   }, [categoriaId])
@@ -51,9 +55,8 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     const dataFechReal = d <= fechMesCompra
       ? fechMesCompra
       : new Date(d.getFullYear(), d.getMonth() + 1, cartao.data_fechamento)
-    if (cartao.data_vencimento < cartao.data_fechamento) {
+    if (cartao.data_vencimento < cartao.data_fechamento)
       return new Date(dataFechReal.getFullYear(), dataFechReal.getMonth() + 1, cartao.data_vencimento)
-    }
     return new Date(dataFechReal.getFullYear(), dataFechReal.getMonth(), cartao.data_vencimento)
   }
 
@@ -71,8 +74,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     if (metodoPagamento === 'Cartão de Crédito' && !cartaoId)
       return setMensagem('Selecione o cartão.')
 
-    setLoading(true)
-    setMensagem('')
+    setLoading(true); setMensagem('')
 
     const valorTotal = parseFloat(valor)
     const cartao = cartoes.find(c => c.id === Number(cartaoId))
@@ -160,11 +162,14 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   )
 
   return (
-    <div style={{ backgroundColor: '#1e293b', padding: 24, borderRadius: 12, border: '1px solid #334155' }}>
+    <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
       {mensagem && (
-        <p style={{ color: mensagem.startsWith('Erro') ? '#ef4444' : '#22c55e', marginBottom: 16, padding: 10, backgroundColor: '#0f172a', borderRadius: 6 }}>
-          {mensagem}
-        </p>
+        <div style={{
+          color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
+          background: mensagem.startsWith('Erro') ? '#fee2e2' : '#dcfce7',
+          border: `1px solid ${mensagem.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          marginBottom: 16, padding: '10px 14px', borderRadius: 6, fontSize: 13
+        }}>{mensagem}</div>
       )}
 
       <label style={labelStyle}>Data *</label>
@@ -236,7 +241,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       )}
 
       <button style={btnPrimary} onClick={salvarDespesa} disabled={loading}>
-        {loading ? 'Salvando...' : '💾 Salvar Despesa'}
+        {loading ? 'Salvando...' : 'Salvar Despesa'}
       </button>
     </div>
   )

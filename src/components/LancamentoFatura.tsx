@@ -3,19 +3,18 @@ import { supabase } from '../lib/supabase'
 
 type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number }
 type FaturaAberta = {
-  cartao_id: number
-  cartao_nome: string
-  data_vencimento: string
-  total: number
-  quantidade: number
+  cartao_id: number; cartao_nome: string; data_vencimento: string; total: number; quantidade: number
 }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#0f172a', border: '1px solid #334155',
-  color: 'white', boxSizing: 'border-box' as const, marginBottom: 10
+  backgroundColor: '#fff', border: '1px solid #d1d5db',
+  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
 }
-const labelStyle: React.CSSProperties = { color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 4 }
+const labelStyle: React.CSSProperties = {
+  color: '#374151', fontSize: 12, fontWeight: 600, display: 'block',
+  marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
+}
 
 type Props = { householdId: string; cartoes: Cartao[]; contas: { id: number; nome: string }[] }
 
@@ -38,79 +37,45 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
 
   const carregarFaturas = async () => {
     const { data, error } = await supabase
-      .from('movimentacoes')
-      .select('data_pagamento, valor, cartao_id')
-      .eq('cartao_id', Number(cartaoId))
-      .in('situacao', ['Pendente', 'Pago'])
-
+      .from('movimentacoes').select('data_pagamento, valor, cartao_id')
+      .eq('cartao_id', Number(cartaoId)).in('situacao', ['Pendente', 'Pago'])
     if (error || !data) return
-
     const grupos: Record<string, FaturaAberta> = {}
     const cartao = cartoes.find(c => c.id === Number(cartaoId))
-
-    data.forEach(m => {
+    data.forEach((m: any) => {
       const key = m.data_pagamento
-      if (!grupos[key]) {
-        grupos[key] = {
-          cartao_id: Number(cartaoId),
-          cartao_nome: cartao?.nome ?? '',
-          data_vencimento: key,
-          total: 0,
-          quantidade: 0,
-        }
-      }
+      if (!grupos[key]) grupos[key] = { cartao_id: Number(cartaoId), cartao_nome: cartao?.nome ?? '', data_vencimento: key, total: 0, quantidade: 0 }
       grupos[key].total += parseFloat(m.valor)
       grupos[key].quantidade += 1
     })
-
-    const lista = Object.values(grupos).sort((a, b) =>
-      a.data_vencimento.localeCompare(b.data_vencimento)
-    )
-    setFaturas(lista)
+    setFaturas(Object.values(grupos).sort((a, b) => a.data_vencimento.localeCompare(b.data_vencimento)))
   }
 
   const selecionarFatura = (f: FaturaAberta) => {
-    setFaturaSelecionada(f)
-    setValorPago(f.total.toFixed(2))
-    setMensagem('')
+    setFaturaSelecionada(f); setValorPago(f.total.toFixed(2)); setMensagem('')
   }
 
   const pagarFatura = async () => {
     if (!faturaSelecionada || !contaId || !valorPago || !dataPagamento)
       return setMensagem('Preencha todos os campos.')
-
-    setLoading(true)
-    setMensagem('')
-
+    setLoading(true); setMensagem('')
     const conta = contas.find(c => c.id === Number(contaId))
     const dataVenc = new Date(faturaSelecionada.data_vencimento + 'T12:00:00')
     const mesAno = dataVenc.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).toUpperCase()
     const nomeCartaoSemCredito = faturaSelecionada.cartao_nome.replace('Crédito ', '')
 
     const { error: errInsert } = await supabase.from('movimentacoes').insert({
-      household_id: householdId,
-      data_movimentacao: dataPagamento,
-      data_pagamento: dataPagamento,
-      tipo: 'Transferência',
-      categoria_id: null,
+      household_id: householdId, data_movimentacao: dataPagamento, data_pagamento: dataPagamento,
+      tipo: 'Transferência', categoria_id: null,
       descricao: `PAGAMENTO FATURA ${nomeCartaoSemCredito} ${mesAno}`,
-      valor: parseFloat(valorPago),
-      metodo_pagamento: 'Transferência',
-      conta_origem_destino: conta?.nome ?? '',
-      forma_pagamento: 'À Vista',
-      numero_parcela: 'Parcela 1/1',
-      situacao: 'Pago',
-      classificacao: 'Pagamento de Fatura',
+      valor: parseFloat(valorPago), metodo_pagamento: 'Transferência',
+      conta_origem_destino: conta?.nome ?? '', forma_pagamento: 'À Vista',
+      numero_parcela: 'Parcela 1/1', situacao: 'Pago', classificacao: 'Pagamento de Fatura',
     })
 
-    if (errInsert) {
-      setMensagem('Erro ao registrar pagamento: ' + errInsert.message)
-      setLoading(false)
-      return
-    }
+    if (errInsert) { setMensagem('Erro ao registrar pagamento: ' + errInsert.message); setLoading(false); return }
 
-    const { error: errUpdate } = await supabase
-      .from('movimentacoes')
+    const { error: errUpdate } = await supabase.from('movimentacoes')
       .update({ situacao: 'Faturado' })
       .eq('cartao_id', faturaSelecionada.cartao_id)
       .eq('data_pagamento', faturaSelecionada.data_vencimento)
@@ -119,13 +84,9 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
     if (errUpdate) {
       setMensagem('Pagamento registrado, mas erro ao atualizar despesas: ' + errUpdate.message)
     } else {
-      setMensagem(`✅ Fatura paga! ${faturaSelecionada.quantidade} despesa(s) marcadas como Faturado.`)
-      setFaturaSelecionada(null)
-      setValorPago('')
-      setContaId('')
-      carregarFaturas()
+      setMensagem(`Fatura paga! ${faturaSelecionada.quantidade} despesa(s) marcadas como Faturado.`)
+      setFaturaSelecionada(null); setValorPago(''); setContaId(''); carregarFaturas()
     }
-
     setLoading(false)
   }
 
@@ -133,17 +94,17 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
     const d = new Date(iso + 'T12:00:00')
     return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
   }
-
-  const formatarValor = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const formatarValor = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   return (
-    <div style={{ backgroundColor: '#1e293b', padding: 24, borderRadius: 12, border: '1px solid #334155' }}>
+    <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
       {mensagem && (
-        <p style={{
-          color: mensagem.startsWith('Erro') ? '#ef4444' : '#22c55e',
-          marginBottom: 16, padding: 10, backgroundColor: '#0f172a', borderRadius: 6
-        }}>{mensagem}</p>
+        <div style={{
+          color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
+          background: mensagem.startsWith('Erro') ? '#fee2e2' : '#dcfce7',
+          border: `1px solid ${mensagem.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          marginBottom: 16, padding: '10px 14px', borderRadius: 6, fontSize: 13
+        }}>{mensagem}</div>
       )}
 
       <label style={labelStyle}>Selecione o Cartão *</label>
@@ -153,7 +114,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
       </select>
 
       {cartaoId && faturas.length === 0 && (
-        <p style={{ color: '#64748b', padding: 16, textAlign: 'center' }}>
+        <p style={{ color: '#9ca3af', padding: 16, textAlign: 'center', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
           Nenhuma fatura em aberto para este cartão.
         </p>
       )}
@@ -163,21 +124,17 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
           <label style={labelStyle}>Faturas em Aberto — selecione para pagar</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
             {faturas.map(f => (
-              <div key={f.data_vencimento}
-                onClick={() => selecionarFatura(f)}
-                style={{
-                  padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                  backgroundColor: faturaSelecionada?.data_vencimento === f.data_vencimento ? '#1e3a5f' : '#0f172a',
-                  border: `2px solid ${faturaSelecionada?.data_vencimento === f.data_vencimento ? '#3b82f6' : '#334155'}`,
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }}>
+              <div key={f.data_vencimento} onClick={() => selecionarFatura(f)} style={{
+                padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
+                background: faturaSelecionada?.data_vencimento === f.data_vencimento ? '#eff6ff' : '#f9fafb',
+                border: `2px solid ${faturaSelecionada?.data_vencimento === f.data_vencimento ? '#2563eb' : '#e5e7eb'}`,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }}>
                 <div>
-                  <span style={{ color: 'white', fontWeight: 'bold' }}>{formatarData(f.data_vencimento)}</span>
-                  <span style={{ color: '#64748b', fontSize: 12, marginLeft: 8 }}>{f.quantidade} lançamento(s)</span>
+                  <span style={{ color: '#111827', fontWeight: 600, fontSize: 14 }}>{formatarData(f.data_vencimento)}</span>
+                  <span style={{ color: '#9ca3af', fontSize: 12, marginLeft: 8 }}>{f.quantidade} lançamento(s)</span>
                 </div>
-                <span style={{ color: '#f59e0b', fontWeight: 'bold', fontSize: 16 }}>
-                  {formatarValor(f.total)}
-                </span>
+                <span style={{ color: '#d97706', fontWeight: 700, fontSize: 15 }}>{formatarValor(f.total)}</span>
               </div>
             ))}
           </div>
@@ -186,19 +143,18 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
 
       {faturaSelecionada && (
         <>
-          <div style={{ backgroundColor: '#0f172a', padding: 16, borderRadius: 8, marginBottom: 16, border: '1px solid #3b82f6' }}>
-            <p style={{ color: '#94a3b8', fontSize: 13, margin: 0 }}>Fatura selecionada:</p>
-            <p style={{ color: 'white', fontWeight: 'bold', margin: '4px 0 0' }}>
+          <div style={{ background: '#eff6ff', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #bfdbfe' }}>
+            <p style={{ color: '#6b7280', fontSize: 12, margin: 0 }}>Fatura selecionada</p>
+            <p style={{ color: '#1e40af', fontWeight: 600, margin: '4px 0 0', fontSize: 14 }}>
               {faturaSelecionada.cartao_nome} — {formatarData(faturaSelecionada.data_vencimento)}
             </p>
-            <p style={{ color: '#f59e0b', fontWeight: 'bold', margin: '4px 0 0' }}>
+            <p style={{ color: '#d97706', fontWeight: 700, margin: '4px 0 0' }}>
               Total: {formatarValor(faturaSelecionada.total)}
             </p>
           </div>
 
           <label style={labelStyle}>Data do Pagamento *</label>
-          <input style={inputStyle} type="date" value={dataPagamento}
-            onChange={e => setDataPagamento(e.target.value)} />
+          <input style={inputStyle} type="date" value={dataPagamento} onChange={e => setDataPagamento(e.target.value)} />
 
           <label style={labelStyle}>Conta de Origem *</label>
           <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
@@ -207,15 +163,14 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
           </select>
 
           <label style={labelStyle}>Valor Pago (R$) *</label>
-          <input style={inputStyle} type="number" step="0.01" value={valorPago}
-            onChange={e => setValorPago(e.target.value)} />
+          <input style={inputStyle} type="number" step="0.01" value={valorPago} onChange={e => setValorPago(e.target.value)} />
 
           <button onClick={pagarFatura} disabled={loading} style={{
             width: '100%', padding: '12px 20px', marginTop: 8,
             backgroundColor: '#22c55e', color: 'white', border: 'none',
-            borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', fontSize: 16
+            borderRadius: 6, cursor: 'pointer', fontWeight: 600, fontSize: 14
           }}>
-            {loading ? 'Processando...' : '✅ Confirmar Pagamento'}
+            {loading ? 'Processando...' : 'Confirmar Pagamento'}
           </button>
         </>
       )}
