@@ -22,6 +22,7 @@ type Pagina =
   | "cadastros" | "lancamento" | "confirmar"
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
+  { label: "Cadastros",         key: "cadastros",     icon: Database    },
   { label: "Lançar",            key: "lancamento",    icon: PlusCircle  },
   { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle },
   { label: "Resumo",            key: "resumo",        icon: BarChart3   },
@@ -30,7 +31,6 @@ const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Fatura Cartão",     key: "fatura",        icon: CreditCard  },
   { label: "Cartões",           key: "cartoes",       icon: Wallet      },
   { label: "DRE",               key: "dre",           icon: FileText    },
-  { label: "Cadastros",         key: "cadastros",     icon: Database    },
 ]
 
 const cardConfig: {
