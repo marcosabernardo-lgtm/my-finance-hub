@@ -6,13 +6,17 @@ type Conta = { id: number; nome: string }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#0f172a', border: '1px solid #334155',
-  color: 'white', boxSizing: 'border-box' as const, marginBottom: 10
+  backgroundColor: '#fff', border: '1px solid #d1d5db',
+  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
 }
-const labelStyle: React.CSSProperties = { color: '#94a3b8', fontSize: 13, display: 'block', marginBottom: 4 }
+const labelStyle: React.CSSProperties = {
+  color: '#374151', fontSize: 12, fontWeight: 600, display: 'block',
+  marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
+}
 const btnPrimary: React.CSSProperties = {
   padding: '10px 20px', backgroundColor: '#22c55e', color: 'white',
-  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 'bold', width: '100%', marginTop: 8
+  border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+  width: '100%', marginTop: 8, fontSize: 13,
 }
 
 type Props = { householdId: string; categorias: Categoria[]; contas: Conta[] }
@@ -35,8 +39,8 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
     supabase.from('movimentacoes').select('descricao').eq('categoria_id', Number(categoriaId))
       .then(({ data }) => {
         if (data) {
-          const unicas = [...new Set(data.map(d => d.descricao).filter(Boolean))]
-          setDescricoesCategoria(unicas)
+          const unicas = [...new Set(data.map((d: any) => d.descricao).filter(Boolean))]
+          setDescricoesCategoria(unicas as string[])
         }
       })
   }, [categoriaId])
@@ -44,15 +48,13 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
   function adicionarMeses(data: Date, meses: number): Date {
     return new Date(data.getFullYear(), data.getMonth() + meses, data.getDate())
   }
-
   function toISO(data: Date): string { return data.toISOString().split('T')[0] }
 
   async function salvarReceita() {
     if (!categoriaId || !descricao || !valor || !dataMov || !contaId)
       return setMensagem('Preencha todos os campos obrigatórios.')
 
-    setLoading(true)
-    setMensagem('')
+    setLoading(true); setMensagem('')
 
     const valorTotal = parseFloat(valor)
     const meses = parseInt(numMeses) || 1
@@ -101,11 +103,14 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
   )
 
   return (
-    <div style={{ backgroundColor: '#1e293b', padding: 24, borderRadius: 12, border: '1px solid #334155' }}>
+    <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
       {mensagem && (
-        <p style={{ color: mensagem.startsWith('Erro') ? '#ef4444' : '#22c55e', marginBottom: 16, padding: 10, backgroundColor: '#0f172a', borderRadius: 6 }}>
-          {mensagem}
-        </p>
+        <div style={{
+          color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
+          background: mensagem.startsWith('Erro') ? '#fee2e2' : '#dcfce7',
+          border: `1px solid ${mensagem.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          marginBottom: 16, padding: '10px 14px', borderRadius: 6, fontSize: 13
+        }}>{mensagem}</div>
       )}
 
       <label style={labelStyle}>Data *</label>
@@ -138,13 +143,13 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
       <input style={inputStyle} type="number" min="1" max="60" value={numMeses}
         onChange={e => setNumMeses(e.target.value)} placeholder="1 = lançamento único" />
       {parseInt(numMeses) > 1 && (
-        <p style={{ color: '#94a3b8', fontSize: 12, marginBottom: 10 }}>
-          Mês 1 será <strong style={{ color: '#22c55e' }}>Pago</strong>, os demais <strong style={{ color: '#f59e0b' }}>Pendente</strong>
+        <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 10 }}>
+          Mês 1 será <strong style={{ color: '#16a34a' }}>Pago</strong>, os demais <strong style={{ color: '#d97706' }}>Pendente</strong>
         </p>
       )}
 
       <button style={btnPrimary} onClick={salvarReceita} disabled={loading}>
-        {loading ? 'Salvando...' : '💾 Salvar Receita'}
+        {loading ? 'Salvando...' : 'Salvar Receita'}
       </button>
     </div>
   )
