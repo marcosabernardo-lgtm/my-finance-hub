@@ -67,7 +67,7 @@ const isAvista = (fp: string | null) => {
   return s.includes('vista') || s === 'a vista' || s === 'à vista'
 }
 
-type FiltroSituacao = 'realizado' | 'pendente' | 'previsto' | 'todos'
+type FiltroSituacao = 'realizado' | 'pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
 
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
@@ -157,10 +157,12 @@ export default function DRE() {
   // ── Situações incluídas ──────────────────────────────────────────────────────
   const situacoesIncluidas = useMemo((): string[] => {
     switch (filtroSituacao) {
-      case 'realizado': return ['Pago', 'Faturado']
-      case 'pendente':  return ['Pago', 'Faturado', 'Pendente']
-      case 'previsto':  return ['Pago', 'Faturado', 'Previsto']
-      case 'todos':     return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+      case 'realizado':    return ['Pago', 'Faturado']
+      case 'pendente':     return ['Pago', 'Faturado', 'Pendente']
+      case 'previsto':     return ['Pago', 'Faturado', 'Previsto']
+      case 'todos':        return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+      case 'conservadora': return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+      case 'inteligente':  return ['Pago', 'Faturado', 'Pendente', 'Previsto']
     }
   }, [filtroSituacao])
 
@@ -249,6 +251,18 @@ export default function DRE() {
     if (ano > hoje.getFullYear()) return 0
     return mesAtual
   }, [ano, mesAtual])
+
+  // ── Médias por linha para modo Inteligente ───────────────────────────────────
+  // Para cada linha, calcula a média dos meses passados (para preencher meses futuros sem lançamento)
+  const mediasPorLinha = useMemo(() => {
+    if (filtroSituacao !== 'inteligente' || mesesCorrente === 0) return {}
+    const result: Record<string, number> = {}
+    for (const linha of linhasDRE) {
+      const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
+      result[linha.id] = soma / mesesCorrente
+    }
+    return result
+  }, [linhasDRE, filtroSituacao, mesesCorrente])
 
   // ── Cards: dados calculados sempre sobre TODOS os dados (sem filtro situação) ─
   const totalPendentesMesAtual = useMemo(() =>
@@ -468,11 +482,15 @@ export default function DRE() {
 
         {/* Projeção 1 — Conservadora */}
         {projecaoConservadora !== null && (
-          <div style={{
-            background: projecaoConservadora >= 0 ? '#d1fae5' : '#fee2e2',
-            borderRadius: '12px', padding: '14px 16px',
-            borderLeft: `4px solid ${projecaoConservadora >= 0 ? '#10b981' : '#ef4444'}`
-          }}>
+          <div
+            onClick={() => { setFiltroSituacao('conservadora'); setDrillAberto(null) }}
+            style={{
+              background: projecaoConservadora >= 0 ? '#d1fae5' : '#fee2e2',
+              borderRadius: '12px', padding: '14px 16px',
+              borderLeft: `4px solid ${projecaoConservadora >= 0 ? '#10b981' : '#ef4444'}`,
+              cursor: 'pointer',
+              outline: filtroSituacao === 'conservadora' ? '2px solid #10b981' : 'none',
+            }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Projeção Conservadora
             </div>
@@ -483,19 +501,22 @@ export default function DRE() {
               Realizado + Pendente + Previsto já lançados
             </div>
             <div style={{ fontSize: '10px', color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', opacity: 0.6, marginTop: '2px' }}>
-              Não assume nada além do que está lançado
+              Clique para ver na tabela ↓
             </div>
           </div>
         )}
 
         {/* Projeção 2 — Inteligente */}
         {projecaoInteligente !== null && (
-          <div style={{
-            background: projecaoInteligente >= 0 ? '#d1fae5' : '#fee2e2',
-            borderRadius: '12px', padding: '14px 16px',
-            borderLeft: `4px solid ${projecaoInteligente >= 0 ? '#10b981' : '#ef4444'}`,
-            position: 'relative'
-          }}>
+          <div
+            onClick={() => { setFiltroSituacao('inteligente'); setDrillAberto(null) }}
+            style={{
+              background: projecaoInteligente >= 0 ? '#d1fae5' : '#fee2e2',
+              borderRadius: '12px', padding: '14px 16px',
+              borderLeft: `4px solid ${projecaoInteligente >= 0 ? '#10b981' : '#ef4444'}`,
+              position: 'relative', cursor: 'pointer',
+              outline: filtroSituacao === 'inteligente' ? '2px solid #2563eb' : 'none',
+            }}>
             <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#2563eb', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '99px' }}>
               SMART
             </span>
@@ -509,7 +530,7 @@ export default function DRE() {
               Pendente/Previsto + média histórica onde não há lançamento
             </div>
             <div style={{ fontSize: '10px', color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', opacity: 0.6, marginTop: '2px' }}>
-              Ex: Mercado sem previstos → usa média dos últimos {mesAtual} meses
+              Clique para ver na tabela ↓
             </div>
           </div>
         )}
@@ -566,6 +587,10 @@ export default function DRE() {
           <span style={{ color: '#92400e' }}>Célula expandida / Média</span>
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ padding: '1px 6px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', fontSize: '10px', fontWeight: 600, fontStyle: 'italic' }}>valor itálico</span>
+          <span style={{ color: '#6b7280' }}>Média projetada (modo Inteligente)</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ padding: '1px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontSize: '10px', fontWeight: 600 }}>valor sublinhado</span>
           <span style={{ color: '#6b7280' }}>Clique para ver lançamentos</span>
         </span>
@@ -619,14 +644,14 @@ export default function DRE() {
                 {/* ── RECEITAS ── */}
                 <GrupoHeader label='RECEITAS' colspan={16} cor='#065f46' bg='#d1fae5' />
                 {receitasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} />
+                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} />
                 ))}
                 <SubtotalRow label='Total Receitas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='#065f46' bg='#d1fae5' mesesCorrente={mesesCorrente} />
 
                 {/* ── DESPESAS ── */}
                 <GrupoHeader label='DESPESAS' colspan={16} cor='#991b1b' bg='#fee2e2' />
                 {despesasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} />
+                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} />
                 ))}
                 <SubtotalRow label='Total Despesas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='#991b1b' bg='#fee2e2' mesesCorrente={mesesCorrente} />
 
@@ -670,7 +695,7 @@ export default function DRE() {
 // ─── LinhaComDrill ─────────────────────────────────────────────────────────────
 // Linha da tabela com capacidade de expandir drill-down ao clicar numa célula
 
-function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, mesesCorrente, drillAberto, lancamentosDrill, onToggle }: {
+function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, mesesCorrente, drillAberto, lancamentosDrill, onToggle, mediaProjecao = 0 }: {
   linha: LinhaDRE
   meses: number[]
   mesAtual: number
@@ -681,6 +706,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
   drillAberto: DrillKey | null
   lancamentosDrill: Movimentacao[]
   onToggle: (linhaId: string, mes: number, valor: number) => void
+  mediaProjecao?: number
 }) {
   const cor = isReceita ? '#065f46' : '#991b1b'
   const drillEstaAberto = (mes: number) => drillAberto?.linhaId === linha.id && drillAberto?.mes === mes
@@ -700,12 +726,17 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           const v = linha.meses[m] || 0
           const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
           const isAtual = ano === anoAtual && m === mesAtual
-          const pct = linha.limite > 0 ? v / linha.limite : null
+          // No modo inteligente, usa média para meses futuros sem lançamento
+          const vExibir = (isFuturo && !isAtual && v === 0 && mediaProjecao > 0) ? mediaProjecao : v
+          const isMedia = isFuturo && !isAtual && v === 0 && mediaProjecao > 0
+          const pct = linha.limite > 0 ? vExibir / linha.limite : null
           const aberto = drillEstaAberto(m)
 
           let corValor = '#d1d5db'
-          if (v > 0) {
-            if (!isReceita && pct !== null) {
+          if (vExibir > 0) {
+            if (isMedia) {
+              corValor = '#9333ea' // roxo para médias projetadas
+            } else if (!isReceita && pct !== null) {
               if (pct > 1) corValor = '#ef4444'
               else if (pct >= 0.8) corValor = '#f59e0b'
               else corValor = '#374151'
@@ -715,21 +746,25 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           return (
             <td
               key={m}
-              onClick={() => onToggle(linha.id, m, v)}
-              title={v > 0 ? 'Clique para ver lançamentos' : ''}
+              onClick={() => !isMedia && onToggle(linha.id, m, v)}
+              title={isMedia ? `Média projetada: ${fmt(mediaProjecao)}` : v > 0 ? 'Clique para ver lançamentos' : ''}
               style={{
                 ...tdNum,
                 color: corValor,
-                fontWeight: v > 0 ? 600 : 400,
+                fontWeight: vExibir > 0 ? 600 : 400,
                 background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent',
                 opacity: isFuturo && !isAtual ? 0.85 : 1,
-                cursor: v > 0 ? 'pointer' : 'default',
+                cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default',
                 borderBottom: aberto ? '2px solid #f59e0b' : 'none',
                 transition: 'background 0.1s',
               }}
             >
-              {v > 0
-                ? <span style={{ textDecoration: v > 0 ? 'underline dotted' : 'none', textUnderlineOffset: '3px' }}>{fmt(v)}</span>
+              {vExibir > 0
+                ? <span style={{
+                    textDecoration: !isMedia ? 'underline dotted' : 'none',
+                    textUnderlineOffset: '3px',
+                    fontStyle: isMedia ? 'italic' : 'normal',
+                  }}>{fmt(vExibir)}</span>
                 : <span style={{ color: '#e5e7eb' }}>—</span>
               }
             </td>
