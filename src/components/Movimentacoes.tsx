@@ -465,11 +465,10 @@ export default function Movimentacoes() {
       </div>
 
       {/* ── Totais ──────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
         <CardTotal label='Receitas' valor={totalReceitas} cor='#065f46' bg='#d1fae5' />
         <CardTotal label='Despesas (Débito/PIX)' valor={totalDespesasDebito} cor='#991b1b' bg='#fee2e2' />
         <CardTotal label='Despesas (Crédito)' valor={totalDespesasCredito} cor='#b45309' bg='#fef3c7' />
-        <CardTotal label='Faturado' valor={totalFaturado} cor='#1e40af' bg='#dbeafe' />
         <CardTotal label='Pag. Fatura' valor={totalPagamentoFatura} cor='#6b21a8' bg='#f3e8ff' />
       </div>
 
