@@ -185,10 +185,12 @@ export default function CartoesView() {
       const totalPendente  = movsCartao.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0)
       const totalPrevisto  = movsCartao.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0)
 
-      // Limite disponível: considera todas as parcelas futuras (não filtra por mês)
-      // pois é o comprometimento real do limite
+      // Limite disponível: considera apenas Pendente e Previsto (futuros)
+      // Faturado = já foi pago, não compromete mais o limite
+      // Pendente = compra feita, fatura ainda não paga → compromete o limite
+      // Previsto = lançamento futuro → compromete o limite (simulação)
       const comprometido = movsCartao
-        .filter(m => situacoesParaLimite.includes(m.situacao))
+        .filter(m => ['Pendente', 'Previsto'].includes(m.situacao))
         .reduce((s, m) => s + Number(m.valor), 0)
 
       return {
