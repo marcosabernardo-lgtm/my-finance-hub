@@ -58,7 +58,7 @@ export default function ExtratoConta() {
   const [contaId, setContaId] = useState<string>('')
   const [filtroMes, setFiltroMes] = useState(hoje.getMonth() + 1)
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear())
-  const [filtroTipo, setFiltroTipo] = useState<'Receita' | 'Despesa' | ''>('')
+  const [filtroTipo, setFiltroTipo] = useState<'Receita' | 'Despesa' | 'Transferência' | ''>('')
 
   const [lancamentosMes, setLancamentosMes] = useState<Lancamento[]>([])
   const [saldoAnterior, setSaldoAnterior] = useState(0)
@@ -110,7 +110,6 @@ export default function ExtratoConta() {
       .eq('household_id', householdId)
       .eq('conta_origem_destino', contaAtual?.nome ?? '')
       .in('situacao', ['Pago', 'Pendente'])
-      .neq('tipo', 'Transferência')
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
       .order('data_movimentacao', { ascending: true })
@@ -130,7 +129,6 @@ export default function ExtratoConta() {
         .eq('household_id', householdId)
         .eq('conta_origem_destino', contaInfo?.nome ?? '')
         .eq('situacao', 'Pago')
-        .neq('tipo', 'Transferência')
         .gte('data_movimentacao', dataInicialConta)
         .lt('data_movimentacao', dataInicio)
 
@@ -230,7 +228,7 @@ export default function ExtratoConta() {
         <div>
           <label style={labelStyle}>Tipo</label>
           <div style={{ display: 'flex', gap: '6px' }}>
-            {(['', 'Receita', 'Despesa'] as const).map(t => (
+            {(['', 'Receita', 'Despesa', 'Transferência'] as const).map(t => (
               <button
                 key={t}
                 onClick={() => setFiltroTipo(t)}
@@ -239,7 +237,7 @@ export default function ExtratoConta() {
                   fontWeight: 600, cursor: 'pointer', height: '38px',
                   border: filtroTipo === t ? 'none' : '1px solid #d1d5db',
                   background: filtroTipo === t
-                    ? t === '' ? '#2563eb' : t === 'Receita' ? '#065f46' : '#991b1b'
+                    ? t === '' ? '#2563eb' : t === 'Receita' ? '#065f46' : t === 'Despesa' ? '#991b1b' : '#92400e'
                     : '#fff',
                   color: filtroTipo === t ? '#fff' : '#374151',
                 }}
@@ -351,15 +349,15 @@ export default function ExtratoConta() {
                       <span style={{
                         padding: '2px 8px', borderRadius: '99px',
                         fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap',
-                        background: l.tipo === 'Receita' ? '#d1fae5' : '#fee2e2',
-                        color: l.tipo === 'Receita' ? '#065f46' : '#991b1b',
+                        background: l.tipo === 'Receita' ? '#d1fae5' : l.tipo === 'Transferência' ? '#fef3c7' : '#fee2e2',
+                        color: l.tipo === 'Receita' ? '#065f46' : l.tipo === 'Transferência' ? '#92400e' : '#991b1b',
                       }}>
                         {l.tipo}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap',
-                      color: l.tipo === 'Receita' ? '#065f46' : '#991b1b' }}>
-                      {l.tipo === 'Receita' ? '+' : '−'} {fmt(Number(l.valor))}
+                      color: l.tipo === 'Receita' ? '#065f46' : l.tipo === 'Transferência' ? '#92400e' : '#991b1b' }}> 
+                      {l.tipo === 'Receita' ? '+' : l.tipo === 'Transferência' ? '↗' : '−'} {fmt(Number(l.valor))}
                     </td>
                     <td style={tdStyle}>
                       <span style={{
@@ -383,7 +381,7 @@ export default function ExtratoConta() {
                   </td>
                   <td />
                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-                    color: filtroTipo === 'Receita' ? '#065f46' : filtroTipo === 'Despesa' ? '#991b1b' : '#374151' }}>
+                    color: filtroTipo === 'Receita' ? '#065f46' : filtroTipo === 'Despesa' ? '#991b1b' : filtroTipo === 'Transferência' ? '#92400e' : '#374151' }}>
                     {fmt(totalTabelaFiltrada)}
                   </td>
                   <td />
