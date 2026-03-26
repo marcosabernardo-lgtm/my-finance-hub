@@ -52,6 +52,14 @@ const corSituacaoStyle = (s: string): React.CSSProperties => {
   }
 }
 
+// Helper fora do componente para evitar problemas de inicialização
+const entraNoReal = (m: { tipo: string; situacao: string; numero_parcela: string | null }) => {
+  if (m.tipo !== 'Despesa') return false
+  if (m.situacao === 'Pago') return true
+  if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
+  return false
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Resumo() {
@@ -117,15 +125,6 @@ export default function Resumo() {
       .reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
-
-  // Helper: despesa entra no "Real" se Pago, ou Pendente com Parcela 1/1 (à vista no cartão)
-  // Faturado NÃO entra — são compras de meses anteriores
-  const entraNoReal = (m: Movimentacao) => {
-    if (m.tipo !== 'Despesa') return false
-    if (m.situacao === 'Pago') return true
-    if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
-    return false
-  }
 
   const totalDespesas = useMemo(() =>
     movimentacoes.filter(m => entraNoReal(m))
