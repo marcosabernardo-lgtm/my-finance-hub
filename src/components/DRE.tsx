@@ -424,7 +424,11 @@ export default function DRE() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
 
         {/* Pendentes do mês atual */}
-        <div style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
+        <div
+          onClick={() => { setFiltroSituacao('pendente'); setDrillAberto(null) }}
+          style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b', cursor: 'pointer' }}
+          title="Clique para ver pendentes na tabela"
+        >
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Pendentes — {MESES_CURTOS[mesAtual - 1]}
           </div>
@@ -432,7 +436,7 @@ export default function DRE() {
             {fmt(totalPendentesMesAtual)}
           </div>
           <div style={{ fontSize: '11px', color: '#92400e', opacity: 0.7 }}>
-            Despesas pendentes no mês atual
+            Clique para ver na tabela abaixo ↓
           </div>
         </div>
 
@@ -528,6 +532,43 @@ export default function DRE() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ── Legenda de cores ─────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center',
+        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px',
+        padding: '10px 16px', marginBottom: '12px', fontSize: '12px'
+      }}>
+        <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />
+          <span style={{ color: '#374151' }}>Dentro do limite</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+          <span style={{ color: '#92400e' }}>Acima de 80% do limite</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} />
+          <span style={{ color: '#991b1b' }}>Acima do limite</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '2px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'inline-block' }} />
+          <span style={{ color: '#1e40af' }}>Mês atual</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '2px', background: '#faf5ff', border: '1px solid #e9d5ff', display: 'inline-block' }} />
+          <span style={{ color: '#6b21a8' }}>Meses futuros</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ width: 12, height: 12, borderRadius: '2px', background: '#fffbeb', border: '1px solid #fde68a', display: 'inline-block' }} />
+          <span style={{ color: '#92400e' }}>Célula expandida / Média</span>
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ padding: '1px 6px', borderRadius: '4px', background: '#fef3c7', color: '#92400e', fontSize: '10px', fontWeight: 600 }}>valor sublinhado</span>
+          <span style={{ color: '#6b7280' }}>Clique para ver lançamentos</span>
+        </span>
       </div>
 
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
