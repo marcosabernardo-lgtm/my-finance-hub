@@ -227,11 +227,21 @@ export default function Movimentacoes() {
     .filter(m => m.tipo === 'Receita' && m.situacao !== 'Previsto')
     .reduce((s, m) => s + Number(m.valor), 0)
 
-  const totalDespesas = movimentacoesFiltradas
-    .filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto')
+  const totalDespesasDebito = movimentacoesFiltradas
+    .filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && !m.cartao_id)
     .reduce((s, m) => s + Number(m.valor), 0)
 
-  const saldo = totalReceitas - totalDespesas
+  const totalDespesasCredito = movimentacoesFiltradas
+    .filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && !!m.cartao_id)
+    .reduce((s, m) => s + Number(m.valor), 0)
+
+  const totalFaturado = movimentacoesFiltradas
+    .filter(m => m.tipo === 'Despesa' && m.situacao === 'Faturado')
+    .reduce((s, m) => s + Number(m.valor), 0)
+
+  const totalPagamentoFatura = movimentacoesFiltradas
+    .filter(m => m.tipo === 'Transferência')
+    .reduce((s, m) => s + Number(m.valor), 0)
 
   // ── Edit ────────────────────────────────────────────────────────────────────
   const abrirEdicao = (mov: Movimentacao) => {
@@ -455,10 +465,12 @@ export default function Movimentacoes() {
       </div>
 
       {/* ── Totais ──────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px', marginBottom: '20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' }}>
         <CardTotal label='Receitas' valor={totalReceitas} cor='#065f46' bg='#d1fae5' />
-        <CardTotal label='Despesas' valor={totalDespesas} cor='#991b1b' bg='#fee2e2' />
-        <CardTotal label='Saldo' valor={saldo} cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} />
+        <CardTotal label='Despesas (Débito/PIX)' valor={totalDespesasDebito} cor='#991b1b' bg='#fee2e2' />
+        <CardTotal label='Despesas (Crédito)' valor={totalDespesasCredito} cor='#b45309' bg='#fef3c7' />
+        <CardTotal label='Faturado' valor={totalFaturado} cor='#1e40af' bg='#dbeafe' />
+        <CardTotal label='Pag. Fatura' valor={totalPagamentoFatura} cor='#6b21a8' bg='#f3e8ff' />
       </div>
 
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
