@@ -172,7 +172,10 @@ export default function ExtratoConta() {
 
   const saldoFinal = saldoAnterior + entradasMes - saidasMes
   const totalTabelaFiltrada = useMemo(() =>
-    lancamentosFiltrados.reduce((s, l) => s + Number(l.valor), 0),
+    lancamentosFiltrados.reduce((s, l) => {
+      const v = Number(l.valor)
+      return s + (l.tipo === 'Receita' ? v : -v)
+    }, 0),
     [lancamentosFiltrados]
   )
 
@@ -381,8 +384,8 @@ export default function ExtratoConta() {
                   </td>
                   <td />
                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-                    color: filtroTipo === 'Receita' ? '#065f46' : '#991b1b' }}>
-                    {fmt(totalTabelaFiltrada)}
+                    color: totalTabelaFiltrada >= 0 ? '#065f46' : '#991b1b' }}>
+                    {totalTabelaFiltrada >= 0 ? '+' : ''}{fmt(totalTabelaFiltrada)}
                   </td>
                   <td />
                 </tr>
