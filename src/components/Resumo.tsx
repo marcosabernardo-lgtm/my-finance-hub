@@ -118,6 +118,15 @@ export default function Resumo() {
     [movimentacoes]
   )
 
+  // Helper: despesa entra no "Real" se Pago, ou Pendente com Parcela 1/1 (à vista no cartão)
+  // Faturado NÃO entra — são compras de meses anteriores
+  const entraNoReal = (m: Movimentacao) => {
+    if (m.tipo !== 'Despesa') return false
+    if (m.situacao === 'Pago') return true
+    if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
+    return false
+  }
+
   const totalDespesas = useMemo(() =>
     movimentacoes.filter(m => entraNoReal(m))
       .reduce((s, m) => s + Number(m.valor), 0),
@@ -131,17 +140,6 @@ export default function Resumo() {
   )
 
   const saldo = totalReceitas - totalDespesas
-
-  // Helper: despesa entra no "Real" se Pago, ou Pendente com Parcela 1/1 (à vista no cartão)
-  // Faturado NÃO entra — são compras de meses anteriores
-  const entraNoReal = (m: Movimentacao) => {
-    if (m.tipo !== 'Despesa') return false
-    if (m.situacao === 'Pago') return true
-    if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
-    return false
-  }
-
-  // ── Tabela de classificação ──────────────────────────────────────────────────
   // Previsto = soma dos limites das categorias de despesa daquela classificação
   // Real     = Pago + Faturado das movimentações do mês naquela classificação
 
