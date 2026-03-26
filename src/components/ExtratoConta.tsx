@@ -134,7 +134,7 @@ export default function ExtratoConta() {
 
       const anterior = anteriores || []
       const entradas = anterior.filter(m => m.tipo === 'Receita').reduce((s, m) => s + Number(m.valor), 0)
-      const saidas   = anterior.filter(m => m.tipo === 'Despesa').reduce((s, m) => s + Number(m.valor), 0)
+      const saidas   = anterior.filter(m => m.tipo === 'Despesa' || m.tipo === 'Transferência').reduce((s, m) => s + Number(m.valor), 0)
       setSaldoAnterior(saldoBase + entradas - saidas)
     } else {
       setSaldoAnterior(saldoBase)
@@ -159,7 +159,7 @@ export default function ExtratoConta() {
   )
 
   const saidasMes = useMemo(() =>
-    lancamentosMes.filter(l => l.tipo === 'Despesa' && l.situacao === 'Pago')
+    lancamentosMes.filter(l => (l.tipo === 'Despesa' || l.tipo === 'Transferência') && l.situacao === 'Pago')
       .reduce((s, l) => s + Number(l.valor), 0),
     [lancamentosMes]
   )
@@ -273,7 +273,7 @@ export default function ExtratoConta() {
           <CardInfo
             label='Saídas'
             valor={fmt(saidasMes)}
-            sub={`Despesas pagas em ${MESES[filtroMes - 1]}`}
+            sub={`Despesas + Pagamentos pagos em ${MESES[filtroMes - 1]}`}
             corValor='#991b1b'
             bg='#fee2e2'
           />
@@ -349,15 +349,15 @@ export default function ExtratoConta() {
                       <span style={{
                         padding: '2px 8px', borderRadius: '99px',
                         fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap',
-                        background: l.tipo === 'Receita' ? '#d1fae5' : l.tipo === 'Transferência' ? '#fef3c7' : '#fee2e2',
-                        color: l.tipo === 'Receita' ? '#065f46' : l.tipo === 'Transferência' ? '#92400e' : '#991b1b',
+                        background: l.tipo === 'Receita' ? '#d1fae5' : '#fee2e2',
+                        color: l.tipo === 'Receita' ? '#065f46' : '#991b1b',
                       }}>
                         {l.tipo}
                       </span>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap',
-                      color: l.tipo === 'Receita' ? '#065f46' : l.tipo === 'Transferência' ? '#92400e' : '#991b1b' }}> 
-                      {l.tipo === 'Receita' ? '+' : l.tipo === 'Transferência' ? '↗' : '−'} {fmt(Number(l.valor))}
+                      color: l.tipo === 'Receita' ? '#065f46' : '#991b1b' }}> 
+                      {l.tipo === 'Receita' ? '+' : '−'} {fmt(Number(l.valor))}
                     </td>
                     <td style={tdStyle}>
                       <span style={{
@@ -381,7 +381,7 @@ export default function ExtratoConta() {
                   </td>
                   <td />
                   <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-                    color: filtroTipo === 'Receita' ? '#065f46' : filtroTipo === 'Despesa' ? '#991b1b' : filtroTipo === 'Transferência' ? '#92400e' : '#374151' }}>
+                    color: filtroTipo === 'Receita' ? '#065f46' : '#991b1b' }}>
                     {fmt(totalTabelaFiltrada)}
                   </td>
                   <td />
