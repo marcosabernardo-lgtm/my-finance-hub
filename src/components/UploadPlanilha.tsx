@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -364,5 +364,6 @@ export default function UploadPlanilha() {
     </div>
   )
 }
-/ /   0 3 / 2 7 / 2 0 2 6   1 8 : 4 8 : 4 7  
+/ /   0 3 / 2 7 / 2 0 2 6   1 8 : 4 8 : 4 7 
+ 
  
