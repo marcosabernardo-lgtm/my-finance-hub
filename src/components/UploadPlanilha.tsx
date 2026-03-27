@@ -97,11 +97,11 @@ export default function UploadPlanilha() {
         for (const row of rows) {
           const nome = String(row['Nome do Cartao *'] ?? row['Nome do Cartão *'] ?? '').trim()
           if (!nome) continue
-          const dia_fechamento = Number(row['Dia Fechamento *']) || null
-          const dia_vencimento = Number(row['Dia Vencimento *']) || null
+          const data_fechamento = Number(row['Dia Fechamento *']) || null
+          const data_vencimento = Number(row['Dia Vencimento *']) || null
           const limite = parseValor(row['Limite Total (R$)']) || null
           const { error } = await supabase.from('cartoes').upsert(
-            { household_id, nome, dia_fechamento, dia_vencimento, limite },
+            { household_id, nome, data_fechamento, data_vencimento, limite_total: limite },
             { onConflict: 'household_id,nome' }
           )
           if (error) erros.push(`Cartao "${nome}": ${error.message}`)
