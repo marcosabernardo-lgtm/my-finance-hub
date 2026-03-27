@@ -11,16 +11,17 @@ import Cadastros from "./components/Cadastros";
 import Lancamento from "./components/Lancamento";
 import ConfirmarDebito from "./components/ConfirmarDebito";
 import ExtratoConta from "./components/ExtratoConta";
+import UploadPlanilha from "./components/UploadPlanilha";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen
+  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen, Upload
 } from "lucide-react";
 
 type Pagina =
   | "home" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Cadastros",         key: "cadastros",     icon: Database    },
@@ -33,6 +34,7 @@ const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Extrato Conta",     key: "extrato",       icon: BookOpen    },
   { label: "Cartões",           key: "cartoes",       icon: Wallet      },
   { label: "DRE",               key: "dre",           icon: FileText    },
+  { label: "Importar",          key: "upload",        icon: Upload      },
 ]
 
 const cardConfig: {
@@ -49,6 +51,11 @@ const cardConfig: {
     key: "cadastros", label: "Cadastros", group: "configuracao",
     desc: "Categorias, cartões e contas",
     icon: Database, accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8",
+  },
+  {
+    key: "upload", label: "Importar Planilha", group: "configuracao",
+    desc: "Importe dados históricos via Excel (.xlsx)",
+    icon: Upload, accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee",
   },
   {
     key: "lancamento", label: "Lançar", group: "lancamentos",
@@ -95,7 +102,6 @@ const cardConfig: {
     desc: "Histórico completo com filtros avançados",
     icon: List, accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf",
   },
-
 ]
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
@@ -261,6 +267,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "cartoes":       return <Cartoes />
       case "dre":           return <DRE />
       case "cadastros":     return <Cadastros />
+      case "upload":        return <UploadPlanilha />
       default:              return null
     }
   }
