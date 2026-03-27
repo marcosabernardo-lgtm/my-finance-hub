@@ -178,7 +178,7 @@ export default function UploadPlanilha() {
             household_id, data_movimentacao, data_pagamento, tipo,
             categoria_id: categId, descricao, valor, metodo_pagamento: metodo,
             cartao_id: cartao_id || null, conta_id: conta_id || null,
-            forma_pagamento, parcela, situacao,
+            forma_pagamento, numero_parcela: parcela, situacao,
           })
 
           if (lote.length >= 50) {
