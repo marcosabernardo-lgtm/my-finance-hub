@@ -235,10 +235,6 @@ export default function Movimentacoes() {
     .filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && !!m.cartao_id)
     .reduce((s, m) => s + Number(m.valor), 0)
 
-  const totalFaturado = movimentacoesFiltradas
-    .filter(m => m.tipo === 'Despesa' && m.situacao === 'Faturado')
-    .reduce((s, m) => s + Number(m.valor), 0)
-
   const totalPagamentoFatura = movimentacoesFiltradas
     .filter(m => m.tipo === 'Transferência')
     .reduce((s, m) => s + Number(m.valor), 0)

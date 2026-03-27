@@ -172,7 +172,7 @@ export default function UploadPlanilha() {
 
       const wsMov = workbook.Sheets['💰 Movimentacoes']
       if (wsMov) {
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsMov, { range: 2, cellDates: true })
+        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsMov, { range: 2 })
 
         // Inserir em lotes de 50
         const lote: Record<string, unknown>[] = []
