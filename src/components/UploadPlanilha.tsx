@@ -162,7 +162,7 @@ export default function UploadPlanilha() {
 
           const categNome = String(row['Categoria *'] ?? '').trim()
           const categId = categMap[categNome.toLowerCase()] ?? null
-          if (!categId && categNome) {
+          if (!categId && categNome && tipo !== 'Transferência' && tipo !== 'Transferencia') {
             erros.push(`Linha ${linha}: categoria "${categNome}" nao encontrada`)
             continue
           }
