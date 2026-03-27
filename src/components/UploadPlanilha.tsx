@@ -227,6 +227,21 @@ export default function UploadPlanilha() {
         Faca upload da planilha padrao Finance Hub (.xlsx) para importar categorias, cartoes, contas e movimentacoes.
       </p>
 
+      {/* Botão download template */}
+      <a
+        href="/finance-hub-importacao.xlsx"
+        download="finance-hub-importacao.xlsx"
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          background: '#f0fdf4', border: '1px solid #bbf7d0',
+          borderRadius: 10, padding: '10px 18px', fontSize: 13,
+          color: '#15803d', fontWeight: 600, textDecoration: 'none',
+          marginBottom: 20,
+        }}
+      >
+        📥 Baixar planilha template
+      </a>
+
       {/* Drop zone */}
       <div
         onClick={() => !loading && fileRef.current?.click()}
