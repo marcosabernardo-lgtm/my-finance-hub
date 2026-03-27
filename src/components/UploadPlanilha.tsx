@@ -1,4 +1,4 @@
-﻿import { useState, useRef } from 'react'
+import { useState, useRef } from 'react'
 import * as XLSX from 'xlsx'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -18,15 +18,13 @@ export default function UploadPlanilha() {
   const [erro, setErro] = useState<string | null>(null)
   const [etapa, setEtapa] = useState<string>('')
   const [progresso, setProgresso] = useState(0)
+  const [hovered, setHovered] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  // ─── Helpers ───────────────────────────────────────────────────────────────
 
   function excelDateToISO(value: unknown): string | null {
     if (!value) return null
     if (value instanceof Date) return value.toISOString().split('T')[0]
     if (typeof value === 'number') {
-      // Excel serial date
       const date = new Date(Math.round((value - 25569) * 86400 * 1000))
       return date.toISOString().split('T')[0]
     }
@@ -46,8 +44,6 @@ export default function UploadPlanilha() {
     return 0
   }
 
-  // ─── Importação ─────────────────────────────────────────────────────────────
-
   async function processarPlanilha(file: File) {
     setLoading(true)
     setResultado(null)
@@ -58,38 +54,31 @@ export default function UploadPlanilha() {
     const result: ImportResult = { categorias: 0, cartoes: 0, contas: 0, movimentacoes: 0, erros: [] }
 
     try {
-      // Buscar household_id do usuário
       const { data: memberData, error: memberError } = await supabase
         .from('household_members')
         .select('household_id')
         .eq('user_id', user!.id)
         .single()
 
-      if (memberError || !memberData) {
-        throw new Error('Não foi possível encontrar o household do usuário.')
-      }
+      if (memberError || !memberData) throw new Error('Nao foi possivel encontrar o household do usuario.')
       const household_id = memberData.household_id
 
-      // Ler arquivo Excel
       setEtapa('Lendo arquivo...')
       const arrayBuffer = await file.arrayBuffer()
       const workbook = XLSX.read(arrayBuffer, { type: 'array', cellDates: true })
 
-      // ── 1. CATEGORIAS ──────────────────────────────────────────────────────
+      // 1. CATEGORIAS
       setEtapa('Importando categorias...')
       setProgresso(10)
-
       const wsCateg = workbook.Sheets['📂 Categorias']
       if (wsCateg) {
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsCateg, { range: 2 })
         for (const row of rows) {
           const nome = String(row['Nome da Categoria *'] ?? '').trim()
-          const classificacao = String(row['Classificação *'] ?? '').trim()
+          const classificacao = String(row['Classificacao *'] ?? row['Classificação *'] ?? '').trim()
           if (!nome || !classificacao) continue
-
           const tipo = ['Renda Ativa', 'Renda Passiva'].includes(classificacao) ? 'Receita' : 'Despesa'
           const limite = parseValor(row['Limite Mensal (R$)']) || null
-
           const { error } = await supabase.from('categorias').upsert(
             { household_id, nome, classificacao, tipo, limite_mensal: limite },
             { onConflict: 'household_id,nome' }
@@ -99,44 +88,38 @@ export default function UploadPlanilha() {
         }
       }
 
-      // ── 2. CARTÕES ─────────────────────────────────────────────────────────
-      setEtapa('Importando cartões...')
+      // 2. CARTOES
+      setEtapa('Importando cartoes...')
       setProgresso(30)
-
       const wsCart = workbook.Sheets['💳 Cartões']
       if (wsCart) {
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsCart, { range: 2 })
         for (const row of rows) {
-          const nome = String(row['Nome do Cartão *'] ?? '').trim()
+          const nome = String(row['Nome do Cartao *'] ?? row['Nome do Cartão *'] ?? '').trim()
+          if (!nome) continue
           const dia_fechamento = Number(row['Dia Fechamento *']) || null
           const dia_vencimento = Number(row['Dia Vencimento *']) || null
-          if (!nome) continue
-
           const limite = parseValor(row['Limite Total (R$)']) || null
-
           const { error } = await supabase.from('cartoes').upsert(
             { household_id, nome, dia_fechamento, dia_vencimento, limite },
             { onConflict: 'household_id,nome' }
           )
-          if (error) erros.push(`Cartão "${nome}": ${error.message}`)
+          if (error) erros.push(`Cartao "${nome}": ${error.message}`)
           else result.cartoes++
         }
       }
 
-      // ── 3. CONTAS ──────────────────────────────────────────────────────────
+      // 3. CONTAS
       setEtapa('Importando contas...')
       setProgresso(50)
-
       const wsContas = workbook.Sheets['🏦 Contas']
       if (wsContas) {
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsContas, { range: 2 })
         for (const row of rows) {
           const nome = String(row['Nome da Conta *'] ?? '').trim()
           if (!nome) continue
-
           const saldo_inicial = parseValor(row['Saldo Inicial (R$)'])
           const data_inicial = excelDateToISO(row['Data Inicial *'])
-
           const { error } = await supabase.from('contas').upsert(
             { household_id, nome, saldo_inicial, data_inicial },
             { onConflict: 'household_id,nome' }
@@ -146,56 +129,41 @@ export default function UploadPlanilha() {
         }
       }
 
-      // Recarregar categorias e cartões para resolver nomes → ids
-      const { data: categsDB } = await supabase
-        .from('categorias')
-        .select('id, nome')
-        .eq('household_id', household_id)
-
-      const { data: cartoesDB } = await supabase
-        .from('cartoes')
-        .select('id, nome')
-        .eq('household_id', household_id)
-
-      const { data: contasDB } = await supabase
-        .from('contas')
-        .select('id, nome')
-        .eq('household_id', household_id)
-
+      // Mapas de ids
+      const { data: categsDB } = await supabase.from('categorias').select('id, nome').eq('household_id', household_id)
+      const { data: cartoesDB } = await supabase.from('cartoes').select('id, nome').eq('household_id', household_id)
+      const { data: contasDB } = await supabase.from('contas').select('id, nome').eq('household_id', household_id)
       const categMap = Object.fromEntries((categsDB ?? []).map(c => [c.nome.trim().toLowerCase(), c.id]))
       const cartaoMap = Object.fromEntries((cartoesDB ?? []).map(c => [c.nome.trim().toLowerCase(), c.id]))
       const contaMap = Object.fromEntries((contasDB ?? []).map(c => [c.nome.trim().toLowerCase(), c.id]))
 
-      // ── 4. MOVIMENTAÇÕES ───────────────────────────────────────────────────
-      setEtapa('Importando movimentações...')
+      // 4. MOVIMENTACOES
+      setEtapa('Importando movimentacoes...')
       setProgresso(65)
-
       const wsMov = workbook.Sheets['💰 Movimentacoes']
       if (wsMov) {
         const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(wsMov, { range: 2 })
-
-        // Inserir em lotes de 50
         const lote: Record<string, unknown>[] = []
-        let linha = 4 // linha humana (começa após 3 linhas de cabeçalho)
+        let linha = 4
 
         for (const row of rows) {
           linha++
-          const data_movimentacao = excelDateToISO(row['Data Movimentação *'])
+          const data_movimentacao = excelDateToISO(row['Data Movimentacao *'] ?? row['Data Movimentação *'])
           const tipo = String(row['Tipo *'] ?? '').trim()
-          const descricao = String(row['Descrição *'] ?? '').trim()
+          const descricao = String(row['Descricao *'] ?? row['Descrição *'] ?? '').trim()
           const valor = parseValor(row['Valor (R$) *'])
-          const metodo = String(row['Método de Pagamento *'] ?? '').trim()
-          const situacao = String(row['Situação *'] ?? '').trim()
+          const metodo = String(row['Metodo de Pagamento *'] ?? row['Método de Pagamento *'] ?? '').trim()
+          const situacao = String(row['Situacao *'] ?? row['Situação *'] ?? '').trim()
 
           if (!data_movimentacao || !tipo || !descricao || !valor || !situacao) {
-            erros.push(`Linha ${linha}: campos obrigatórios faltando`)
+            erros.push(`Linha ${linha}: campos obrigatorios faltando`)
             continue
           }
 
           const categNome = String(row['Categoria *'] ?? '').trim()
           const categId = categMap[categNome.toLowerCase()] ?? null
           if (!categId && categNome) {
-            erros.push(`Linha ${linha}: categoria "${categNome}" não encontrada`)
+            erros.push(`Linha ${linha}: categoria "${categNome}" nao encontrada`)
             continue
           }
 
@@ -203,40 +171,28 @@ export default function UploadPlanilha() {
           const contaNome = String(row['Conta Origem/Destino'] ?? '').trim()
           const conta_id = contaNome ? (contaMap[contaNome.toLowerCase()] ?? null) : null
           const forma_pagamento = String(row['Forma de Pagamento'] ?? '').trim() || null
-          const parcela = String(row['Nº da Parcela'] ?? '').trim() || null
-
-          // Cartão: método é o nome do cartão
+          const parcela = String(row['No da Parcela'] ?? row['Nº da Parcela'] ?? '').trim() || null
           const cartao_id = cartaoMap[metodo.toLowerCase()] ?? null
 
           lote.push({
-            household_id,
-            data_movimentacao,
-            data_pagamento,
-            tipo,
-            categoria_id: categId,
-            descricao,
-            valor,
-            metodo_pagamento: metodo,
-            cartao_id: cartao_id || null,
-            conta_id: conta_id || null,
-            forma_pagamento,
-            parcela,
-            situacao,
+            household_id, data_movimentacao, data_pagamento, tipo,
+            categoria_id: categId, descricao, valor, metodo_pagamento: metodo,
+            cartao_id: cartao_id || null, conta_id: conta_id || null,
+            forma_pagamento, parcela, situacao,
           })
 
           if (lote.length >= 50) {
             const { error, data } = await supabase.from('movimentacoes').insert(lote).select('id')
-            if (error) erros.push(`Lote movimentações: ${error.message}`)
+            if (error) erros.push(`Lote movimentacoes: ${error.message}`)
             else result.movimentacoes += data?.length ?? 0
             lote.length = 0
             setProgresso(65 + Math.min(30, result.movimentacoes / 10))
           }
         }
 
-        // Último lote
         if (lote.length > 0) {
           const { error, data } = await supabase.from('movimentacoes').insert(lote).select('id')
-          if (error) erros.push(`Lote final movimentações: ${error.message}`)
+          if (error) erros.push(`Lote final: ${error.message}`)
           else result.movimentacoes += data?.length ?? 0
         }
       }
@@ -244,9 +200,9 @@ export default function UploadPlanilha() {
       result.erros = erros
       setResultado(result)
       setProgresso(100)
-      setEtapa('Concluído!')
+      setEtapa('Concluido!')
     } catch (e: unknown) {
-      setErro(e instanceof Error ? e.message : 'Erro inesperado durante a importação.')
+      setErro(e instanceof Error ? e.message : 'Erro inesperado durante a importacao.')
     } finally {
       setLoading(false)
     }
@@ -262,30 +218,40 @@ export default function UploadPlanilha() {
     processarPlanilha(file)
   }
 
-  // ─── UI ─────────────────────────────────────────────────────────────────────
-
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-2 text-gray-800">Importar Planilha</h1>
-      <p className="text-gray-500 mb-6 text-sm">
-        Faça upload da planilha padrão Finance Hub (.xlsx) para importar categorias, cartões, contas e movimentações.
+    <div style={{ padding: 32, maxWidth: 640, margin: '0 auto' }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
+        Importar Planilha
+      </h1>
+      <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 28 }}>
+        Faca upload da planilha padrao Finance Hub (.xlsx) para importar categorias, cartoes, contas e movimentacoes.
       </p>
 
-      {/* Drop zone / botão */}
+      {/* Drop zone */}
       <div
-        className="border-2 border-dashed border-blue-300 rounded-2xl p-10 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition-all"
         onClick={() => !loading && fileRef.current?.click()}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          border: `2px dashed ${hovered ? '#2563eb' : '#93c5fd'}`,
+          borderRadius: 16,
+          padding: '48px 32px',
+          textAlign: 'center',
+          cursor: loading ? 'default' : 'pointer',
+          background: hovered ? '#eff6ff' : '#f8fafc',
+          transition: 'all 0.2s',
+        }}
       >
-        <div className="text-5xl mb-3">📊</div>
-        <p className="font-semibold text-gray-700 text-lg">
+        <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
+        <p style={{ fontWeight: 600, fontSize: 16, color: '#374151', marginBottom: 6 }}>
           {loading ? etapa : 'Clique para selecionar a planilha'}
         </p>
-        <p className="text-gray-400 text-sm mt-1">Formato aceito: .xlsx</p>
+        <p style={{ fontSize: 12, color: '#9ca3af' }}>Formato aceito: .xlsx</p>
         <input
           ref={fileRef}
           type="file"
           accept=".xlsx"
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={handleFile}
           disabled={loading}
         />
@@ -293,44 +259,56 @@ export default function UploadPlanilha() {
 
       {/* Barra de progresso */}
       {loading && (
-        <div className="mt-4">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
+        <div style={{ marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
             <span>{etapa}</span>
             <span>{progresso}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-500 h-2 rounded-full transition-all duration-500"
-              style={{ width: `${progresso}%` }}
-            />
+          <div style={{ width: '100%', background: '#e5e7eb', borderRadius: 99, height: 8 }}>
+            <div style={{
+              width: `${progresso}%`, background: '#2563eb',
+              borderRadius: 99, height: 8, transition: 'width 0.5s',
+            }} />
           </div>
         </div>
       )}
 
-      {/* Erro geral */}
+      {/* Erro */}
       {erro && (
-        <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
+        <div style={{
+          marginTop: 16, background: '#fef2f2', border: '1px solid #fecaca',
+          borderRadius: 12, padding: '12px 16px', color: '#b91c1c', fontSize: 13,
+        }}>
           ❌ {erro}
         </div>
       )}
 
       {/* Resultado */}
       {resultado && (
-        <div className="mt-6 space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-xl p-5">
-            <h2 className="font-bold text-green-800 text-lg mb-3">✅ Importação concluída!</h2>
-            <div className="grid grid-cols-2 gap-3">
+        <div style={{ marginTop: 24 }}>
+          <div style={{
+            background: '#f0fdf4', border: '1px solid #bbf7d0',
+            borderRadius: 12, padding: 20, marginBottom: 16,
+          }}>
+            <p style={{ fontWeight: 700, color: '#15803d', fontSize: 16, marginBottom: 16 }}>
+              Importacao concluida!
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
                 { label: 'Categorias', valor: resultado.categorias, icon: '📂' },
-                { label: 'Cartões', valor: resultado.cartoes, icon: '💳' },
+                { label: 'Cartoes', valor: resultado.cartoes, icon: '💳' },
                 { label: 'Contas', valor: resultado.contas, icon: '🏦' },
-                { label: 'Movimentações', valor: resultado.movimentacoes, icon: '💰' },
+                { label: 'Movimentacoes', valor: resultado.movimentacoes, icon: '💰' },
               ].map(item => (
-                <div key={item.label} className="bg-white rounded-lg p-3 flex items-center gap-3 shadow-sm">
-                  <span className="text-2xl">{item.icon}</span>
+                <div key={item.label} style={{
+                  background: '#fff', borderRadius: 10, padding: '12px 16px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                }}>
+                  <span style={{ fontSize: 24 }}>{item.icon}</span>
                   <div>
-                    <p className="text-xs text-gray-400">{item.label}</p>
-                    <p className="font-bold text-gray-800 text-lg">{item.valor}</p>
+                    <p style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>{item.label}</p>
+                    <p style={{ fontWeight: 700, fontSize: 20, color: '#111827' }}>{item.valor}</p>
                   </div>
                 </div>
               ))}
@@ -338,23 +316,27 @@ export default function UploadPlanilha() {
           </div>
 
           {resultado.erros.length > 0 && (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-              <h3 className="font-semibold text-yellow-800 mb-2">
-                ⚠️ {resultado.erros.length} avisos durante a importação:
-              </h3>
-              <ul className="text-xs text-yellow-700 space-y-1 max-h-40 overflow-y-auto">
+            <div style={{
+              background: '#fffbeb', border: '1px solid #fde68a',
+              borderRadius: 12, padding: 16, marginBottom: 16,
+            }}>
+              <p style={{ fontWeight: 600, color: '#92400e', marginBottom: 8, fontSize: 13 }}>
+                {resultado.erros.length} avisos durante a importacao:
+              </p>
+              <ul style={{ fontSize: 12, color: '#b45309', maxHeight: 160, overflowY: 'auto' }}>
                 {resultado.erros.map((e, i) => (
-                  <li key={i}>• {e}</li>
+                  <li key={i} style={{ marginBottom: 4 }}>- {e}</li>
                 ))}
               </ul>
             </div>
           )}
 
           <button
-            className="w-full bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl py-3 text-sm font-medium transition"
-            onClick={() => {
-              setResultado(null)
-              if (fileRef.current) fileRef.current.value = ''
+            onClick={() => { setResultado(null); if (fileRef.current) fileRef.current.value = '' }}
+            style={{
+              width: '100%', background: '#f3f4f6', border: '1px solid #e5e7eb',
+              borderRadius: 10, padding: '12px 0', fontSize: 13, color: '#374151',
+              cursor: 'pointer', fontWeight: 500,
             }}
           >
             Importar outra planilha
