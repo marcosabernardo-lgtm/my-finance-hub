@@ -685,14 +685,14 @@ export default function DRE() {
                 {/* ── RECEITAS ── */}
                 <GrupoHeader label='RECEITAS' colspan={16} cor='#065f46' bg='#d1fae5' />
                 {receitasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} />
+                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
                 <SubtotalRow label='Total Receitas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='#065f46' bg='#d1fae5' mesesCorrente={mesesCorrente} />
 
                 {/* ── DESPESAS ── */}
                 <GrupoHeader label='DESPESAS' colspan={16} cor='#991b1b' bg='#fee2e2' />
                 {despesasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} />
+                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
                 <SubtotalRow label='Total Despesas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='#991b1b' bg='#fee2e2' mesesCorrente={mesesCorrente} />
 
@@ -736,7 +736,7 @@ export default function DRE() {
 // ─── LinhaComDrill ─────────────────────────────────────────────────────────────
 // Linha da tabela com capacidade de expandir drill-down ao clicar numa célula
 
-function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, mesesCorrente, drillAberto, lancamentosDrill, onToggle, mediaProjecao = 0 }: {
+function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, mesesCorrente, drillAberto, lancamentosDrill, onToggle, mediaProjecao = 0, onEditLancamento }: {
   linha: LinhaDRE
   meses: number[]
   mesAtual: number
@@ -748,6 +748,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
   lancamentosDrill: Movimentacao[]
   onToggle: (linhaId: string, mes: number, valor: number) => void
   mediaProjecao?: number
+  onEditLancamento: (m: Movimentacao) => void
 }) {
   const cor = isReceita ? '#065f46' : '#991b1b'
   const drillEstaAberto = (mes: number) => drillAberto?.linhaId === linha.id && drillAberto?.mes === mes
@@ -872,7 +873,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                   <tbody>
                     {lancamentosDrill.map((l, idx) => (
                       <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7', cursor: 'pointer' }}
-                        onClick={() => setEditandoDrill(l)}
+                        onClick={() => onEditLancamento(l)}
                         title="Clique para editar este lançamento"
                       >
                         <td style={tdDrill}>{fmtDate(l.data_movimentacao)}</td>
