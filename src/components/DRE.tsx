@@ -291,7 +291,16 @@ export default function DRE() {
       m.data_pagamento && getMes(m.data_pagamento) === mesAtual && getAno(m.data_pagamento) === ano
     )
     if (!despMes.length) return null
-    return despMes.reduce((max, m) => Number(m.valor) > Number(max.valor) ? m : max)
+    // Agrupar por categoria e somar totais
+    const totaisPorCategoria: Record<string, { categoria_id: number | null; total: number }> = {}
+    for (const m of despMes) {
+      const key = String(m.categoria_id ?? 'sem_cat')
+      if (!totaisPorCategoria[key]) totaisPorCategoria[key] = { categoria_id: m.categoria_id, total: 0 }
+      totaisPorCategoria[key].total += Number(m.valor)
+    }
+    // Encontrar categoria com maior total
+    const maior = Object.values(totaisPorCategoria).reduce((max, c) => c.total > max.total ? c : max)
+    return { categoria_id: maior.categoria_id, valor: maior.total }
   }, [movimentacoes, mesAtual, ano])
 
   // ── Projeção 1: Conservadora ────────────────────────────────────────────────
