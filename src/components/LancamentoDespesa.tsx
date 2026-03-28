@@ -53,14 +53,14 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   }, [categoriaId])
 
   useEffect(() => {
-    if (isPrevisto && metodoPagamento === 'Cartao de Credito' && cartaoId && dataInicio) {
+    if (isPrevisto && metodoPagamento === 'Cartao de Credito' && cartaoId && dataMov) {
       const cartao = cartoes.find(c => c.id === Number(cartaoId))
       if (cartao) {
-        const venc = calcularVencimentoCartao(dataInicio, cartao)
+        const venc = calcularVencimentoCartao(dataMov, cartao)
         setDataInicio(toISO(venc))
       }
     }
-  }, [cartaoId, isPrevisto])
+  }, [cartaoId, isPrevisto, dataMov])
 
   function calcularVencimentoCartao(dataMov: string, cartao: Cartao): Date {
     const d = new Date(dataMov + 'T12:00:00')
@@ -353,6 +353,11 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
           <label style={labelStyle}>Data do 1o Vencimento *</label>
           <input style={inputStyle} type="date" value={dataInicio}
             onChange={e => setDataInicio(e.target.value)} />
+          {isCartao && dataInicio && (
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 6, padding: '8px 12px', marginBottom: 10, color: '#15803d', fontSize: 13 }}>
+              1o vencimento calculado: <strong>{new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
+            </div>
+          )}
 
           {isCartao && (
             <>
