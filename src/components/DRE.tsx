@@ -367,8 +367,8 @@ export default function DRE() {
                 getAno(m.data_pagamento) === ano
             })
             .reduce((s, m) => s + Number(m.valor), 0)
-        } else if (mesesCorrente > 0) {
-          // Usa a média histórica dos meses correntes para essa categoria
+        } else if (mesesCorrente > 0 && linha.tipo === 'despesa') {
+          // Usa a média histórica apenas para despesas — receitas sem lançamento ficam zeradas
           const somaHistorica = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
           valorMesFut = somaHistorica / mesesCorrente
         }
