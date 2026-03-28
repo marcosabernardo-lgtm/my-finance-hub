@@ -287,6 +287,7 @@ export default function DRE() {
       const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
       const media = soma / mesesCorrente
       // Se tem limite e a media supera o limite, usa o limite como teto
+      console.log(`[DRE] ${linha.nome} | limite: ${linha.limite} | media: ${media.toFixed(2)} | resultado: ${(linha.limite > 0 && media > linha.limite) ? linha.limite : media}`)
       result[linha.id] = (linha.limite > 0 && media > linha.limite) ? linha.limite : media
     }
     return result
