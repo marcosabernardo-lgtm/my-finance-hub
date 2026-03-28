@@ -927,10 +927,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                   </thead>
                   <tbody>
                     {lancamentosDrill.map((l, idx) => (
-                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7', cursor: 'pointer' }}
-                        onClick={() => onEditLancamento(l)}
-                        title="Clique para editar este lançamento"
-                      >
+                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
                         <td style={tdDrill}>{fmtDate(l.data_movimentacao)}</td>
                         <td style={tdDrill}>{fmtDate(l.data_pagamento)}</td>
                         <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.descricao}</td>
@@ -942,7 +939,12 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                             {l.situacao}
                           </span>
                         </td>
-                        <td style={{ ...tdDrill, color: '#6b7280' }}>✏️</td>
+                        <td style={{ ...tdDrill }}>
+                          <button
+                            onClick={e => { e.stopPropagation(); onEditLancamento(l) }}
+                            style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 11, color: '#1d4ed8', fontWeight: 600 }}
+                          >✏️ Editar</button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
