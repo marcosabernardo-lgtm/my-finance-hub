@@ -66,6 +66,9 @@ export default function FaturaCartao() {
 
   // Totais globais do cartão (sem filtro de mês — limite real comprometido)
   const [totalPendenteGlobal, setTotalPendenteGlobal] = useState(0)
+  const [atualizandoSituacao, setAtualizandoSituacao] = useState<number | null>(null)
+  const [editandoValor, setEditandoValor] = useState<number | null>(null)
+  const [valorTemp, setValorTemp] = useState('')
   const [totalPrevistoGlobal, setTotalPrevistoGlobal] = useState(0)
 
   const [loading, setLoading] = useState(false)
@@ -116,12 +119,19 @@ export default function FaturaCartao() {
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
     // Query 1 — tabela: lançamentos do mês/ano selecionado (pelo data_pagamento)
+    const hoje2 = new Date()
+    const isMesPassado = filtroAno < hoje2.getFullYear() ||
+      (filtroAno === hoje2.getFullYear() && filtroMes < hoje2.getMonth() + 1)
+    const situacoesBusca = isMesPassado
+      ? ['Pendente', 'Previsto', 'Faturado']
+      : ['Pendente', 'Previsto']
+
     const { data: dadosMes } = await supabase
       .from('movimentacoes')
       .select('id, data_movimentacao, data_pagamento, categoria_id, descricao, valor, forma_pagamento, numero_parcela, situacao')
       .eq('household_id', householdId)
       .eq('cartao_id', cartaoId)
-      .in('situacao', ['Pendente', 'Previsto'])
+      .in('situacao', situacoesBusca)
       .gte('data_pagamento', dataInicio)
       .lte('data_pagamento', dataFim)
       .order('data_movimentacao', { ascending: true })
@@ -162,6 +172,27 @@ export default function FaturaCartao() {
     lancamentosFiltrados.reduce((s, l) => s + Number(l.valor), 0),
     [lancamentosFiltrados]
   )
+
+  // Total da fatura do mês
+  const totalFaturaMes = useMemo(() =>
+    lancamentosMes.reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentosMes]
+  )
+
+  const atualizarSituacao = async (id: number, novaSituacao: string) => {
+    setAtualizandoSituacao(id)
+    await supabase.from('movimentacoes').update({ situacao: novaSituacao }).eq('id', id)
+    setLancamentosMes(prev => prev.map(l => l.id === id ? { ...l, situacao: novaSituacao } : l))
+    setAtualizandoSituacao(null)
+  }
+
+  const salvarValor = async (id: number) => {
+    const novoValor = parseFloat(valorTemp.replace(',', '.'))
+    if (isNaN(novoValor) || novoValor <= 0) { setEditandoValor(null); return }
+    await supabase.from('movimentacoes').update({ valor: novoValor }).eq('id', id)
+    setLancamentosMes(prev => prev.map(l => l.id === id ? { ...l, valor: novoValor } : l))
+    setEditandoValor(null)
+  }
 
   // ── Cálculos dos cards (sempre globais, sem filtro de mês) ──────────────────
   const limite = cartaoAtual?.limite_total || 0
@@ -341,18 +372,44 @@ export default function FaturaCartao() {
                       </div>
                     </td>
                     <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, color: '#991b1b', whiteSpace: 'nowrap' }}>
-                      − {fmt(Number(l.valor))}
+                      {editandoValor === l.id ? (
+                        <input
+                          type="number" step="0.01" autoFocus
+                          value={valorTemp}
+                          onChange={e => setValorTemp(e.target.value)}
+                          onKeyDown={e => { if (e.key === 'Enter') salvarValor(l.id); if (e.key === 'Escape') setEditandoValor(null) }}
+                          onBlur={() => salvarValor(l.id)}
+                          style={{ width: 90, padding: '2px 6px', borderRadius: 4, border: '1px solid #2563eb', fontSize: 12, textAlign: 'right' }}
+                        />
+                      ) : (
+                        <span
+                          onClick={() => { setEditandoValor(l.id); setValorTemp(String(Number(l.valor))) }}
+                          title="Clique para editar o valor"
+                          style={{ cursor: 'pointer', borderBottom: '1px dotted #991b1b' }}
+                        >
+                          − {fmt(Number(l.valor))}
+                        </span>
+                      )}
                     </td>
                     <td style={{ ...tdStyle, color: '#6b7280' }}>{l.forma_pagamento || '—'}</td>
                     <td style={{ ...tdStyle, color: '#6b7280' }}>{l.numero_parcela || '—'}</td>
                     <td style={tdStyle}>
-                      <span style={{
-                        ...corSituacao(l.situacao),
-                        padding: '2px 8px', borderRadius: '99px',
-                        fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
-                      }}>
-                        {l.situacao}
-                      </span>
+                      <select
+                        value={l.situacao}
+                        disabled={atualizandoSituacao === l.id}
+                        onChange={e => atualizarSituacao(l.id, e.target.value)}
+                        style={{
+                          ...corSituacao(l.situacao),
+                          padding: '2px 8px', borderRadius: '99px',
+                          fontSize: '11px', fontWeight: 600,
+                          border: 'none', cursor: 'pointer', outline: 'none',
+                        }}
+                      >
+                        <option value="Pendente">Pendente</option>
+                        <option value="Previsto">Previsto</option>
+                        <option value="Pago">Pago</option>
+                        <option value="Faturado">Faturado</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
