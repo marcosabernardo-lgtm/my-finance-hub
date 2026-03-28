@@ -17,6 +17,7 @@ interface Movimentacao {
   numero_parcela: string | null
   data_movimentacao: string
   data_pagamento: string | null
+  grupo_id: string | null
 }
 
 interface Categoria {
@@ -100,27 +101,44 @@ export default function DRE() {
   const [editandoDrill, setEditandoDrill] = useState<Movimentacao | null>(null)
   const [editDrillForm, setEditDrillForm] = useState<Partial<Movimentacao>>({})
   const [salvandoDrill, setSalvandoDrill] = useState(false)
+  const [modalParcelasDrill, setModalParcelasDrill] = useState(false)
 
   useEffect(() => {
     if (editandoDrill) setEditDrillForm({ ...editandoDrill })
   }, [editandoDrill])
 
-  const salvarEditDrill = async () => {
+  const salvarEditDrill = async (escopo: 'esta' | 'proximas') => {
     if (!editandoDrill) return
     setSalvandoDrill(true)
-    const { error } = await supabase.from('movimentacoes').update({
-      data_movimentacao: editDrillForm.data_movimentacao,
-      data_pagamento: editDrillForm.data_pagamento,
+    setModalParcelasDrill(false)
+    const payload = {
       descricao: editDrillForm.descricao,
       valor: Number(editDrillForm.valor),
       situacao: editDrillForm.situacao,
       categoria_id: editDrillForm.categoria_id,
-    }).eq('id', editandoDrill.id)
-    if (!error) {
-      setEditandoDrill(null)
-      fetchDados()
     }
+    if (escopo === 'proximas' && editandoDrill.grupo_id) {
+      await supabase.from('movimentacoes').update(payload)
+        .eq('grupo_id', editandoDrill.grupo_id)
+        .gte('data_movimentacao', editandoDrill.data_movimentacao)
+    } else {
+      await supabase.from('movimentacoes').update({
+        ...payload,
+        data_movimentacao: editDrillForm.data_movimentacao,
+        data_pagamento: editDrillForm.data_pagamento,
+      }).eq('id', editandoDrill.id)
+    }
+    setEditandoDrill(null)
+    fetchDados()
     setSalvandoDrill(false)
+  }
+
+  const handleSalvarDrill = () => {
+    if (editandoDrill?.grupo_id) {
+      setModalParcelasDrill(true)
+    } else {
+      salvarEditDrill('esta')
+    }
   }
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
@@ -149,7 +167,7 @@ export default function DRE() {
 
     const { data: movs } = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento')
+      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
       .eq('household_id', householdId)
       .in('tipo', ['Despesa', 'Receita'])
       .gte('data_movimentacao', dataInicio)
@@ -774,14 +792,37 @@ export default function DRE() {
                 style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
               >
                 <option value="">— Selecione —</option>
-                {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {categorias
+                  .filter(c => editDrillForm.tipo === 'Receita'
+                    ? ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao)
+                    : !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao))
+                  .map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
               <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
-              <button onClick={salvarEditDrill} disabled={salvandoDrill} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+              <button onClick={handleSalvarDrill} disabled={salvandoDrill} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                 {salvandoDrill ? 'Salvando...' : 'Salvar'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Parcelas Drill */}
+      {modalParcelasDrill && editandoDrill && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#111827' }}>Lançamento Parcelado</h3>
+            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>Este lançamento faz parte de um grupo. O que deseja fazer?</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button onClick={() => salvarEditDrill('esta')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, textAlign: 'left' }}>
+                ✏️ Editar somente esta parcela
+              </button>
+              <button onClick={() => salvarEditDrill('proximas')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', color: '#374151', cursor: 'pointer', fontSize: 13, textAlign: 'left' }}>
+                ⏩ Editar esta e todas as próximas
+              </button>
+              <button onClick={() => setModalParcelasDrill(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: 13 }}>Cancelar</button>
             </div>
           </div>
         </div>
