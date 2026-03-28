@@ -313,12 +313,25 @@ export default function Movimentacoes() {
   }
 
   // ── Delete ──────────────────────────────────────────────────────────────────
-  const confirmarExclusao = async () => {
+  const confirmarExclusao = async (modo: 'esta' | 'todas') => {
     if (!excluindo) return
     setSaving(true)
-    const { error } = await supabase.from('movimentacoes').delete().eq('id', excluindo.id)
-    if (!error) {
-      setSucesso('Lançamento excluído.')
+    let deleteError = null
+
+    if (modo === 'todas' && excluindo.grupo_id) {
+      const { error } = await supabase
+        .from('movimentacoes')
+        .delete()
+        .eq('grupo_id', excluindo.grupo_id)
+        .in('situacao', ['Pendente', 'Previsto'])
+      deleteError = error
+    } else {
+      const { error } = await supabase.from('movimentacoes').delete().eq('id', excluindo.id)
+      deleteError = error
+    }
+
+    if (!deleteError) {
+      setSucesso(modo === 'todas' ? 'Parcelas pendentes excluídas.' : 'Lançamento excluído.')
       setTimeout(() => setSucesso(''), 3000)
       fetchMovimentacoes()
     } else {
@@ -693,14 +706,19 @@ export default function Movimentacoes() {
           <p style={{ color: '#9ca3af', fontSize: '12px' }}>Esta ação não pode ser desfeita.</p>
           {excluindo.grupo_id && (
             <p style={{ color: '#92400e', fontSize: '12px', background: '#fef3c7', padding: '8px', borderRadius: '6px' }}>
-              ⚠️ Este lançamento faz parte de um grupo parcelado. Apenas esta parcela será excluída.
+              ⚠️ Este lançamento faz parte de um grupo parcelado. Escolha abaixo excluir só esta parcela ou todas as pendentes do grupo.
             </p>
           )}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', flexWrap: 'wrap' }}>
             <button onClick={() => setExcluindo(null)} style={btnSecundario}>Cancelar</button>
-            <button onClick={confirmarExclusao} disabled={saving} style={{ ...btnPrimario, background: '#dc2626' }}>
-              {saving ? 'Excluindo...' : 'Excluir'}
+            <button onClick={() => confirmarExclusao('esta')} disabled={saving} style={{ ...btnPrimario, background: '#dc2626' }}>
+              {saving ? 'Excluindo...' : 'Excluir só esta'}
             </button>
+            {excluindo.grupo_id && (
+              <button onClick={() => confirmarExclusao('todas')} disabled={saving} style={{ ...btnPrimario, background: '#7f1d1d' }}>
+                {saving ? 'Excluindo...' : 'Excluir todas pendentes'}
+              </button>
+            )}
           </div>
         </Modal>
       )}
