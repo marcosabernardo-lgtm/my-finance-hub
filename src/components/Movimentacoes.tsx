@@ -267,7 +267,9 @@ export default function Movimentacoes() {
   const salvarMovimentacao = async (
     id: number,
     form: Partial<Movimentacao>,
-    escopo: 'esta' | 'proximas' | null
+    escopo: 'esta' | 'proximas' | null,
+    grupoId?: string | null,
+    dataMov?: string
   ) => {
     setSaving(true)
     try {
@@ -285,12 +287,12 @@ export default function Movimentacoes() {
         situacao: form.situacao,
       }
 
-      if (escopo === 'proximas' && editando?.grupo_id) {
+      if (escopo === 'proximas' && grupoId && dataMov) {
         const { data: parcelas } = await supabase
           .from('movimentacoes')
           .select('id')
-          .eq('grupo_id', editando.grupo_id)
-          .gte('data_movimentacao', editando.data_movimentacao)
+          .eq('grupo_id', grupoId)
+          .gte('data_movimentacao', dataMov)
         if (parcelas) {
           for (const p of parcelas) {
             await supabase.from('movimentacoes').update(payload).eq('id', p.id)
@@ -613,7 +615,7 @@ export default function Movimentacoes() {
             <Campo label='Categoria'>
               <select style={inputStyle} value={editForm.categoria_id || ''} onChange={e => setEditForm(f => ({ ...f, categoria_id: Number(e.target.value) || null }))}>
                 <option value=''>— Selecione —</option>
-                {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                {categorias.filter(c => !editForm.tipo || (editForm.tipo === 'Receita' ? ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) : !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao))).map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </Campo>
 
@@ -668,14 +670,14 @@ export default function Movimentacoes() {
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <button
-              onClick={() => salvarMovimentacao(modalParcelas.mov.id, modalParcelas.form, 'esta')}
+              onClick={() => salvarMovimentacao(modalParcelas.mov.id, modalParcelas.form, 'esta', modalParcelas.mov.grupo_id, modalParcelas.mov.data_movimentacao)}
               disabled={saving}
               style={{ ...btnPrimario, justifyContent: 'flex-start', padding: '12px 16px' }}
             >
               ✏️ Editar somente esta parcela
             </button>
             <button
-              onClick={() => salvarMovimentacao(modalParcelas.mov.id, modalParcelas.form, 'proximas')}
+              onClick={() => salvarMovimentacao(modalParcelas.mov.id, modalParcelas.form, 'proximas', modalParcelas.mov.grupo_id, modalParcelas.mov.data_movimentacao)}
               disabled={saving}
               style={{ ...btnSecundario, justifyContent: 'flex-start', padding: '12px 16px' }}
             >
