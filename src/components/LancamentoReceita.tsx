@@ -28,6 +28,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
   const [valor, setValor] = useState('')
   const [contaId, setContaId] = useState('')
   const [numMeses, setNumMeses] = useState('1')
+  const [dataPrimeiro, setDataPrimeiro] = useState('')
   const [descricoesCategoria, setDescricoesCategoria] = useState<string[]>([])
   const [mensagem, setMensagem] = useState('')
   const [loading, setLoading] = useState(false)
@@ -53,6 +54,8 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
   async function salvarReceita() {
     if (!categoriaId || !descricao || !valor || !dataMov || !contaId)
       return setMensagem('Preencha todos os campos obrigatórios.')
+    if (parseInt(numMeses) > 1 && !dataPrimeiro)
+      return setMensagem('Informe a data do 1º recebimento.')
 
     setLoading(true); setMensagem('')
 
@@ -61,7 +64,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
     const conta = contas.find(c => c.id === Number(contaId))
     const categoria = categorias.find(c => c.id === Number(categoriaId))
     const classificacao = categoria?.classificacao ?? ''
-    const dataBase = new Date(dataMov + 'T12:00:00')
+    const dataBase = new Date((dataPrimeiro || dataMov) + 'T12:00:00')
     let registros: any[] = []
 
     const grupoId = crypto.randomUUID()
@@ -96,7 +99,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
       setMensagem('Erro: ' + error.message)
     } else {
       setMensagem(meses > 1 ? `${meses} receitas lançadas com sucesso!` : 'Receita lançada com sucesso!')
-      setDescricao(''); setValor(''); setCategoriaId(''); setContaId(''); setNumMeses('1')
+      setDescricao(''); setValor(''); setCategoriaId(''); setContaId(''); setNumMeses('1'); setDataPrimeiro('')
     }
     setLoading(false)
   }
@@ -145,10 +148,16 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
       <label style={labelStyle}>Recorrência (quantos meses)</label>
       <input style={inputStyle} type="number" min="1" max="60" value={numMeses}
         onChange={e => setNumMeses(e.target.value)} placeholder="1 = lançamento único" />
+
       {parseInt(numMeses) > 1 && (
-        <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 10 }}>
-          Mês 1 será <strong style={{ color: '#16a34a' }}>Pago</strong>, os demais <strong style={{ color: '#d97706' }}>Pendente</strong>
-        </p>
+        <>
+          <label style={labelStyle}>Data do 1º Recebimento *</label>
+          <input style={inputStyle} type="date" value={dataPrimeiro}
+            onChange={e => setDataPrimeiro(e.target.value)} />
+          <p style={{ color: '#6b7280', fontSize: 12, marginBottom: 10 }}>
+            Mês 1 será <strong style={{ color: '#16a34a' }}>Pago</strong>, os demais <strong style={{ color: '#d97706' }}>Pendente</strong>
+          </p>
+        </>
       )}
 
       <button style={btnPrimary} onClick={salvarReceita} disabled={loading}>
