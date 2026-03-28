@@ -106,15 +106,13 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       const parcelas = isParcelado ? parseInt(numParcelas) : meses
 
       if (isParcelado) {
-        const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
         for (let i = 0; i < parcelas; i++) {
-          const isUltima = i === parcelas - 1
           const dataParcela = adicionarMeses(dataBase, i)
           registros.push({
             household_id: householdId, data_movimentacao: toISO(dataParcela),
             data_pagamento: toISO(dataParcela), tipo: 'Despesa',
             categoria_id: Number(categoriaId), classificacao, descricao,
-            valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
+            valor: valorTotal,
             metodo_pagamento: cartao?.nome ?? metodoPagamento,
             cartao_id: cartao?.id ?? null,
             forma_pagamento: `Parcelado ${parcelas}x`,
@@ -285,7 +283,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         {descricoesCategoria.map((d, i) => <option key={i} value={d} />)}
       </datalist>
 
-      <label style={labelStyle}>Valor (R$) *</label>
+      <label style={labelStyle}>{isPrevisto ? 'Valor da Parcela (R$) *' : 'Valor (R$) *'}</label>
       <input style={inputStyle} type="number" step="0.01" value={valor}
         onChange={e => setValor(e.target.value)} placeholder="0,00" />
 
@@ -386,8 +384,8 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
           {dataInicio && valor && (
             <div style={{ background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: '#6d28d9' }}>
               {isCartao && formaPagamento === 'Parcelado'
-                ? `${numParcelas}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} a partir de ${new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — todos como Previsto`
-                : `${numMeses} lancamentos de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} a partir de ${new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — todos como Previsto`
+                ? `${numParcelas}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = ${(parseFloat(valor || '0') * parseInt(numParcelas || '0')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} total — todos como Previsto`
+                : `${numMeses}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = ${(parseFloat(valor || '0') * parseInt(numMeses || '0')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} total — todos como Previsto`
               }
             </div>
           )}
