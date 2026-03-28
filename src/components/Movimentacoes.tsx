@@ -514,7 +514,7 @@ export default function Movimentacoes() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
-                  {['Dt. Movimentação','Dt. Pagamento','Descrição','Tipo','Categoria','Valor','Método','Cartão','Parcela','Situação','Ações'].map(h => (
+                  {['Dt. Movimentação','Dt. Pagamento','Descrição','Tipo','Categoria','Valor','Método','Cartão / Conta','Parcela','Situação','Ações'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px' }}>{h}</th>
                   ))}
                 </tr>
@@ -538,9 +538,7 @@ export default function Movimentacoes() {
                     {/* Descrição */}
                     <td style={{ ...tdStyle, maxWidth: '200px' }}>
                       <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</div>
-                      {m.conta_origem_destino && (
-                        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{m.conta_origem_destino}</div>
-                      )}
+
                     </td>
 
                     {/* Tipo */}
@@ -559,8 +557,13 @@ export default function Movimentacoes() {
                     {/* Método */}
                     <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{m.metodo_pagamento || '—'}</td>
 
-                    {/* Cartão */}
-                    <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{cartaoNome(m.cartao_id) || '—'}</td>
+                    {/* Cartão / Conta */}
+                    <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                      {m.metodo_pagamento === 'Débito' || m.metodo_pagamento === 'PIX' || m.metodo_pagamento === 'Dinheiro'
+                        ? <span style={{ color: '#0891b2', fontSize: '12px' }}>{m.conta_origem_destino || '—'}</span>
+                        : cartaoNome(m.cartao_id) || '—'
+                      }
+                    </td>
 
                     {/* Parcela */}
                     <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{m.numero_parcela || '—'}</td>
