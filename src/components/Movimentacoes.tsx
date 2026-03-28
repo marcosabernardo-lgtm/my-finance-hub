@@ -555,13 +555,18 @@ export default function Movimentacoes() {
                     </td>
 
                     {/* Método */}
-                    <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>{m.metodo_pagamento || '—'}</td>
+                    <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
+                      {m.cartao_id
+                        ? <span style={{ color: '#f59e0b', fontWeight: 500 }}>Crédito</span>
+                        : m.metodo_pagamento || '—'
+                      }
+                    </td>
 
                     {/* Cartão / Conta */}
                     <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                      {m.metodo_pagamento === 'Débito' || m.metodo_pagamento === 'PIX' || m.metodo_pagamento === 'Dinheiro'
-                        ? <span style={{ color: '#0891b2', fontSize: '12px' }}>{m.conta_origem_destino || '—'}</span>
-                        : cartaoNome(m.cartao_id) || '—'
+                      {m.cartao_id
+                        ? <span>{cartaoNome(m.cartao_id) || '—'}</span>
+                        : <span style={{ color: '#0891b2', fontSize: '12px' }}>{m.conta_origem_destino || m.metodo_pagamento || '—'}</span>
                       }
                     </td>
 
