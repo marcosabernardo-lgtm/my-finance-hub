@@ -27,11 +27,14 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   const [categoriaId, setCategoriaId] = useState('')
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
-  const [metodoPagamento, setMetodoPagamento] = useState('Débito')
+  const [metodoPagamento, setMetodoPagamento] = useState('Debito')
   const [cartaoId, setCartaoId] = useState('')
   const [contaId, setContaId] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState('À Vista')
+  const [formaPagamento, setFormaPagamento] = useState('A Vista')
   const [numParcelas, setNumParcelas] = useState('2')
+  const [isPrevisto, setIsPrevisto] = useState(false)
+  const [dataInicio, setDataInicio] = useState('')
+  const [numMeses, setNumMeses] = useState('2')
   const [descricoesCategoria, setDescricoesCategoria] = useState<string[]>([])
   const [mensagem, setMensagem] = useState('')
   const [loading, setLoading] = useState(false)
@@ -49,6 +52,16 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       })
   }, [categoriaId])
 
+  useEffect(() => {
+    if (isPrevisto && metodoPagamento === 'Cartao de Credito' && cartaoId && dataInicio) {
+      const cartao = cartoes.find(c => c.id === Number(cartaoId))
+      if (cartao) {
+        const venc = calcularVencimentoCartao(dataInicio, cartao)
+        setDataInicio(toISO(venc))
+      }
+    }
+  }, [cartaoId, isPrevisto])
+
   function calcularVencimentoCartao(dataMov: string, cartao: Cartao): Date {
     const d = new Date(dataMov + 'T12:00:00')
     const fechMesCompra = new Date(d.getFullYear(), d.getMonth(), cartao.data_fechamento)
@@ -63,16 +76,17 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   function adicionarMeses(data: Date, meses: number): Date {
     return new Date(data.getFullYear(), data.getMonth() + meses, data.getDate())
   }
-
   function toISO(data: Date): string { return data.toISOString().split('T')[0] }
 
   async function salvarDespesa() {
     if (!categoriaId || !descricao || !valor || !dataMov)
-      return setMensagem('Preencha todos os campos obrigatórios.')
-    if ((metodoPagamento === 'Débito' || metodoPagamento === 'PIX') && !contaId)
+      return setMensagem('Preencha todos os campos obrigatorios.')
+    if ((metodoPagamento === 'Debito' || metodoPagamento === 'PIX') && !contaId)
       return setMensagem('Selecione a conta de origem.')
-    if (metodoPagamento === 'Cartão de Crédito' && !cartaoId)
-      return setMensagem('Selecione o cartão.')
+    if (metodoPagamento === 'Cartao de Credito' && !cartaoId)
+      return setMensagem('Selecione o cartao.')
+    if (isPrevisto && !dataInicio)
+      return setMensagem('Informe a data do 1o vencimento.')
 
     setLoading(true); setMensagem('')
 
@@ -81,82 +95,133 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     const conta = contas.find(c => c.id === Number(contaId))
     const categoria = categorias.find(c => c.id === Number(categoriaId))
     const classificacao = categoria?.classificacao ?? ''
-    const isParcelado = formaPagamento === 'Parcelado'
-    const parcelas = isParcelado ? parseInt(numParcelas) : 1
+    const grupoId = crypto.randomUUID()
     let registros: any[] = []
 
-    if (metodoPagamento === 'Cartão de Crédito' && cartao) {
-      const primeiroVenc = calcularVencimentoCartao(dataMov, cartao)
+    if (isPrevisto) {
+      // Modo Previsao Futura — todos como Previsto
+      const meses = parseInt(numMeses) || 2
+      const dataBase = new Date(dataInicio + 'T12:00:00')
+      const isParcelado = formaPagamento === 'Parcelado' && metodoPagamento === 'Cartao de Credito'
+      const parcelas = isParcelado ? parseInt(numParcelas) : meses
+
       if (isParcelado) {
         const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
         for (let i = 0; i < parcelas; i++) {
           const isUltima = i === parcelas - 1
+          const dataParcela = adicionarMeses(dataBase, i)
           registros.push({
-            household_id: householdId, data_movimentacao: dataMov,
-            data_pagamento: toISO(adicionarMeses(primeiroVenc, i)),
-            tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao,
+            household_id: householdId, data_movimentacao: toISO(dataParcela),
+            data_pagamento: toISO(dataParcela), tipo: 'Despesa',
+            categoria_id: Number(categoriaId), classificacao, descricao,
             valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
-            metodo_pagamento: cartao.nome, cartao_id: cartao.id,
+            metodo_pagamento: cartao?.nome ?? metodoPagamento,
+            cartao_id: cartao?.id ?? null,
             forma_pagamento: `Parcelado ${parcelas}x`,
-            numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
+            numero_parcela: `Parcela ${i + 1}/${parcelas}`,
+            situacao: 'Previsto', grupo_id: grupoId,
           })
         }
       } else {
-        registros.push({
-          household_id: householdId, data_movimentacao: dataMov,
-          data_pagamento: toISO(primeiroVenc), tipo: 'Despesa',
-          categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
-          metodo_pagamento: cartao.nome, cartao_id: cartao.id,
-          forma_pagamento: 'À Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pendente',
-        })
-      }
-    } else if (metodoPagamento === 'Boleto') {
-      const dataPgto = new Date(dataMov + 'T12:00:00')
-      dataPgto.setMonth(dataPgto.getMonth() + 1)
-      if (isParcelado) {
-        const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
-        for (let i = 0; i < parcelas; i++) {
-          const isUltima = i === parcelas - 1
+        for (let i = 0; i < meses; i++) {
+          const dataParcela = adicionarMeses(dataBase, i)
           registros.push({
-            household_id: householdId, data_movimentacao: dataMov,
-            data_pagamento: toISO(adicionarMeses(dataPgto, i)),
-            tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao,
-            valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
-            metodo_pagamento: 'Boleto', forma_pagamento: `Parcelado ${parcelas}x`,
-            numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
+            household_id: householdId, data_movimentacao: toISO(dataParcela),
+            data_pagamento: toISO(dataParcela), tipo: 'Despesa',
+            categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
+            metodo_pagamento: metodoPagamento,
+            cartao_id: cartao?.id ?? null,
+            conta_origem_destino: metodoPagamento === 'Dinheiro' ? 'Carteira' : conta?.nome ?? '',
+            forma_pagamento: 'A Vista', numero_parcela: `Parcela ${i + 1}/${meses}`,
+            situacao: 'Previsto', grupo_id: grupoId,
           })
         }
-      } else {
-        registros.push({
-          household_id: householdId, data_movimentacao: dataMov,
-          data_pagamento: toISO(dataPgto), tipo: 'Despesa',
-          categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
-          metodo_pagamento: 'Boleto', forma_pagamento: 'À Vista',
-          numero_parcela: 'Parcela 1/1', situacao: 'Pendente',
-        })
       }
     } else {
-      registros.push({
-        household_id: householdId, data_movimentacao: dataMov, data_pagamento: dataMov,
-        tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
-        metodo_pagamento: metodoPagamento,
-        conta_origem_destino: metodoPagamento === 'Dinheiro' ? 'Carteira' : conta?.nome ?? '',
-        forma_pagamento: 'À Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pago',
-      })
+      // Modo Lancamento Unico — comportamento original
+      const isParcelado = formaPagamento === 'Parcelado'
+      const parcelas = isParcelado ? parseInt(numParcelas) : 1
+
+      if (metodoPagamento === 'Cartao de Credito' && cartao) {
+        const primeiroVenc = calcularVencimentoCartao(dataMov, cartao)
+        if (isParcelado) {
+          const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
+          for (let i = 0; i < parcelas; i++) {
+            const isUltima = i === parcelas - 1
+            registros.push({
+              household_id: householdId, data_movimentacao: dataMov,
+              data_pagamento: toISO(adicionarMeses(primeiroVenc, i)),
+              tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao,
+              valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
+              metodo_pagamento: cartao.nome, cartao_id: cartao.id,
+              forma_pagamento: `Parcelado ${parcelas}x`,
+              numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
+              grupo_id: grupoId,
+            })
+          }
+        } else {
+          registros.push({
+            household_id: householdId, data_movimentacao: dataMov,
+            data_pagamento: toISO(primeiroVenc), tipo: 'Despesa',
+            categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
+            metodo_pagamento: cartao.nome, cartao_id: cartao.id,
+            forma_pagamento: 'A Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pendente',
+            grupo_id: grupoId,
+          })
+        }
+      } else if (metodoPagamento === 'Boleto') {
+        const dataPgto = new Date(dataMov + 'T12:00:00')
+        dataPgto.setMonth(dataPgto.getMonth() + 1)
+        if (isParcelado) {
+          const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
+          for (let i = 0; i < parcelas; i++) {
+            const isUltima = i === parcelas - 1
+            registros.push({
+              household_id: householdId, data_movimentacao: dataMov,
+              data_pagamento: toISO(adicionarMeses(dataPgto, i)),
+              tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao,
+              valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
+              metodo_pagamento: 'Boleto', forma_pagamento: `Parcelado ${parcelas}x`,
+              numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
+              grupo_id: grupoId,
+            })
+          }
+        } else {
+          registros.push({
+            household_id: householdId, data_movimentacao: dataMov,
+            data_pagamento: toISO(dataPgto), tipo: 'Despesa',
+            categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
+            metodo_pagamento: 'Boleto', forma_pagamento: 'A Vista',
+            numero_parcela: 'Parcela 1/1', situacao: 'Pendente', grupo_id: grupoId,
+          })
+        }
+      } else {
+        registros.push({
+          household_id: householdId, data_movimentacao: dataMov, data_pagamento: dataMov,
+          tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
+          metodo_pagamento: metodoPagamento,
+          conta_origem_destino: metodoPagamento === 'Dinheiro' ? 'Carteira' : conta?.nome ?? '',
+          forma_pagamento: 'A Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pago',
+          grupo_id: grupoId,
+        })
+      }
     }
 
     const { error } = await supabase.from('movimentacoes').insert(registros)
     if (error) {
       setMensagem('Erro: ' + error.message)
     } else {
-      setMensagem(registros.length > 1 ? `${registros.length} parcelas lançadas!` : 'Despesa lançada com sucesso!')
+      setMensagem(registros.length > 1 ? `${registros.length} lancamentos salvos!` : 'Despesa lancada com sucesso!')
       setDescricao(''); setValor(''); setCategoriaId('')
-      setFormaPagamento('À Vista'); setNumParcelas('2')
+      setFormaPagamento('A Vista'); setNumParcelas('2')
+      setDataInicio(''); setNumMeses('2'); setIsPrevisto(false)
     }
     setLoading(false)
   }
 
-  const isParcelavel = metodoPagamento === 'Cartão de Crédito' || metodoPagamento === 'Boleto'
+  const isCartao = metodoPagamento === 'Cartao de Credito'
+  const isDebitoOuPix = metodoPagamento === 'Debito' || metodoPagamento === 'PIX'
+  const isParcelavel = isCartao || metodoPagamento === 'Boleto'
   const categoriasDespesa = categorias.filter(c =>
     c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'
   )
@@ -172,6 +237,38 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         }}>{mensagem}</div>
       )}
 
+      {/* Toggle Previsto */}
+      <div
+        onClick={() => { setIsPrevisto(p => !p); setDataInicio('') }}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
+          cursor: 'pointer', userSelect: 'none',
+          background: isPrevisto ? '#fdf4ff' : '#f9fafb',
+          border: `1px solid ${isPrevisto ? '#e9d5ff' : '#e5e7eb'}`,
+          borderRadius: 8, padding: '10px 14px',
+        }}
+      >
+        <div style={{
+          width: 36, height: 20, borderRadius: 10,
+          background: isPrevisto ? '#8b5cf6' : '#d1d5db',
+          position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+        }}>
+          <div style={{
+            width: 16, height: 16, borderRadius: '50%', background: '#fff',
+            position: 'absolute', top: 2,
+            left: isPrevisto ? 18 : 2, transition: 'left 0.2s',
+          }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+            {isPrevisto ? 'Previsao Futura' : 'Lancamento Unico'}
+          </div>
+          <div style={{ fontSize: 11, color: '#6b7280' }}>
+            {isPrevisto ? 'Lancamentos futuros como Previsto' : 'Despesa realizada ou a vencer'}
+          </div>
+        </div>
+      </div>
+
       <label style={labelStyle}>Data *</label>
       <input style={inputStyle} type="date" value={dataMov} onChange={e => setDataMov(e.target.value)} />
 
@@ -181,7 +278,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         {categoriasDespesa.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
 
-      <label style={labelStyle}>Descrição *</label>
+      <label style={labelStyle}>Descricao *</label>
       <input style={inputStyle} value={descricao} onChange={e => setDescricao(e.target.value)}
         placeholder="Ex: Supermercado Extra" list="sugestoes-despesa" />
       <datalist id="sugestoes-despesa">
@@ -192,17 +289,17 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       <input style={inputStyle} type="number" step="0.01" value={valor}
         onChange={e => setValor(e.target.value)} placeholder="0,00" />
 
-      <label style={labelStyle}>Método de Pagamento *</label>
+      <label style={labelStyle}>Metodo de Pagamento *</label>
       <select style={inputStyle} value={metodoPagamento}
-        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('À Vista') }}>
-        <option>Débito</option>
-        <option>PIX</option>
-        <option>Cartão de Crédito</option>
-        <option>Dinheiro</option>
-        <option>Boleto</option>
+        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('A Vista') }}>
+        <option value="Debito">Debito</option>
+        <option value="PIX">PIX</option>
+        <option value="Cartao de Credito">Cartao de Credito</option>
+        <option value="Dinheiro">Dinheiro</option>
+        <option value="Boleto">Boleto</option>
       </select>
 
-      {(metodoPagamento === 'Débito' || metodoPagamento === 'PIX') && (
+      {isDebitoOuPix && !isPrevisto && (
         <>
           <label style={labelStyle}>Conta de Origem *</label>
           <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
@@ -212,9 +309,19 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         </>
       )}
 
-      {metodoPagamento === 'Cartão de Crédito' && (
+      {isDebitoOuPix && isPrevisto && (
         <>
-          <label style={labelStyle}>Cartão *</label>
+          <label style={labelStyle}>Conta de Origem *</label>
+          <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
+            <option value="">Selecione...</option>
+            {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+        </>
+      )}
+
+      {isCartao && (
+        <>
+          <label style={labelStyle}>Cartao *</label>
           <select style={inputStyle} value={cartaoId} onChange={e => setCartaoId(e.target.value)}>
             <option value="">Selecione...</option>
             {cartoes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
@@ -222,26 +329,68 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         </>
       )}
 
-      {isParcelavel && (
+      {/* Modo lancamento unico — parcelamento normal */}
+      {!isPrevisto && isParcelavel && (
         <>
           <label style={labelStyle}>Forma de Pagamento</label>
           <select style={inputStyle} value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
-            <option value="À Vista">À Vista</option>
+            <option value="A Vista">A Vista</option>
             <option value="Parcelado">Parcelado</option>
           </select>
         </>
       )}
-
-      {isParcelavel && formaPagamento === 'Parcelado' && (
+      {!isPrevisto && isParcelavel && formaPagamento === 'Parcelado' && (
         <>
-          <label style={labelStyle}>Número de Parcelas</label>
+          <label style={labelStyle}>Numero de Parcelas</label>
           <input style={inputStyle} type="number" min="2" max="48"
             value={numParcelas} onChange={e => setNumParcelas(e.target.value)} />
         </>
       )}
 
+      {/* Modo previsao futura */}
+      {isPrevisto && (
+        <>
+          <label style={labelStyle}>Data do 1o Vencimento *</label>
+          <input style={inputStyle} type="date" value={dataInicio}
+            onChange={e => setDataInicio(e.target.value)} />
+
+          {isCartao && (
+            <>
+              <label style={labelStyle}>Forma de Pagamento</label>
+              <select style={inputStyle} value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)}>
+                <option value="A Vista">A Vista</option>
+                <option value="Parcelado">Parcelado</option>
+              </select>
+            </>
+          )}
+
+          {isCartao && formaPagamento === 'Parcelado' ? (
+            <>
+              <label style={labelStyle}>Numero de Parcelas</label>
+              <input style={inputStyle} type="number" min="2" max="48"
+                value={numParcelas} onChange={e => setNumParcelas(e.target.value)} />
+            </>
+          ) : (
+            <>
+              <label style={labelStyle}>Repetir por quantos meses</label>
+              <input style={inputStyle} type="number" min="2" max="60"
+                value={numMeses} onChange={e => setNumMeses(e.target.value)} />
+            </>
+          )}
+
+          {dataInicio && valor && (
+            <div style={{ background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: '#6d28d9' }}>
+              {isCartao && formaPagamento === 'Parcelado'
+                ? `${numParcelas}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} a partir de ${new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — todos como Previsto`
+                : `${numMeses} lancamentos de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} a partir de ${new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — todos como Previsto`
+              }
+            </div>
+          )}
+        </>
+      )}
+
       <button style={btnPrimary} onClick={salvarDespesa} disabled={loading}>
-        {loading ? 'Salvando...' : 'Salvar Despesa'}
+        {loading ? 'Salvando...' : isPrevisto ? 'Salvar Previsao' : 'Salvar Despesa'}
       </button>
     </div>
   )
