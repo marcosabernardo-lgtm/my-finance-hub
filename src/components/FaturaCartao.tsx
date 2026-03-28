@@ -279,6 +279,13 @@ export default function FaturaCartao() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
 
           <CardInfo
+            label={`Total Fatura — ${MESES[filtroMes - 1]}`}
+            valor={fmt(totalFaturaMes)}
+            sub={`${lancamentosMes.length} lançamento${lancamentosMes.length !== 1 ? 's' : ''} no mês`}
+            corValor='#1d4ed8'
+            bg='#eff6ff'
+          />
+          <CardInfo
             label='Total Pendente'
             valor={fmt(totalPendenteGlobal)}
             sub='Todas as parcelas futuras'
