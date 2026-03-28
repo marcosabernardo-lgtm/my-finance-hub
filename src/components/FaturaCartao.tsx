@@ -121,7 +121,7 @@ export default function FaturaCartao() {
     // Query 1 — tabela: lançamentos do mês/ano selecionado (pelo data_pagamento)
     const hoje2 = new Date()
     const isMesPassado = filtroAno < hoje2.getFullYear() ||
-      (filtroAno === hoje2.getFullYear() && filtroMes < hoje2.getMonth() + 1)
+      (filtroAno === hoje2.getFullYear() && filtroMes <= hoje2.getMonth() + 1)
     const situacoesBusca = isMesPassado
       ? ['Pendente', 'Previsto', 'Faturado']
       : ['Pendente', 'Previsto']
@@ -176,6 +176,12 @@ export default function FaturaCartao() {
   // Total da fatura do mês
   const totalFaturaMes = useMemo(() =>
     lancamentosMes.reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentosMes]
+  )
+
+  // Total apenas Previsto do mês selecionado
+  const totalPrevistMes = useMemo(() =>
+    lancamentosMes.filter(l => l.situacao === 'Previsto').reduce((s, l) => s + Number(l.valor), 0),
     [lancamentosMes]
   )
 
@@ -295,8 +301,8 @@ export default function FaturaCartao() {
 
           <CardInfo
             label='Total Previsto'
-            valor={fmt(totalPrevistoGlobal)}
-            sub='Simulação (não consome limite)'
+            valor={fmt(totalPrevistMes)}
+            sub={`Mês ${MESES[filtroMes - 1]} — não consome limite`}
             corValor='#6b21a8'
             bg='#f3e8ff'
           />
