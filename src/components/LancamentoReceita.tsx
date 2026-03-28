@@ -64,13 +64,16 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
     const dataBase = new Date(dataMov + 'T12:00:00')
     let registros: any[] = []
 
+    const grupoId = crypto.randomUUID()
+
     if (meses <= 1) {
       registros.push({
         household_id: householdId, data_movimentacao: dataMov, data_pagamento: dataMov,
         tipo: 'Receita', categoria_id: Number(categoriaId), classificacao, descricao,
         valor: valorTotal, metodo_pagamento: 'Transferência',
         conta_origem_destino: conta?.nome ?? '',
-        forma_pagamento: 'À Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pago',
+        forma_pagamento: 'À Vista', numero_parcela: 'Parcela 1/1',
+        situacao: 'Pago', grupo_id: grupoId,
       })
     } else {
       for (let i = 0; i < meses; i++) {
@@ -79,11 +82,11 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
           household_id: householdId,
           data_movimentacao: toISO(dataFutura), data_pagamento: toISO(dataFutura),
           tipo: 'Receita', categoria_id: Number(categoriaId), classificacao,
-          descricao: `${descricao} (${i + 1}/${meses})`,
+          descricao: descricao,
           valor: valorTotal, metodo_pagamento: 'Transferência',
           conta_origem_destino: conta?.nome ?? '',
-          forma_pagamento: 'À Vista', numero_parcela: 'Parcela 1/1',
-          situacao: i === 0 ? 'Pago' : 'Pendente',
+          forma_pagamento: 'À Vista', numero_parcela: `Parcela ${i + 1}/${meses}`,
+          situacao: i === 0 ? 'Pago' : 'Pendente', grupo_id: grupoId,
         })
       }
     }
@@ -119,7 +122,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
       <label style={labelStyle}>Categoria *</label>
       <select style={inputStyle} value={categoriaId} onChange={e => { setCategoriaId(e.target.value); setDescricao('') }}>
         <option value="">Selecione...</option>
-        {categoriasReceita.map(c => <option key={c.id} value={c.id}>{c.nome} — {c.classificacao}</option>)}
+        {categoriasReceita.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
       </select>
 
       <label style={labelStyle}>Descrição *</label>
