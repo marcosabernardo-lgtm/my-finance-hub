@@ -1,0 +1,101 @@
+id,data_movimentacao,data_pagamento,descricao,situacao
+2688,2025-10-22,2026-01-07,Fone De Ouvido,Faturado
+2798,2025-12-03,2026-01-07,Meli +,Faturado
+2815,2025-12-04,2026-01-07,Mercado Livre,Faturado
+2817,2025-12-06,2026-01-07,Mercado Livre,Faturado
+2818,2025-12-26,2026-01-07,Mercado Livre,Faturado
+2544,2025-12-14,2026-01-09,Anuidade Cartão Itau 0979,Faturado
+2632,2025-12-24,2026-01-09,Combustivel,Faturado
+2633,2025-12-13,2026-01-09,Combustivel,Faturado
+2756,2025-09-24,2026-01-09,Jesus Copy,Faturado
+2845,2025-10-09,2026-01-09,Nubank Samara,Pago
+2754,2025-12-09,2026-01-09,IPTU,Pago
+2517,2025-12-10,2026-01-10,Ambiental,Pago
+2536,2025-12-21,2026-01-10,Angeloni,Faturado
+2547,2025-10-26,2026-01-10,Anuidade Cartão Sicredi,Faturado
+2549,2025-12-16,2026-01-10,Arc Pet,Faturado
+2586,2025-11-01,2026-01-10,Cactus,Faturado
+2587,2025-12-08,2026-01-10,Panificadora São Jose,Faturado
+2605,2025-12-12,2026-01-10,Casa Suiça,Faturado
+2606,2025-12-11,2026-01-10,Casa Suiça,Faturado
+2607,2025-12-09,2026-01-10,Casa Suiça,Faturado
+2634,2025-12-06,2026-01-10,Combustivel,Faturado
+2635,2025-11-28,2026-01-10,Combustivel,Faturado
+2636,2025-12-11,2026-01-10,Combustivel,Faturado
+2647,2025-12-06,2026-01-10,Conta Vivo,Faturado
+2659,2025-08-06,2026-01-10,Curso Data Driven,Faturado
+2670,2025-12-12,2026-01-10,Doca,Faturado
+2689,2025-12-13,2026-01-10,Fort Atacadista,Faturado
+2700,2025-08-28,2026-01-10,Funeraria,Faturado
+2701,2025-12-07,2026-01-10,Gas,Faturado
+2712,2025-12-20,2026-01-10,Giassi,Faturado
+2713,2025-12-19,2026-01-10,Giassi,Faturado
+2714,2025-12-13,2026-01-10,Giassi,Faturado
+2715,2025-12-06,2026-01-10,Giassi,Faturado
+2716,2025-11-28,2026-01-10,Giassi,Faturado
+2720,2025-06-22,2026-01-10,Havan,Faturado
+2761,2025-12-18,2026-01-10,Joinvillense,Faturado
+2762,2025-12-16,2026-01-10,Joinvillense,Faturado
+2766,2025-12-10,2026-01-10,Kruger,Faturado
+2783,2025-12-13,2026-01-10,Madero,Faturado
+2785,2025-04-12,2026-01-10,Magazine Luiza,Faturado
+2811,2025-12-20,2026-01-10,Mercado Carolina,Faturado
+2812,2025-12-10,2026-01-10,Mercado Carolina,Faturado
+2823,2025-06-28,2026-01-10,Metronorte,Faturado
+2832,2025-12-06,2026-01-10,Netflix,Faturado
+2848,2025-12-10,2026-01-10,Nubank Ultravioleta,Faturado
+2850,2025-12-23,2026-01-10,Nutag,Faturado
+2851,2025-12-13,2026-01-10,Nutag,Faturado
+2892,2025-11-09,2026-01-10,Parcelamento Nubank,Faturado
+2919,2025-09-10,2026-01-10,Parcelamento Sams,Pago
+2935,2025-11-14,2026-01-10,Pernambucanas,Faturado
+2939,2025-10-11,2026-01-10,Pernambucanas,Faturado
+2950,2025-08-22,2026-01-10,Presente Duda E André,Faturado
+2961,2025-12-17,2026-01-10,Restaurante Marisol,Faturado
+2975,2025-12-20,2026-01-10,Sams Clube,Faturado
+2983,2025-12-10,2026-01-10,Seguro Carro,Pago
+2988,2025-12-16,2026-01-10,Shop Sicredi,Faturado
+2996,2025-12-12,2026-01-10,Smartfit,Faturado
+3002,2025-12-19,2026-01-10,Spotify,Faturado
+3007,2025-12-19,2026-01-10,Arc Pet,Faturado
+3013,2025-10-31,2026-01-10,Tina Modas,Faturado
+3027,2025-12-16,2026-01-10,Uber,Faturado
+3030,2025-12-13,2026-01-10,Verdureira,Faturado
+3075,2025-12-17,2026-01-10,Vitorino,Faturado
+3076,2025-12-11,2026-01-10,Vitorino,Faturado
+3077,2025-12-10,2026-01-10,Vitorino,Faturado
+3078,2025-12-07,2026-01-10,Vitorino,Faturado
+3079,2025-12-04,2026-01-10,Vitorino,Faturado
+3080,2025-12-03,2026-01-10,Vitorino,Faturado
+2797,2025-12-03,2026-02-07,Meli +,Faturado
+2816,2025-12-06,2026-02-07,Mercado Livre,Faturado
+2844,2025-10-09,2026-02-09,Nubank Samara,Pago
+2753,2025-12-09,2026-02-09,IPTU,Pago
+2516,2025-12-10,2026-02-10,Ambiental,Pago
+2535,2025-12-27,2026-02-10,Angeloni,Faturado
+2546,2025-10-26,2026-02-10,Anuidade Cartão Sicredi,Faturado
+2580,2025-12-24,2026-02-10,Cactus,Faturado
+2585,2025-11-01,2026-02-10,Cactus,Faturado
+2646,2025-12-06,2026-02-10,Conta Vivo,Faturado
+2658,2025-08-06,2026-02-10,Curso Data Driven,Faturado
+2699,2025-08-28,2026-02-10,Funeraria,Faturado
+2719,2025-06-22,2026-02-10,Havan,Faturado
+2774,2025-12-29,2026-02-10,Lojas Americanas,Faturado
+2781,2025-12-27,2026-02-10,Mac Donalds,Faturado
+2784,2025-04-12,2026-02-10,Magazine Luiza,Faturado
+2789,2025-12-30,2026-02-10,Mercado Mariano,Faturado
+2822,2025-06-28,2026-02-10,Metronorte,Faturado
+2829,2025-12-30,2026-02-10,Restaurante Do Nego,Faturado
+2831,2025-12-06,2026-02-10,Netflix,Faturado
+2847,2025-12-10,2026-02-10,Nubank Ultravioleta,Faturado
+2891,2025-11-09,2026-02-10,Parcelamento Nubank,Faturado
+2918,2025-09-10,2026-02-10,Parcelamento Sams,Pago
+2938,2025-10-11,2026-02-10,Pernambucanas,Faturado
+2982,2025-12-10,2026-02-10,Seguro Carro,Pago
+2987,2025-12-16,2026-02-10,Shop Sicredi,Faturado
+2995,2025-12-12,2026-02-10,Smartfit,Faturado
+3001,2025-12-19,2026-02-10,Spotify,Faturado
+3074,2025-12-29,2026-02-10,Vitorino,Faturado
+2796,2025-12-03,2026-03-07,Meli +,Faturado
+2843,2025-10-09,2026-03-09,Nubank Samara,Pago
+2752,2025-12-09,2026-03-09,IPTU,Pago
