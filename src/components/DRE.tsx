@@ -729,6 +729,61 @@ export default function DRE() {
           <span>* Cartão parcelado: rateio proporcional pelo % pago da fatura</span>
         </div>
       )}
+
+      {/* Modal Edição Drill-down */}
+      {editandoDrill && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 400, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Editar Lançamento</h3>
+              <button onClick={() => setEditandoDrill(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af' }}>×</button>
+            </div>
+            {([
+              { label: 'Descrição', field: 'descricao', type: 'text' },
+              { label: 'Valor (R$)', field: 'valor', type: 'number' },
+              { label: 'Dt. Movimentação', field: 'data_movimentacao', type: 'date' },
+              { label: 'Dt. Pagamento', field: 'data_pagamento', type: 'date' },
+            ] as { label: string; field: keyof Movimentacao; type: string }[]).map(({ label, field, type }) => (
+              <div key={field} style={{ marginBottom: 12 }}>
+                <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
+                <input
+                  type={type}
+                  value={String(editDrillForm[field] ?? '')}
+                  onChange={e => setEditDrillForm(f => ({ ...f, [field]: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const }}
+                />
+              </div>
+            ))}
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Situação</label>
+              <select
+                value={editDrillForm.situacao ?? ''}
+                onChange={e => setEditDrillForm(f => ({ ...f, situacao: e.target.value }))}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+              >
+                {['Pago', 'Pendente', 'Previsto', 'Faturado'].map(s => <option key={s}>{s}</option>)}
+              </select>
+            </div>
+            <div style={{ marginBottom: 12 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Categoria</label>
+              <select
+                value={editDrillForm.categoria_id ?? ''}
+                onChange={e => setEditDrillForm(f => ({ ...f, categoria_id: Number(e.target.value) || null }))}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}
+              >
+                <option value="">— Selecione —</option>
+                {categorias.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
+              <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+              <button onClick={salvarEditDrill} disabled={salvandoDrill} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
+                {salvandoDrill ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
