@@ -95,6 +95,7 @@ export default function LancamentoPrevisto({ householdId, categorias, cartoes, c
     const classificacao = categoria?.classificacao ?? ''
     const parcelas = parseInt(numParcelas)
     const primeiraParcelaDate = new Date(dataPrimeiraParcela + 'T12:00:00')
+    const grupoId = crypto.randomUUID()
     let registros: any[] = []
 
     for (let i = 0; i < parcelas; i++) {
@@ -107,7 +108,7 @@ export default function LancamentoPrevisto({ householdId, categorias, cartoes, c
           metodo_pagamento: cartao.nome, cartao_id: cartao.id,
           forma_pagamento: parcelas > 1 ? `Parcelado ${parcelas}x` : 'À Vista',
           numero_parcela: parcelas > 1 ? `Parcela ${i + 1}/${parcelas}` : 'Parcela 1/1',
-          situacao: 'Previsto',
+          situacao: 'Previsto', grupo_id: grupoId,
         })
       } else {
         registros.push({
@@ -117,7 +118,7 @@ export default function LancamentoPrevisto({ householdId, categorias, cartoes, c
           metodo_pagamento: metodoPagamento, conta_origem_destino: conta?.nome ?? '',
           forma_pagamento: parcelas > 1 ? `Parcelado ${parcelas}x` : 'À Vista',
           numero_parcela: parcelas > 1 ? `Parcela ${i + 1}/${parcelas}` : 'Parcela 1/1',
-          situacao: 'Previsto',
+          situacao: 'Previsto', grupo_id: grupoId,
         })
       }
     }
