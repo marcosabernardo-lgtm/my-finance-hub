@@ -33,11 +33,11 @@ interface Categoria {
 
 interface LinhaCartao {
   cartao: Cartao
-  meses: Record<number, number>   // mes → valor (respeitando filtro)
-  totalFaturado: number           // global (todos os meses do ano selecionado)
+  meses: Record<number, number>
+  totalFaturado: number
   totalPendente: number
   totalPrevisto: number
-  limiteDisponivel: number        // depende do filtro
+  limiteDisponivel: number
 }
 
 interface DrillKey { cartaoId: number; mes: number }
@@ -75,7 +75,11 @@ export default function CartoesView() {
 
   const hoje = new Date()
   const mesAtual = hoje.getMonth() + 1
-  const [ano, setAno] = useState(hoje.getFullYear())
+  const anoAtual = hoje.getFullYear()
+  // Data de corte: primeiro dia do mês atual — parcelas antes disso não comprometem mais o limite
+  const dataCorte = `${anoAtual}-${String(mesAtual).padStart(2, '0')}-01`
+
+  const [ano, setAno] = useState(anoAtual)
   const [filtro, setFiltro] = useState<FiltroSituacao>('tudo')
 
   const [cartoes, setCartoes] = useState<Cartao[]>([])
@@ -84,7 +88,7 @@ export default function CartoesView() {
   const [loading, setLoading] = useState(false)
   const [drillAberto, setDrillAberto] = useState<DrillKey | null>(null)
 
-  const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
+  const anos = Array.from({ length: 5 }, (_, i) => anoAtual - 2 + i)
   const meses = Array.from({ length: 12 }, (_, i) => i + 1)
 
   // ── Household ───────────────────────────────────────────────────────────────
@@ -105,12 +109,12 @@ export default function CartoesView() {
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
-  // ── Busca movimentações do ano ───────────────────────────────────────────────
+  // ── Busca movimentações ──────────────────────────────────────────────────────
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
 
-    // Query 1: lançamentos com data_pagamento no ano selecionado (tabela mensal)
+    // Query 1: lançamentos do ano selecionado (para a tabela mensal)
     const { data: dadosAno } = await supabase
       .from('movimentacoes')
       .select('id,cartao_id,categoria_id,descricao,valor,situacao,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento')
@@ -121,39 +125,28 @@ export default function CartoesView() {
       .lte('data_pagamento', `${ano}-12-31`)
       .order('data_pagamento', { ascending: true })
 
-    // Query 2: TODOS os Pendentes e Previstos do cartão sem filtro de ano
-    // Para calcular o limite real comprometido (pode ter parcelas em anos futuros)
+    // Query 2: Pendentes e Previstos a partir do mês atual (para calcular limite disponível real)
     const { data: dadosGlobais } = await supabase
       .from('movimentacoes')
       .select('id,cartao_id,categoria_id,descricao,valor,situacao,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento')
       .eq('household_id', householdId)
       .not('cartao_id', 'is', null)
-      .in('situacao', ['Faturado', 'Pendente', 'Previsto'])
+      .in('situacao', ['Pendente', 'Previsto'])
+      .gte('data_pagamento', dataCorte)   // ✅ só a partir do mês atual
 
     // Merge por id para deduplicar
     const mapaMovs = new Map<number, Movimentacao>()
     for (const m of [...(dadosGlobais || []), ...(dadosAno || [])]) {
       mapaMovs.set(m.id, m)
     }
-    const lista = Array.from(mapaMovs.values())
-    setMovimentacoes(lista)
+    setMovimentacoes(Array.from(mapaMovs.values()))
     setLoading(false)
-  }, [householdId, ano])
+  }, [householdId, ano, dataCorte])
 
   useEffect(() => { fetchDados() }, [fetchDados])
 
-  // ── Situações incluídas no filtro ───────────────────────────────────────────
+  // ── Situações visíveis na tabela ─────────────────────────────────────────────
   const situacoesVisiveis = useMemo((): string[] => {
-    switch (filtro) {
-      case 'tudo':      return ['Faturado', 'Pendente', 'Previsto']
-      case 'Faturado':  return ['Faturado']
-      case 'Pendente':  return ['Faturado', 'Pendente']
-      case 'Previsto':  return ['Faturado', 'Pendente', 'Previsto']
-    }
-  }, [filtro])
-
-  // Situações usadas para cálculo do Limite Disponível
-  const situacoesParaLimite = useMemo((): string[] => {
     switch (filtro) {
       case 'tudo':      return ['Faturado', 'Pendente', 'Previsto']
       case 'Faturado':  return ['Faturado']
@@ -167,7 +160,7 @@ export default function CartoesView() {
     return cartoes.map(cartao => {
       const movsCartao = movimentacoes.filter(m => m.cartao_id === cartao.id)
 
-      // Meses: soma por mês/ano usando data_pagamento, filtrando pelas situações visíveis
+      // Meses: soma por mês do ano selecionado, respeitando situações visíveis
       const mesesMap: Record<number, number> = {}
       for (const m of movsCartao) {
         if (!situacoesVisiveis.includes(m.situacao)) continue
@@ -177,7 +170,7 @@ export default function CartoesView() {
         mesesMap[mes] = (mesesMap[mes] || 0) + Number(m.valor)
       }
 
-      // ✅ CORRIGIDO: Totais filtrados pelo ano selecionado (não soma todos os anos)
+      // Totais filtrados pelo ano selecionado
       const movsCartaoAno = movsCartao.filter(
         m => m.data_pagamento && getAno(m.data_pagamento) === ano
       )
@@ -185,10 +178,14 @@ export default function CartoesView() {
       const totalPendente  = movsCartaoAno.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0)
       const totalPrevisto  = movsCartaoAno.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0)
 
-      // ✅ Limite disponível: Pendente + Previsto de TODOS os anos (compromisso real do limite)
-      // Parcelas de anos futuros ainda comprometem o limite do cartão
+      // ✅ Limite disponível: Pendente + Previsto a partir do mês atual
+      // Parcelas de meses já passados não comprometem mais o limite
       const comprometido = movsCartao
-        .filter(m => ['Pendente', 'Previsto'].includes(m.situacao))
+        .filter(m =>
+          ['Pendente', 'Previsto'].includes(m.situacao) &&
+          m.data_pagamento != null &&
+          m.data_pagamento >= dataCorte
+        )
         .reduce((s, m) => s + Number(m.valor), 0)
 
       return {
@@ -200,18 +197,16 @@ export default function CartoesView() {
         limiteDisponivel: (cartao.limite_total || 0) - comprometido,
       }
     })
-  }, [cartoes, movimentacoes, situacoesVisiveis, situacoesParaLimite, ano])
+  }, [cartoes, movimentacoes, situacoesVisiveis, ano, dataCorte])
 
   // ── Cards globais ────────────────────────────────────────────────────────────
-  const cardTotalFaturado = linhas.reduce((s, l) => s + l.totalFaturado, 0)
-  const cardTotalPendente = linhas.reduce((s, l) => s + l.totalPendente, 0)
+  const cardTotalFaturado         = linhas.reduce((s, l) => s + l.totalFaturado, 0)
+  const cardTotalPendente         = linhas.reduce((s, l) => s + l.totalPendente, 0)
   const cardTotalPendentePrevisto = linhas.reduce((s, l) => s + l.totalPendente + l.totalPrevisto, 0)
 
   const cartaoMaisComprometido = useMemo(() => {
     if (!linhas.length) return null
-    return linhas.reduce((min, l) =>
-      l.limiteDisponivel < min.limiteDisponivel ? l : min
-    )
+    return linhas.reduce((min, l) => l.limiteDisponivel < min.limiteDisponivel ? l : min)
   }, [linhas])
 
   const pctComprometido = (linha: LinhaCartao) => {
@@ -242,7 +237,6 @@ export default function CartoesView() {
   const catNome = (id: number | null) =>
     id ? (categorias.find(c => c.id === id)?.nome || '—') : '—'
 
-  // ── Total da coluna de cada mês ──────────────────────────────────────────────
   const totalColunaMes = (mes: number) => linhas.reduce((s, l) => s + (l.meses[mes] || 0), 0)
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -262,22 +256,19 @@ export default function CartoesView() {
       {/* ── Cards ─────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
 
-        <CardInfo label='Total Faturado' valor={fmt(cardTotalFaturado)} sub='Despesas fechadas na fatura' cor='#1e40af' bg='#dbeafe' borda='#93c5fd' />
-        <CardInfo label='Total Pendente' valor={fmt(cardTotalPendente)} sub='Fatura aberta (ainda não fechou)' cor='#92400e' bg='#fef3c7' borda='#fcd34d' />
-        <CardInfo label='Pendente + Previsto' valor={fmt(cardTotalPendentePrevisto)} sub='Comprometimento total' cor='#6b21a8' bg='#f3e8ff' borda='#c4b5fd' />
+        <CardInfo label='Total Faturado'      valor={fmt(cardTotalFaturado)}        sub='Despesas fechadas na fatura'      cor='#1e40af' bg='#dbeafe' borda='#93c5fd' />
+        <CardInfo label='Total Pendente'      valor={fmt(cardTotalPendente)}         sub='Fatura aberta (ainda não fechou)' cor='#92400e' bg='#fef3c7' borda='#fcd34d' />
+        <CardInfo label='Pendente + Previsto' valor={fmt(cardTotalPendentePrevisto)} sub='Comprometimento total do ano'     cor='#6b21a8' bg='#f3e8ff' borda='#c4b5fd' />
 
         {cartaoMaisComprometido && (
           <div style={{ background: '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #ef4444', position: 'relative' }}>
             <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#ef4444', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '99px' }}>
               ⚠ ALERTA
             </span>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Mais Comprometido
-            </div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Mais Comprometido</div>
             <div style={{ fontSize: '16px', fontWeight: 700, color: '#991b1b', margin: '4px 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {cartaoMaisComprometido.cartao.nome}
             </div>
-            {/* Barra de progresso */}
             <div style={{ background: '#fecaca', borderRadius: '99px', height: '6px', margin: '6px 0' }}>
               <div style={{ background: '#ef4444', borderRadius: '99px', height: '6px', width: `${pctComprometido(cartaoMaisComprometido)}%`, transition: 'width 0.3s' }} />
             </div>
@@ -293,7 +284,6 @@ export default function CartoesView() {
       <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-end' }}>
 
-          {/* Ano */}
           <div>
             <label style={labelStyle}>Ano</label>
             <select value={ano} onChange={e => { setAno(Number(e.target.value)); setDrillAberto(null) }} style={selectStyle}>
@@ -301,26 +291,25 @@ export default function CartoesView() {
             </select>
           </div>
 
-          {/* Situação */}
           <div>
             <label style={{ ...labelStyle, marginBottom: '8px' }}>Situação</label>
             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {([
-            { key: 'tudo',     label: 'Tudo',            desc: 'Faturado + Pendente + Previsto', cor: '#1e40af' },
-            { key: 'Faturado', label: 'Faturado',         desc: 'Apenas faturado',               cor: '#1e40af' },
-            { key: 'Pendente', label: '+ Pendente',       desc: 'Faturado + Pendente',           cor: '#92400e' },
-            { key: 'Previsto', label: '+ Previsto',       desc: 'Faturado + Pendente + Previsto',cor: '#6b21a8' },
-          ] as { key: FiltroSituacao; label: string; desc: string; cor: string }[]).map(f => (
-            <button key={f.key} onClick={() => { setFiltro(f.key); setDrillAberto(null) }} style={{
-              padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-              border: filtro === f.key ? 'none' : '1px solid #e5e7eb',
-              background: filtro === f.key ? f.cor : '#fff',
-              color: filtro === f.key ? '#fff' : '#374151',
-            }}>
-              {f.label}
-              <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
-            </button>
-          ))}
+              {([
+                { key: 'tudo',     label: 'Tudo',       desc: 'Faturado + Pendente + Previsto', cor: '#1e40af' },
+                { key: 'Faturado', label: 'Faturado',   desc: 'Apenas faturado',               cor: '#1e40af' },
+                { key: 'Pendente', label: '+ Pendente', desc: 'Faturado + Pendente',           cor: '#92400e' },
+                { key: 'Previsto', label: '+ Previsto', desc: 'Faturado + Pendente + Previsto',cor: '#6b21a8' },
+              ] as { key: FiltroSituacao; label: string; desc: string; cor: string }[]).map(f => (
+                <button key={f.key} onClick={() => { setFiltro(f.key); setDrillAberto(null) }} style={{
+                  padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                  border: filtro === f.key ? 'none' : '1px solid #e5e7eb',
+                  background: filtro === f.key ? f.cor : '#fff',
+                  color: filtro === f.key ? '#fff' : '#374151',
+                }}>
+                  {f.label}
+                  <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -335,14 +324,13 @@ export default function CartoesView() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
-                {/* Indicador passado/futuro */}
                 <tr style={{ background: '#1f2937' }}>
                   <td colSpan={3} style={{ padding: '4px 12px', fontSize: '10px', color: '#6b7280', position: 'sticky', left: 0, background: '#1f2937', zIndex: 11 }}>
                     ◀ passado · presente · futuro ▶
                   </td>
                   {meses.map(m => {
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
+                    const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
+                    const isAtual  = ano === anoAtual && m === mesAtual
                     return (
                       <td key={m} style={{ padding: '3px 4px', textAlign: 'center', fontSize: '9px', fontWeight: 600, color: isAtual ? '#fbbf24' : isFuturo ? '#7c3aed' : '#4b5563' }}>
                         {isAtual ? '● ATUAL' : isFuturo ? '◆' : ''}
@@ -352,39 +340,43 @@ export default function CartoesView() {
                   <td colSpan={3} style={{ background: '#1f2937' }} />
                 </tr>
 
-                {/* Cabeçalho */}
                 <tr style={{ background: '#111827' }}>
                   <th style={{ ...thBase, textAlign: 'left', minWidth: '160px', position: 'sticky', left: 0, background: '#111827', zIndex: 11 }}>Cartão</th>
                   <th style={{ ...thBase, minWidth: '100px', background: '#1f2937' }}>Limite</th>
                   <th style={{ ...thBase, minWidth: '85px', background: '#1f2937', color: '#fbbf24' }}>Vence/Fecha</th>
                   {meses.map(m => {
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
+                    const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
+                    const isAtual  = ano === anoAtual && m === mesAtual
                     return (
-                      <th key={m} style={{ ...thBase, minWidth: '80px', background: isAtual ? '#1e3a5f' : isFuturo ? '#2d1b4e' : '#111827', color: isAtual ? '#fbbf24' : isFuturo ? '#c4b5fd' : '#f9fafb', borderBottom: isAtual ? '2px solid #fbbf24' : isFuturo ? '2px solid #7c3aed' : '2px solid #374151' }}>
+                      <th key={m} style={{
+                        ...thBase, minWidth: '80px',
+                        background:   isAtual ? '#1e3a5f' : isFuturo ? '#2d1b4e' : '#111827',
+                        color:        isAtual ? '#fbbf24' : isFuturo ? '#c4b5fd' : '#f9fafb',
+                        borderBottom: isAtual ? '2px solid #fbbf24' : isFuturo ? '2px solid #7c3aed' : '2px solid #374151',
+                      }}>
                         {MESES_CURTOS[m - 1]}
                       </th>
                     )
                   })}
-                  <th style={{ ...thBase, minWidth: '90px', background: '#1f2937' }}>Total</th>
+                  <th style={{ ...thBase, minWidth: '90px',  background: '#1f2937' }}>Total</th>
                   <th style={{ ...thBase, minWidth: '105px', background: '#1f2937', color: '#34d399' }}>Disponível</th>
                 </tr>
               </thead>
 
               <tbody>
                 {linhas.map(linha => {
-                  const totalLinha = Object.values(linha.meses).reduce((s, v) => s + v, 0)
-                  const pct = linha.cartao.limite_total > 0 ? ((linha.cartao.limite_total - linha.limiteDisponivel) / linha.cartao.limite_total) * 100 : 0
+                  const totalLinha   = Object.values(linha.meses).reduce((s, v) => s + v, 0)
+                  const pct          = linha.cartao.limite_total > 0 ? ((linha.cartao.limite_total - linha.limiteDisponivel) / linha.cartao.limite_total) * 100 : 0
                   const drillAberto_ = drillAberto?.cartaoId === linha.cartao.id
 
                   return (
-                    <>
-                      <tr key={linha.cartao.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                    // ✅ React.Fragment com key — corrige o warning "Each child in a list should have a unique key"
+                    <React.Fragment key={linha.cartao.id}>
+                      <tr style={{ borderBottom: '1px solid #f3f4f6' }}>
 
                         {/* Cartão */}
                         <td style={{ ...tdFixo }}>
                           <div style={{ fontWeight: 600, color: '#111827' }}>{linha.cartao.nome}</div>
-                          {/* Barra de uso do limite */}
                           <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '4px', marginTop: '4px', width: '120px' }}>
                             <div style={{ background: pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981', borderRadius: '99px', height: '4px', width: `${Math.min(pct, 100)}%` }} />
                           </div>
@@ -404,11 +396,11 @@ export default function CartoesView() {
 
                         {/* Meses */}
                         {meses.map(m => {
-                          const v = linha.meses[m] || 0
-                          const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                          const isAtual = ano === hoje.getFullYear() && m === mesAtual
-                          const aberto = drillAberto?.cartaoId === linha.cartao.id && drillAberto?.mes === m
-                          const pctMes = linha.cartao.limite_total > 0 ? (v / linha.cartao.limite_total) * 100 : 0
+                          const v        = linha.meses[m] || 0
+                          const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
+                          const isAtual  = ano === anoAtual && m === mesAtual
+                          const aberto   = drillAberto?.cartaoId === linha.cartao.id && drillAberto?.mes === m
+                          const pctMes   = linha.cartao.limite_total > 0 ? (v / linha.cartao.limite_total) * 100 : 0
 
                           return (
                             <td
@@ -417,10 +409,10 @@ export default function CartoesView() {
                               title={v > 0 ? 'Clique para ver lançamentos' : ''}
                               style={{
                                 ...tdNum,
-                                cursor: v > 0 ? 'pointer' : 'default',
-                                background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent',
-                                fontWeight: v > 0 ? 600 : 400,
-                                color: v === 0 ? '#e5e7eb' : pctMes > 80 ? '#ef4444' : pctMes > 50 ? '#f59e0b' : '#1e40af',
+                                cursor:       v > 0 ? 'pointer' : 'default',
+                                background:   aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent',
+                                fontWeight:   v > 0 ? 600 : 400,
+                                color:        v === 0 ? '#e5e7eb' : pctMes > 80 ? '#ef4444' : pctMes > 50 ? '#f59e0b' : '#1e40af',
                                 borderBottom: aberto ? '2px solid #f59e0b' : 'none',
                               }}
                             >
@@ -440,16 +432,14 @@ export default function CartoesView() {
                         {/* Disponível */}
                         <td style={{ ...tdNum, background: '#f9fafb', fontWeight: 700, color: linha.limiteDisponivel >= 0 ? '#065f46' : '#991b1b' }}>
                           <div>{fmt(linha.limiteDisponivel)}</div>
-                          <div style={{ fontSize: '10px', fontWeight: 400, color: '#9ca3af' }}>
-                            de {fmt(linha.cartao.limite_total)}
-                          </div>
+                          <div style={{ fontSize: '10px', fontWeight: 400, color: '#9ca3af' }}>de {fmt(linha.cartao.limite_total)}</div>
                         </td>
 
                       </tr>
 
                       {/* ── Drill-down ── */}
                       {drillAberto_ && drillAberto !== null && (
-                        <tr key={`drill-${linha.cartao.id}`}>
+                        <tr>
                           <td colSpan={17} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
                             <div style={{ padding: '12px 16px 16px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -505,7 +495,7 @@ export default function CartoesView() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </React.Fragment>
                   )
                 })}
 
@@ -517,9 +507,9 @@ export default function CartoesView() {
                   </td>
                   <td style={{ ...tdNum, background: '#1f2937' }} />
                   {meses.map(m => {
-                    const v = totalColunaMes(m)
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
+                    const v        = totalColunaMes(m)
+                    const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
+                    const isAtual  = ano === anoAtual && m === mesAtual
                     return (
                       <td key={m} style={{ ...tdNum, fontWeight: 700, color: '#60a5fa', background: isAtual ? '#1e3a5f' : isFuturo ? '#1a1035' : 'transparent', opacity: isFuturo && !isAtual ? 0.75 : 1 }}>
                         {v > 0 ? fmt(v) : <span style={{ color: '#374151' }}>—</span>}
@@ -568,9 +558,9 @@ function CardInfo({ label, valor, sub, cor, bg, borda }: {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
+const labelStyle: React.CSSProperties  = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
 const selectStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px' }
-const thBase: React.CSSProperties = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
-const tdFixo: React.CSSProperties = { padding: '10px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: '#fff', borderRight: '1px solid #f3f4f6', zIndex: 1, minWidth: '160px' }
-const tdNum: React.CSSProperties = { padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }
-const tdDrill: React.CSSProperties = { padding: '6px 10px', color: '#374151', verticalAlign: 'middle' }
+const thBase: React.CSSProperties      = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
+const tdFixo: React.CSSProperties      = { padding: '10px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: '#fff', borderRight: '1px solid #f3f4f6', zIndex: 1, minWidth: '160px' }
+const tdNum: React.CSSProperties       = { padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }
+const tdDrill: React.CSSProperties     = { padding: '6px 10px', color: '#374151', verticalAlign: 'middle' }
