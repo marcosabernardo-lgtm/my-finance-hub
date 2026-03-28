@@ -121,7 +121,7 @@ export default function FaturaCartao() {
     // Query 1 — tabela: lançamentos do mês/ano selecionado (pelo data_pagamento)
     const hoje2 = new Date()
     const isMesPassado = filtroAno < hoje2.getFullYear() ||
-      (filtroAno === hoje2.getFullYear() && filtroMes <= hoje2.getMonth() + 1)
+      (filtroAno === hoje2.getFullYear() && filtroMes < hoje2.getMonth() + 1)
     const situacoesBusca = isMesPassado
       ? ['Pendente', 'Previsto', 'Faturado']
       : ['Pendente', 'Previsto']
