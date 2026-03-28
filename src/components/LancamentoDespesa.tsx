@@ -60,7 +60,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         setDataInicio(toISO(venc))
       }
     }
-  }, [cartaoId, isPrevisto, dataMov])
+  }, [cartaoId, isPrevisto, dataMov, metodoPagamento])
 
   function calcularVencimentoCartao(dataMov: string, cartao: Cartao): Date {
     const d = new Date(dataMov + 'T12:00:00')
@@ -289,7 +289,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
 
       <label style={labelStyle}>Metodo de Pagamento *</label>
       <select style={inputStyle} value={metodoPagamento}
-        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('A Vista') }}>
+        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('A Vista'); if (e.target.value !== 'Cartao de Credito') setDataInicio('') }}>
         <option value="Debito">Debito</option>
         <option value="PIX">PIX</option>
         <option value="Cartao de Credito">Cartao de Credito</option>
