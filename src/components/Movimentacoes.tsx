@@ -128,9 +128,9 @@ export default function Movimentacoes() {
       .from('movimentacoes')
       .select('*')
       .eq('household_id', householdId)
-      .gte('data_movimentacao', dataInicio)
-      .lte('data_movimentacao', dataFim)
-      .order('data_movimentacao', { ascending: false })
+      .gte('data_pagamento', dataInicio)
+      .lte('data_pagamento', dataFim)
+      .order('data_pagamento', { ascending: false })
       .order('id', { ascending: false })
 
     if (!error) setTodasMovimentacoes(data || [])
