@@ -119,12 +119,7 @@ export default function FaturaCartao() {
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
     // Query 1 — tabela: lançamentos do mês/ano selecionado (pelo data_pagamento)
-    const hoje2 = new Date()
-    const isMesPassado = filtroAno < hoje2.getFullYear() ||
-      (filtroAno === hoje2.getFullYear() && filtroMes < hoje2.getMonth() + 1)
-    const situacoesBusca = isMesPassado
-      ? ['Pendente', 'Previsto', 'Faturado']
-      : ['Pendente', 'Previsto']
+    const situacoesBusca = ['Pendente', 'Previsto', 'Faturado']
 
     const { data: dadosMes } = await supabase
       .from('movimentacoes')
