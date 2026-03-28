@@ -118,9 +118,11 @@ export default function DRE() {
       categoria_id: editDrillForm.categoria_id,
     }
     if (escopo === 'proximas' && editandoDrill.grupo_id) {
-      await supabase.from('movimentacoes').update(payload)
+      const { error: errP, count } = await supabase.from('movimentacoes').update(payload)
         .eq('grupo_id', editandoDrill.grupo_id)
         .gte('data_movimentacao', editandoDrill.data_movimentacao)
+        .select('id', { count: 'exact' })
+      console.log('[DRE] proximas - grupo_id:', editandoDrill.grupo_id, 'data:', editandoDrill.data_movimentacao, 'count:', count, 'error:', errP)
     } else {
       await supabase.from('movimentacoes').update({
         ...payload,
