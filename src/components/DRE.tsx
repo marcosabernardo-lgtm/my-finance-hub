@@ -67,7 +67,7 @@ const isAvista = (fp: string | null) => {
   return s.includes('vista') || s === 'a vista' || s === 'à vista'
 }
 
-type FiltroSituacao = 'realizado' | 'pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
+type FiltroSituacao = 'realizado' | 'pendente' | 'so_pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
 
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
@@ -184,6 +184,7 @@ export default function DRE() {
     switch (filtroSituacao) {
       case 'realizado':    return ['Pago', 'Faturado']
       case 'pendente':     return ['Pago', 'Faturado', 'Pendente']
+      case 'so_pendente':  return ['Pendente']
       case 'previsto':     return ['Pago', 'Faturado', 'Previsto']
       case 'todos':        return ['Pago', 'Faturado', 'Pendente', 'Previsto']
       case 'conservadora': return ['Pago', 'Faturado', 'Pendente', 'Previsto']
@@ -479,9 +480,9 @@ export default function DRE() {
 
         {/* Pendentes do mês atual */}
         <div
-          onClick={() => { setFiltroSituacao('pendente'); setDrillAberto(null) }}
-          style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b', cursor: 'pointer' }}
-          title="Clique para ver pendentes na tabela"
+          onClick={() => { setFiltroSituacao(filtroSituacao === 'so_pendente' ? 'todos' : 'so_pendente'); setDrillAberto(null) }}
+          style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${filtroSituacao === 'so_pendente' ? '#ef4444' : '#f59e0b'}`, cursor: 'pointer', outline: filtroSituacao === 'so_pendente' ? '2px solid #f59e0b' : 'none' }}
+          title="Clique para filtrar apenas pendentes na tabela"
         >
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Pendentes — {MESES_CURTOS[mesAtual - 1]}
@@ -490,7 +491,7 @@ export default function DRE() {
             {fmt(totalPendentesMesAtual)}
           </div>
           <div style={{ fontSize: '11px', color: '#92400e', opacity: 0.7 }}>
-            Clique para ver na tabela abaixo ↓
+            {filtroSituacao === 'so_pendente' ? '✓ Filtrando pendentes — clique para limpar' : 'Clique para filtrar na tabela ↓'}
           </div>
         </div>
 
