@@ -101,7 +101,7 @@ export default function LancamentoPrevisto({ householdId, categorias, cartoes, c
       const dataParcela = adicionarMeses(primeiraParcelaDate, i)
       if (metodoPagamento === 'Cartão de Crédito' && cartao) {
         registros.push({
-          household_id: householdId, data_movimentacao: dataMov,
+          household_id: householdId, data_movimentacao: toISO(dataParcela),
           data_pagamento: toISO(dataParcela), tipo: 'Despesa',
           categoria_id: Number(categoriaId), classificacao, descricao, valor: valorUnitario,
           metodo_pagamento: cartao.nome, cartao_id: cartao.id,
