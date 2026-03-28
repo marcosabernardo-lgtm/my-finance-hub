@@ -290,7 +290,7 @@ export default function Movimentacoes() {
           .from('movimentacoes')
           .select('id')
           .eq('grupo_id', editando.grupo_id)
-          .gte('id', id)
+          .gte('data_movimentacao', editando.data_movimentacao)
         if (parcelas) {
           for (const p of parcelas) {
             await supabase.from('movimentacoes').update(payload).eq('id', p.id)
