@@ -34,7 +34,7 @@ interface Categoria {
 interface LinhaCartao {
   cartao: Cartao
   meses: Record<number, number>   // mes → valor (respeitando filtro)
-  totalFaturado: number           // global (todos os meses do ano)
+  totalFaturado: number           // global (todos os meses do ano selecionado)
   totalPendente: number
   totalPrevisto: number
   limiteDisponivel: number        // depende do filtro
@@ -106,9 +106,6 @@ export default function CartoesView() {
   }, [householdId])
 
   // ── Busca movimentações do ano ───────────────────────────────────────────────
-  // Filtra por data_pagamento (não data_movimentacao) pois queremos saber
-  // em qual mês a despesa impacta o limite/fatura — independente de quando foi comprada
-  // Ex: parcela comprada em jan/2025 com data_pagamento em mar/2026 deve aparecer em março
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
@@ -180,15 +177,16 @@ export default function CartoesView() {
         mesesMap[mes] = (mesesMap[mes] || 0) + Number(m.valor)
       }
 
-      // Totais globais do ano (sem filtro de mês)
-      const totalFaturado = movsCartao.filter(m => m.situacao === 'Faturado').reduce((s, m) => s + Number(m.valor), 0)
-      const totalPendente  = movsCartao.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0)
-      const totalPrevisto  = movsCartao.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0)
+      // ✅ CORRIGIDO: Totais filtrados pelo ano selecionado (não soma todos os anos)
+      const movsCartaoAno = movsCartao.filter(
+        m => m.data_pagamento && getAno(m.data_pagamento) === ano
+      )
+      const totalFaturado = movsCartaoAno.filter(m => m.situacao === 'Faturado').reduce((s, m) => s + Number(m.valor), 0)
+      const totalPendente  = movsCartaoAno.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0)
+      const totalPrevisto  = movsCartaoAno.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0)
 
-      // Limite disponível: considera apenas Pendente e Previsto (futuros)
-      // Faturado = já foi pago, não compromete mais o limite
-      // Pendente = compra feita, fatura ainda não paga → compromete o limite
-      // Previsto = lançamento futuro → compromete o limite (simulação)
+      // ✅ Limite disponível: Pendente + Previsto de TODOS os anos (compromisso real do limite)
+      // Parcelas de anos futuros ainda comprometem o limite do cartão
       const comprometido = movsCartao
         .filter(m => ['Pendente', 'Previsto'].includes(m.situacao))
         .reduce((s, m) => s + Number(m.valor), 0)
