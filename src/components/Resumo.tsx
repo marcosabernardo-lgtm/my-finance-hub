@@ -109,9 +109,9 @@ export default function Resumo() {
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento')
       .eq('household_id', householdId)
-      .gte('data_pagamento', dataInicio)
-      .lte('data_pagamento', dataFim)
-      .order('data_pagamento', { ascending: false })
+      .gte('data_movimentacao', dataInicio)
+      .lte('data_movimentacao', dataFim)
+      .order('data_movimentacao', { ascending: false })
 
     setMovimentacoes(data || [])
     setLoading(false)
