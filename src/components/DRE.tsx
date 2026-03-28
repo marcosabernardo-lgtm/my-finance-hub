@@ -118,7 +118,7 @@ export default function DRE() {
     }).eq('id', editandoDrill.id)
     if (!error) {
       setEditandoDrill(null)
-      fetchData()
+      fetchDados()
     }
     setSalvandoDrill(false)
   }
@@ -328,7 +328,7 @@ export default function DRE() {
     }
     // Encontrar categoria com maior total
     const maior = Object.values(totaisPorCategoria).reduce((max, c) => c.total > max.total ? c : max)
-    return { categoria_id: maior.categoria_id, valor: maior.total }
+    return { categoria_id: maior.categoria_id, valor: maior.total, descricao: '' }
   }, [movimentacoes, mesAtual, ano])
 
   // ── Projeção 1: Conservadora ────────────────────────────────────────────────
