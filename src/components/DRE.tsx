@@ -477,7 +477,9 @@ export default function DRE() {
             {maiorDespesaMes ? fmt(Number(maiorDespesaMes.valor)) : '—'}
           </div>
           <div style={{ fontSize: '11px', color: '#991b1b', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {maiorDespesaMes ? maiorDespesaMes.descricao : 'Nenhuma despesa'}
+            {maiorDespesaMes
+              ? (categorias.find(c => c.id === maiorDespesaMes.categoria_id)?.nome ?? maiorDespesaMes.descricao)
+              : 'Nenhuma despesa'}
           </div>
         </div>
 
