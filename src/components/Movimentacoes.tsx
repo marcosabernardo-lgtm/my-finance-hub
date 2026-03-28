@@ -288,15 +288,31 @@ export default function Movimentacoes() {
       }
 
       if (escopo === 'proximas' && grupoId && dataMov) {
-        const { data: parcelas } = await supabase
+        // Para proximas parcelas, nao sobrescreve datas individuais de cada parcela
+        const payloadProximas = {
+          tipo: form.tipo,
+          categoria_id: form.categoria_id,
+          descricao: form.descricao,
+          valor: Number(form.valor),
+          metodo_pagamento: form.metodo_pagamento,
+          cartao_id: form.cartao_id || null,
+          conta_origem_destino: form.conta_origem_destino,
+          forma_pagamento: form.forma_pagamento,
+          situacao: form.situacao,
+        }
+        const { data: parcelas, error: errBusca } = await supabase
           .from('movimentacoes')
           .select('id')
           .eq('grupo_id', grupoId)
           .gte('data_movimentacao', dataMov)
-        if (parcelas) {
-          for (const p of parcelas) {
-            await supabase.from('movimentacoes').update(payload).eq('id', p.id)
-          }
+        console.log('proximas - grupo_id:', grupoId, 'dataMov:', dataMov, 'parcelas:', parcelas, 'erro:', errBusca)
+        if (parcelas && parcelas.length > 0) {
+          const { error: errUpdate } = await supabase
+            .from('movimentacoes')
+            .update(payloadProximas)
+            .eq('grupo_id', grupoId)
+            .gte('data_movimentacao', dataMov)
+          console.log('update erro:', errUpdate)
         }
       } else {
         await supabase.from('movimentacoes').update(payload).eq('id', id)
