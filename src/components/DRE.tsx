@@ -97,6 +97,31 @@ export default function DRE() {
 
   // Drill-down: qual linha+mês está expandido (null = nenhum)
   const [drillAberto, setDrillAberto] = useState<DrillKey | null>(null)
+  const [editandoDrill, setEditandoDrill] = useState<Movimentacao | null>(null)
+  const [editDrillForm, setEditDrillForm] = useState<Partial<Movimentacao>>({})
+  const [salvandoDrill, setSalvandoDrill] = useState(false)
+
+  useEffect(() => {
+    if (editandoDrill) setEditDrillForm({ ...editandoDrill })
+  }, [editandoDrill])
+
+  const salvarEditDrill = async () => {
+    if (!editandoDrill) return
+    setSalvandoDrill(true)
+    const { error } = await supabase.from('movimentacoes').update({
+      data_movimentacao: editDrillForm.data_movimentacao,
+      data_pagamento: editDrillForm.data_pagamento,
+      descricao: editDrillForm.descricao,
+      valor: Number(editDrillForm.valor),
+      situacao: editDrillForm.situacao,
+      categoria_id: editDrillForm.categoria_id,
+    }).eq('id', editandoDrill.id)
+    if (!error) {
+      setEditandoDrill(null)
+      fetchData()
+    }
+    setSalvandoDrill(false)
+  }
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
@@ -260,7 +285,9 @@ export default function DRE() {
     for (const linha of linhasDRE) {
       if (linha.tipo === 'receita') continue  // projecao inteligente apenas para despesas
       const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
-      result[linha.id] = soma / mesesCorrente
+      const media = soma / mesesCorrente
+      // Se tem limite e a media supera o limite, usa o limite como teto
+      result[linha.id] = (linha.limite > 0 && media > linha.limite) ? linha.limite : media
     }
     return result
   }, [linhasDRE, filtroSituacao, mesesCorrente])
@@ -379,7 +406,9 @@ export default function DRE() {
         } else if (mesesCorrente > 0 && linha.tipo === 'despesa') {
           // Usa a média histórica apenas para despesas — receitas sem lançamento ficam zeradas
           const somaHistorica = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
-          valorMesFut = somaHistorica / mesesCorrente
+          const mediaHist = somaHistorica / mesesCorrente
+          // Se tem limite e a media supera o limite, usa o limite como teto
+          valorMesFut = (linha.limite > 0 && mediaHist > linha.limite) ? linha.limite : mediaHist
         }
 
         // Receita soma, despesa subtrai
@@ -835,14 +864,17 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead>
                     <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
-                      {['Dt. Movimentação','Dt. Pagamento','Descrição','Valor','Método','Parcela','Situação'].map(h => (
+                      {['Dt. Movimentação','Dt. Pagamento','Descrição','Valor','Método','Parcela','Situação',''].map(h => (
                         <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {lancamentosDrill.map((l, idx) => (
-                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7', cursor: 'pointer' }}
+                        onClick={() => setEditandoDrill(l)}
+                        title="Clique para editar este lançamento"
+                      >
                         <td style={tdDrill}>{fmtDate(l.data_movimentacao)}</td>
                         <td style={tdDrill}>{fmtDate(l.data_pagamento)}</td>
                         <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.descricao}</td>
@@ -854,6 +886,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                             {l.situacao}
                           </span>
                         </td>
+                        <td style={{ ...tdDrill, color: '#6b7280' }}>✏️</td>
                       </tr>
                     ))}
                   </tbody>
