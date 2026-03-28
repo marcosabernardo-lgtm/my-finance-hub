@@ -258,6 +258,7 @@ export default function DRE() {
     if (filtroSituacao !== 'inteligente' || mesesCorrente === 0) return {}
     const result: Record<string, number> = {}
     for (const linha of linhasDRE) {
+      if (linha.tipo === 'receita') continue  // projecao inteligente apenas para despesas
       const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
       result[linha.id] = soma / mesesCorrente
     }
