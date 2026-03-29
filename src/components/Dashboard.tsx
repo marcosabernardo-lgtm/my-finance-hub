@@ -561,23 +561,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ── Linha 3: Evolução 6 meses ─────────────────────────────────── */}
-          <div style={{ ...cardStyle, marginBottom: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <SectionTitle>📈 Evolução — Últimos 6 Meses</SectionTitle>
-              <div style={{ display: 'flex', gap: '16px', fontSize: '12px' }}>
-                {evolucao6Meses.series.map(s => (
-                  <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ width: '12px', height: '3px', background: s.cor, display: 'inline-block', borderRadius: '99px' }} />
-                    <span style={{ color: '#6b7280' }}>{s.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <GraficoLinha series={evolucao6Meses.series} />
-          </div>
-
-          {/* ── Linha 4: Pizza + Top Categorias + Ranking (3 colunas) ──────── */}
+          {/* ── Linha 3: Pizza + Top Categorias + Ranking (3 colunas) ──────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
 
             {/* Pizza por classificação */}
