@@ -108,9 +108,9 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
             <title>{a.label}: {fmt(a.valor)} ({(a.pct * 100).toFixed(1)}%)</title>
           </path>
         ))}
-        <circle cx={cx} cy={cy} r="35" fill="white" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="600">TOTAL</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#111827" fontWeight="700">
+        <circle cx={cx} cy={cy} r="35" fill="#006070" />
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#b2d8de" fontWeight="600">TOTAL</text>
+        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#ffffff" fontWeight="700">
           {(total / 1000).toFixed(1)}k
         </text>
       </svg>
@@ -118,8 +118,8 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
         {arcos.map((a, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: a.cor, flexShrink: 0 }} />
-            <span style={{ color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
-            <span style={{ color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
+            <span style={{ color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
+            <span style={{ color: '#b2d8de', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
           </div>
         ))}
       </div>
@@ -160,8 +160,8 @@ function GraficoLinha({ series }: {
         const y = PAD.t + iH * (1 - p)
         return (
           <g key={p}>
-            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="3 3" />
-            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#d1d5db">
+            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#007585" strokeWidth="1" strokeDasharray="3 3" />
+            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#7bbcc5">
               {p === 0 ? '0' : `${(maxVal * p / 1000).toFixed(0)}k`}
             </text>
           </g>
@@ -187,7 +187,7 @@ function GraficoLinha({ series }: {
 
       {/* Eixo X */}
       {meses.map((m, i) => (
-        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#9ca3af">{m}</text>
+        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#b2d8de">{m}</text>
       ))}
     </svg>
   )
@@ -399,13 +399,13 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#005562', minHeight: '100vh' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111827', margin: 0 }}>Dashboard</h1>
-          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>Visão geral financeira — {MESES[filtroMes - 1]} {filtroAno}</p>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', margin: 0 }}>Dashboard</h1>
+          <p style={{ color: '#b2d8de', marginTop: '4px', fontSize: '13px' }}>Visão geral financeira — {MESES[filtroMes - 1]} {filtroAno}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <select value={filtroMes} onChange={e => setFiltroMes(Number(e.target.value))} style={selectStyle}>
@@ -450,10 +450,10 @@ export default function Dashboard() {
                     const saldo = saldosContas[c.id] ?? 0
                     return (
                       <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏦</div>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#007585', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏦</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                          <div style={{ fontSize: '11px', color: '#7bbcc5' }}>Conta corrente</div>
                         </div>
                         <div style={{ fontSize: '15px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>
                           {fmt(saldo)}
@@ -461,8 +461,8 @@ export default function Dashboard() {
                       </div>
                     )
                   })}
-                  <div style={{ borderTop: '1px solid #f3f4f6', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#374151' }}>Total</span>
+                  <div style={{ borderTop: '1px solid #007585', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>Total</span>
                     <span style={{ fontSize: '16px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
                   </div>
                 </div>
@@ -482,14 +482,14 @@ export default function Dashboard() {
                     return (
                       <div key={c.id}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{c.nome}</span>
+                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{c.nome}</span>
                           <span style={{ fontSize: '12px', color: '#6b7280' }}>Vence dia {c.data_vencimento}</span>
                         </div>
                         <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', marginBottom: '4px' }}>
                           <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                          <span style={{ color: '#9ca3af' }}>Usado: <strong style={{ color: '#374151' }}>{fmt(usado)}</strong></span>
+                          <span style={{ color: '#7bbcc5' }}>Usado: <strong style={{ color: '#ffffff' }}>{fmt(usado)}</strong></span>
                           <span style={{ color: disponivel >= 0 ? '#065f46' : '#991b1b', fontWeight: 600 }}>Disponível: {fmt(disponivel)}</span>
                         </div>
                       </div>
@@ -516,10 +516,10 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {porCategoria.slice(0, 8).map((cat, i) => (
                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '11px', color: '#9ca3af', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                      <span style={{ fontSize: '12px', color: '#374151', width: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{cat.nome}</span>
+                      <span style={{ fontSize: '11px', color: '#7bbcc5', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                      <span style={{ fontSize: '12px', color: '#e0f2f5', width: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{cat.nome}</span>
                       <BarraInline valor={cat.valor} max={maxCategoria} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '80px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '80px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
                     </div>
                   ))}
                 </div>
@@ -535,7 +535,7 @@ export default function Dashboard() {
                 {evolucao6Meses.series.map(s => (
                   <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '12px', height: '3px', background: s.cor, display: 'inline-block', borderRadius: '99px' }} />
-                    <span style={{ color: '#6b7280' }}>{s.label}</span>
+                    <span style={{ color: '#b2d8de' }}>{s.label}</span>
                   </div>
                 ))}
               </div>
@@ -558,9 +558,9 @@ export default function Dashboard() {
                     }}>
                       {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                     </span>
-                    <span style={{ fontSize: '13px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
+                    <span style={{ fontSize: '13px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
                     <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#111827', width: '100px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', width: '100px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
                   </div>
                 ))}
               </div>
@@ -579,36 +579,36 @@ function CardResumo({ label, valor, sub, cor, bg, borda, icone }: {
   label: string; valor: string; sub: string; cor: string; bg: string; borda: string; icone: string
 }) {
   return (
-    <div style={{ background: bg, borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}` }}>
+    <div style={{ background: '#006070', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #007585`, borderLeftWidth: '4px', borderLeftColor: borda }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: '#EC6E21', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
       </div>
-      <div style={{ fontSize: '22px', fontWeight: 700, color: cor, margin: '8px 0 2px' }}>{valor}</div>
-      <div style={{ fontSize: '11px', color: cor, opacity: 0.7 }}>{sub}</div>
+      <div style={{ fontSize: '22px', fontWeight: 700, color: '#ffffff', margin: '8px 0 2px' }}>{valor}</div>
+      <div style={{ fontSize: '11px', color: '#b2d8de', opacity: 0.9 }}>{sub}</div>
     </div>
   )
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>{children}</div>
+  return <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '14px' }}>{children}</div>
 }
 
 function Vazio() {
-  return <div style={{ color: '#9ca3af', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>Sem dados para o período</div>
+  return <div style={{ color: '#7bbcc5', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>Sem dados para o período</div>
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  background: '#fff',
+  background: '#006070',
   borderRadius: '14px',
   padding: '20px',
-  border: '1px solid #e5e7eb',
-  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+  border: '1px solid #007585',
+  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
+  border: '1px solid #007585', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: '#006070', color: '#ffffff', cursor: 'pointer', height: '38px'
 }
