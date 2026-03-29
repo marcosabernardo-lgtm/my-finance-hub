@@ -9,6 +9,7 @@ interface Conta {
   nome: string
   saldo_inicial: number
   data_inicial: string
+  tipo: 'corrente' | 'investimento'
 }
 
 interface Cartao {
@@ -172,7 +173,7 @@ export default function Dashboard() {
   // ── Referências ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) return
-    supabase.from('contas').select('id,nome,saldo_inicial,data_inicial').eq('household_id', householdId).eq('ativo', true).order('nome')
+    supabase.from('contas').select('id,nome,saldo_inicial,data_inicial,tipo').eq('household_id', householdId).eq('ativo', true).order('nome')
       .then(({ data }) => setContas(data || []))
     supabase.from('cartoes').select('id,nome,limite_total,data_vencimento').eq('household_id', householdId).eq('ativo', true).order('nome')
       .then(({ data }) => setCartoes(data || []))
@@ -260,7 +261,8 @@ export default function Dashboard() {
       .reduce((s, m) => s + Number(m.valor), 0),
     [movsmes])
 
-  const totalSaldoContas = Object.values(saldosContas).reduce((s, v) => s + v, 0)
+  const totalSaldoContas     = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
+  const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
 
   // Por categoria
   const porCategoria = useMemo(() => {
@@ -340,7 +342,7 @@ export default function Dashboard() {
 
           {/* ── Linha 1: Cards resumo ─────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
-            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Todas as contas ativas" borda="#6ee7b7" icone="🏦" />
+            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Contas correntes ativas" borda="#6ee7b7" icone="🏦" />
             <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" borda="#93c5fd" icone="📈" />
             <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" borda="#fca5a5" icone="📉" />
             <CardResumo label="Despesas Cartão Crédito" valor={fmt(totalCartaoCredito)} sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
@@ -349,50 +351,66 @@ export default function Dashboard() {
           {/* ── Linha 2: Contas + Cartões ─────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
 
-            {/* Saldos por conta */}
-            <div style={cardStyle}>
-              <SectionTitle>🏦 Saldos por Conta</SectionTitle>
-              {contas.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {contas.map(c => {
-                    const saldo = saldosContas[c.id] ?? 0
-                    const logo = logoBanco(c.nome)
-                    return (
-                      <div key={c.id} style={{
-                        display: 'flex', alignItems: 'center', gap: '12px',
-                        background: '#f9fafb', borderRadius: '10px', padding: '10px 14px',
-                        border: '1px solid #e5e7eb',
-                      }}>
-                        {/* Logo do banco */}
-                        <div style={{
-                          width: '38px', height: '38px', borderRadius: '8px',
-                          background: logo.bg, display: 'flex', alignItems: 'center',
-                          justifyContent: 'center', flexShrink: 0,
-                          fontSize: logo.emoji ? '20px' : '11px',
-                          fontWeight: 700, color: logo.color, letterSpacing: '-0.5px',
-                        }}>
-                          {logo.emoji || logo.sigla}
+            {/* Saldos por conta — correntes + investimentos */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              {/* Contas Correntes */}
+              <div style={cardStyle}>
+                <SectionTitle>🏦 Contas Correntes</SectionTitle>
+                {contas.filter(c => c.tipo === 'corrente').length === 0 ? <Vazio /> : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {contas.filter(c => c.tipo === 'corrente').map(c => {
+                      const saldo = saldosContas[c.id] ?? 0
+                      const logo = logoBanco(c.nome)
+                      return (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', border: '1px solid #e5e7eb' }}>
+                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: logo.emoji ? '20px' : '11px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
+                            {logo.emoji || logo.sigla}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                            <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
                         </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
-                        </div>
-                        <div style={{ fontSize: '16px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>
-                          {fmt(saldo)}
-                        </div>
-                      </div>
-                    )
-                  })}
-                  {/* Linha total */}
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderTop: '1px solid #e5e7eb', paddingTop: '10px', marginTop: '2px'
-                  }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#374151', textTransform: 'uppercase' }}>Total</span>
-                    <span style={{ fontSize: '18px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
+                      )
+                    })}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#374151', textTransform: 'uppercase' }}>Total</span>
+                      <span style={{ fontSize: '17px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Investimentos */}
+              <div style={cardStyle}>
+                <SectionTitle>📈 Investimentos</SectionTitle>
+                {contas.filter(c => c.tipo === 'investimento').length === 0 ? <Vazio /> : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {contas.filter(c => c.tipo === 'investimento').map(c => {
+                      const saldo = saldosContas[c.id] ?? 0
+                      return (
+                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f0fdf4', borderRadius: '10px', padding: '10px 14px', border: '1px solid #bbf7d0' }}>
+                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#fff' }}>
+                            {c.nome.replace(/[^A-Z0-9]/gi, '').slice(0, 3).toUpperCase()}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                            <div style={{ fontSize: '11px', color: '#16a34a' }}>Investimento</div>
+                          </div>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#065f46', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
+                        </div>
+                      )
+                    })}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #bbf7d0', paddingTop: '10px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase' }}>Total Investido</span>
+                      <span style={{ fontSize: '17px', fontWeight: 700, color: '#065f46' }}>{fmt(totalSaldoInvestimentos)}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
             </div>
 
             {/* Cartões de crédito */}
