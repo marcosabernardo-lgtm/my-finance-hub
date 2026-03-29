@@ -33,6 +33,18 @@ interface Movimentacao {
   conta_origem_destino: string | null
 }
 
+// Tipo reduzido para o gráfico de evolução (query com menos campos)
+interface MovimentacaoLeve {
+  id: number
+  tipo: string
+  situacao: string
+  valor: number
+  data_movimentacao: string
+  numero_parcela: string | null
+  metodo_pagamento: string | null
+  cartao_id: number | null
+}
+
 interface Categoria {
   id: number
   nome: string
@@ -183,7 +195,7 @@ export default function Dashboard() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
-  const [movs6meses, setMovs6Meses] = useState<Movimentacao[]>([])
+  const [movs6meses, setMovs6Meses] = useState<MovimentacaoLeve[]>([])
   const [saldosContas, setSaldosContas] = useState<Record<number, number>>({})
   const [comprometidoCartoes, setComprometidoCartoes] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
