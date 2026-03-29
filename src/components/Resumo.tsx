@@ -121,8 +121,11 @@ export default function Resumo() {
 
   // ── Cálculos dos cards ───────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movimentacoes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago')
-      .reduce((s, m) => s + Number(m.valor), 0),
+    movimentacoes.filter(m =>
+      m.tipo === 'Receita' &&
+      m.situacao === 'Pago' &&
+      m.metodo_pagamento !== 'Transferência'  // exclui entradas de transferência entre contas
+    ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 

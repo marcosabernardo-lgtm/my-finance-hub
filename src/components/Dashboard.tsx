@@ -242,7 +242,11 @@ export default function Dashboard() {
 
   // ── Cálculos do mês ─────────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movsmes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago').reduce((s, m) => s + Number(m.valor), 0),
+    movsmes.filter(m =>
+      m.tipo === 'Receita' &&
+      m.situacao === 'Pago' &&
+      m.metodo_pagamento !== 'Transferência'  // exclui entradas de transferência entre contas
+    ).reduce((s, m) => s + Number(m.valor), 0),
     [movsmes])
 
   const totalDespesas = useMemo(() =>
