@@ -60,7 +60,8 @@ const corSituacao = (s: string): React.CSSProperties => {
 // Regra: entra no cálculo se...
 // - tipo = Despesa
 // - situacao != Previsto
-// - metodo != Cartão de Crédito  OU  (Cartão de Crédito AND forma_pagamento = à vista)
+// - metodo_pagamento começa com 'Crédito' → só entra se Parcela 1/1
+// - PIX, Débito, Boleto, Dinheiro → entram sempre
 const deveEntrar = (m: {
   tipo: string
   situacao: string
@@ -69,9 +70,10 @@ const deveEntrar = (m: {
 }) => {
   if (m.tipo !== 'Despesa') return false
   if (m.situacao === 'Previsto') return false
-  // Cartão de Crédito só entra se for à vista (Parcela 1/1)
-  // PIX, Débito, Boleto, Dinheiro entram independente da parcela
-  if (m.metodo_pagamento === 'Cartão de Crédito') {
+  // metodo_pagamento de cartão vem como 'Crédito Nubank', 'Crédito Sicredi', etc.
+  const metodo = (m.metodo_pagamento || '').toLowerCase()
+  if (metodo.startsWith('crédito') || metodo.startsWith('credito')) {
+    // Cartão parcelado não entra — só à vista (Parcela 1/1)
     return m.numero_parcela === 'Parcela 1/1'
   }
   return true
