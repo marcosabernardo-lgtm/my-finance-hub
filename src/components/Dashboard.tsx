@@ -531,6 +531,6 @@ const cardStyle: React.CSSProperties = {
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #e5e7eb', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#ffffff', cursor: 'pointer', height: '38px'
+  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
 }
