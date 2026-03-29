@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth'
 
 type Categoria = { id: number; nome: string; classificacao: string; limite_gastos: number; exemplos: string }
 type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number; limite_total: number; ativo: boolean }
-type Conta = { id: number; nome: string; saldo_inicial: number; data_inicial: string | null; ativo: boolean }
+type Conta = { id: number; nome: string; saldo_inicial: number; data_inicial: string | null; ativo: boolean; tipo: string }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
@@ -54,6 +54,7 @@ export default function Cadastros() {
   const [nomeConta, setNomeConta] = useState('')
   const [saldoInicial, setSaldoInicial] = useState('')
   const [dataInicial, setDataInicial] = useState('')
+  const [tipoConta, setTipoConta] = useState('corrente')
   const [editandoConta, setEditandoConta] = useState<number | null>(null)
 
   const [mensagem, setMensagem] = useState('')
@@ -203,35 +204,38 @@ export default function Cadastros() {
         nome: nomeConta,
         saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
         data_inicial: dataInicial || null,
+        tipo: tipoConta,
       }).eq('id', editandoConta)
       if (error) setMensagem('Erro: ' + error.message)
       else { setMensagem('Conta atualizada!'); setEditandoConta(null) }
     } else {
       const { error } = await supabase.from('contas').insert({
-        household_id: householdId,   // ✅ corrigido
+        household_id: householdId,
         nome: nomeConta,
         saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
         data_inicial: dataInicial || null,
+        tipo: tipoConta,
         ativo: true,
       })
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Conta salva!')
     }
-    setNomeConta(''); setSaldoInicial(''); setDataInicial('')
+    setNomeConta(''); setSaldoInicial(''); setDataInicial(''); setTipoConta('corrente')
     setLoading(false); carregarTudo()
   }
 
   const editarConta = (c: Conta) => {
     setEditandoConta(c.id); setNomeConta(c.nome)
     setSaldoInicial(c.saldo_inicial ? String(c.saldo_inicial) : '')
-    setDataInicial(c.data_inicial ?? ''); setMensagem('')
+    setDataInicial(c.data_inicial ?? '')
+    setTipoConta(c.tipo || 'corrente'); setMensagem('')
   }
 
   const cancelarEdicao = () => {
     setEditandoCategoriaDespesa(null); setNomeCategoriaDespesa(''); setLimiteGastosDespesa(''); setExemplosDespesa('')
     setEditandoCategoriaReceita(null); setNomeCategoriaReceita(''); setLimiteGastosReceita('')
     setEditandoCartao(null); setNomeCartao(''); setDataFechamento(''); setDataVencimento(''); setLimiteTotal('')
-    setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setDataInicial(''); setMensagem('')
+    setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setDataInicial(''); setTipoConta('corrente'); setMensagem('')
   }
 
   const abas = [
@@ -404,6 +408,11 @@ export default function Cadastros() {
 
           {aba === 'contas' && (
             <>
+              <label style={labelStyle}>Tipo da Conta</label>
+              <select style={inputStyle} value={tipoConta} onChange={e => setTipoConta(e.target.value)}>
+                <option value="corrente">Conta Corrente</option>
+                <option value="investimento">Investimento</option>
+              </select>
               <label style={labelStyle}>Nome da Conta *</label>
               <input style={inputStyle} value={nomeConta}
                 onChange={e => setNomeConta(e.target.value)} placeholder="Ex: Nubank" />
@@ -455,7 +464,11 @@ export default function Cadastros() {
               ? <p style={{ color: '#9ca3af' }}>Nenhuma conta cadastrada.</p>
               : contas.map(c => itemRow(
                   c.nome,
-                  [c.saldo_inicial > 0 ? `Saldo: R$ ${c.saldo_inicial}` : '', c.data_inicial ? `Início: ${new Date(c.data_inicial + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''].filter(Boolean).join(' · '),
+                  [
+                    c.tipo === 'investimento' ? '📈 Investimento' : '🏦 Corrente',
+                    c.saldo_inicial > 0 ? `Saldo: R$ ${c.saldo_inicial}` : '',
+                    c.data_inicial ? `Início: ${new Date(c.data_inicial + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''
+                  ].filter(Boolean).join(' · '),
                   c.id, 'contas', () => editarConta(c)
                 ))
             )}
