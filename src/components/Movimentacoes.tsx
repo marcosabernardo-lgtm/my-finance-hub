@@ -67,13 +67,12 @@ export default function Movimentacoes() {
   const { user } = useAuth()
   const [householdId, setHouseholdId] = useState<string | null>(null)
 
-  // Todos os dados do período (sem filtros de tipo/situação/categoria/método)
   const [todasMovimentacoes, setTodasMovimentacoes] = useState<Movimentacao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [contas, setContas] = useState<Conta[]>([])
 
-  // Filtros
+  // Filtros — todos persistem ao trocar mês/ano
   const hoje = new Date()
   const [filtroMes, setFiltroMes] = useState(hoje.getMonth() + 1)
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear())
@@ -81,6 +80,7 @@ export default function Movimentacoes() {
   const [filtroSituacao, setFiltroSituacao] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroMetodo, setFiltroMetodo] = useState('')
+  const [filtroBusca, setFiltroBusca] = useState('')   // ✅ busca por descrição — persiste entre meses
 
   // UI State
   const [loading, setLoading] = useState(false)
@@ -114,8 +114,9 @@ export default function Movimentacoes() {
       .then(({ data }) => setContas(data || []))
   }, [householdId])
 
-  // ── Carrega TODOS os lançamentos do período (sem filtros dinâmicos) ──────────
-  // A filtragem acontece no front via useMemo, permitindo filtros inteligentes
+  // ── Carrega lançamentos por data_movimentacao ────────────────────────────────
+  // ✅ Filtro por data_movimentacao — mostra o que foi comprado/feito no mês,
+  //    não quando foi pago
   const fetchMovimentacoes = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
@@ -128,9 +129,9 @@ export default function Movimentacoes() {
       .from('movimentacoes')
       .select('*')
       .eq('household_id', householdId)
-      .gte('data_pagamento', dataInicio)
-      .lte('data_pagamento', dataFim)
-      .order('data_pagamento', { ascending: false })
+      .gte('data_movimentacao', dataInicio)   // ✅ era data_pagamento
+      .lte('data_movimentacao', dataFim)       // ✅ era data_pagamento
+      .order('data_movimentacao', { ascending: false })
       .order('id', { ascending: false })
 
     if (!error) setTodasMovimentacoes(data || [])
@@ -140,17 +141,15 @@ export default function Movimentacoes() {
   useEffect(() => { fetchMovimentacoes() }, [fetchMovimentacoes])
 
   // ── Filtros dinâmicos ────────────────────────────────────────────────────────
-  // Para calcular as opções de um filtro X, aplica todos os outros filtros EXCETO X.
-  // Assim cada filtro mostra só o que ainda faz sentido dado o contexto atual.
-
   const aplicarFiltros = (
     lista: Movimentacao[],
-    opts: { tipo?: string; situacao?: string; categoria?: string; metodo?: string }
+    opts: { tipo?: string; situacao?: string; categoria?: string; metodo?: string; busca?: string }
   ) => lista.filter(m => {
     if (opts.tipo && m.tipo !== opts.tipo) return false
     if (opts.situacao && m.situacao !== opts.situacao) return false
     if (opts.categoria && String(m.categoria_id) !== opts.categoria) return false
     if (opts.metodo && m.metodo_pagamento !== opts.metodo) return false
+    if (opts.busca && !m.descricao.toLowerCase().includes(opts.busca.toLowerCase())) return false
     return true
   })
 
@@ -161,47 +160,53 @@ export default function Movimentacoes() {
       situacao: filtroSituacao,
       categoria: filtroCategoria,
       metodo: filtroMetodo,
+      busca: filtroBusca,
     }),
-    [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroMetodo]
+    [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroMetodo, filtroBusca]
   )
 
   // Opções disponíveis por filtro (excluindo o próprio filtro do cálculo)
   const tiposDisponiveis = useMemo(() => {
-    const base = aplicarFiltros(todasMovimentacoes, { situacao: filtroSituacao, categoria: filtroCategoria, metodo: filtroMetodo })
+    const base = aplicarFiltros(todasMovimentacoes, { situacao: filtroSituacao, categoria: filtroCategoria, metodo: filtroMetodo, busca: filtroBusca })
     return [...new Set(base.map(m => m.tipo))].sort()
-  }, [todasMovimentacoes, filtroSituacao, filtroCategoria, filtroMetodo])
+  }, [todasMovimentacoes, filtroSituacao, filtroCategoria, filtroMetodo, filtroBusca])
 
   const situacoesDisponiveis = useMemo(() => {
-    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, categoria: filtroCategoria, metodo: filtroMetodo })
+    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, categoria: filtroCategoria, metodo: filtroMetodo, busca: filtroBusca })
     return [...new Set(base.map(m => m.situacao))].sort()
-  }, [todasMovimentacoes, filtroTipo, filtroCategoria, filtroMetodo])
+  }, [todasMovimentacoes, filtroTipo, filtroCategoria, filtroMetodo, filtroBusca])
 
   const categoriasDisponiveis = useMemo(() => {
-    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, metodo: filtroMetodo })
+    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, metodo: filtroMetodo, busca: filtroBusca })
     const ids = [...new Set(base.map(m => m.categoria_id).filter(Boolean))]
     return categorias.filter(c => ids.includes(c.id))
-  }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroMetodo, categorias])
+  }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroMetodo, categorias, filtroBusca])
 
   const metodosDisponiveis = useMemo(() => {
-    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, categoria: filtroCategoria })
+    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, categoria: filtroCategoria, busca: filtroBusca })
     return [...new Set(base.map(m => m.metodo_pagamento).filter(Boolean) as string[])].sort()
-  }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria])
+  }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroBusca])
 
-  // Ao trocar mês/ano, limpa filtros para evitar opção inválida selecionada
+  // ✅ Trocar mês/ano NÃO limpa filtros — eles persistem
   const handleMesAno = (mes: number, ano: number) => {
     setFiltroMes(mes)
     setFiltroAno(ano)
+    // filtros de tipo/situacao/categoria/metodo/busca permanecem
+  }
+
+  // ✅ Limpar todos os filtros (exceto mês/ano) — via botão explícito
+  const limparFiltros = () => {
     setFiltroTipo('')
     setFiltroSituacao('')
     setFiltroCategoria('')
     setFiltroMetodo('')
+    setFiltroBusca('')
   }
 
-  // Ao mudar tipo, verifica se categoria ainda é válida
   const handleFiltroTipo = (v: string) => {
     setFiltroTipo(v)
     if (filtroCategoria) {
-      const base = aplicarFiltros(todasMovimentacoes, { tipo: v, situacao: filtroSituacao, metodo: filtroMetodo })
+      const base = aplicarFiltros(todasMovimentacoes, { tipo: v, situacao: filtroSituacao, metodo: filtroMetodo, busca: filtroBusca })
       if (!base.some(m => String(m.categoria_id) === filtroCategoria)) setFiltroCategoria('')
     }
   }
@@ -209,7 +214,7 @@ export default function Movimentacoes() {
   const handleFiltroSituacao = (v: string) => {
     setFiltroSituacao(v)
     if (filtroCategoria) {
-      const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: v, metodo: filtroMetodo })
+      const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: v, metodo: filtroMetodo, busca: filtroBusca })
       if (!base.some(m => String(m.categoria_id) === filtroCategoria)) setFiltroCategoria('')
     }
   }
@@ -217,7 +222,7 @@ export default function Movimentacoes() {
   const handleFiltroMetodo = (v: string) => {
     setFiltroMetodo(v)
     if (filtroCategoria) {
-      const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, metodo: v })
+      const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, metodo: v, busca: filtroBusca })
       if (!base.some(m => String(m.categoria_id) === filtroCategoria)) setFiltroCategoria('')
     }
   }
@@ -288,7 +293,6 @@ export default function Movimentacoes() {
       }
 
       if (escopo === 'proximas' && grupoId && dataMov) {
-        // Para proximas parcelas, nao sobrescreve datas individuais de cada parcela
         const payloadProximas = {
           tipo: form.tipo,
           categoria_id: form.categoria_id,
@@ -383,7 +387,7 @@ export default function Movimentacoes() {
     id ? (cartoes.find(c => c.id === id)?.nome || null) : null
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
-  const temFiltroAtivo = !!(filtroTipo || filtroSituacao || filtroCategoria || filtroMetodo)
+  const temFiltroAtivo = !!(filtroTipo || filtroSituacao || filtroCategoria || filtroMetodo || filtroBusca)
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -480,10 +484,24 @@ export default function Movimentacoes() {
           </select>
         </div>
 
-        {/* Limpar — aparece só quando há filtro ativo */}
+        {/* ✅ Busca por descrição — persiste ao trocar mês */}
+        <div>
+          <label style={labelStyle}>
+            Descrição {filtroBusca && <span style={badgeFiltro}>✓</span>}
+          </label>
+          <input
+            type='text'
+            placeholder='Buscar...'
+            value={filtroBusca}
+            onChange={e => setFiltroBusca(e.target.value)}
+            style={{ ...selectStyle, width: '160px' }}
+          />
+        </div>
+
+        {/* ✅ Botão Limpar — aparece só quando há filtro ativo */}
         {temFiltroAtivo && (
           <button
-            onClick={() => { setFiltroTipo(''); setFiltroSituacao(''); setFiltroCategoria(''); setFiltroMetodo('') }}
+            onClick={limparFiltros}
             style={{ ...btnSecundario, height: '38px', color: '#dc2626', borderColor: '#fca5a5' }}
           >
             ✕ Limpar filtros
@@ -537,8 +555,23 @@ export default function Movimentacoes() {
 
                     {/* Descrição */}
                     <td style={{ ...tdStyle, maxWidth: '200px' }}>
-                      <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</div>
-
+                      <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {/* Destaca o texto buscado */}
+                        {filtroBusca
+                          ? (() => {
+                              const idx2 = m.descricao.toLowerCase().indexOf(filtroBusca.toLowerCase())
+                              if (idx2 === -1) return m.descricao
+                              return <>
+                                {m.descricao.slice(0, idx2)}
+                                <mark style={{ background: '#fef08a', borderRadius: '2px', padding: '0 1px' }}>
+                                  {m.descricao.slice(idx2, idx2 + filtroBusca.length)}
+                                </mark>
+                                {m.descricao.slice(idx2 + filtroBusca.length)}
+                              </>
+                            })()
+                          : m.descricao
+                        }
+                      </div>
                     </td>
 
                     {/* Tipo */}
@@ -576,7 +609,8 @@ export default function Movimentacoes() {
                     {/* Situação */}
                     <td style={tdStyle}>
                       <span style={{
-                        ...corSituacao(m.situacao),
+                        background: corSituacao(m.situacao).bg,
+                        color: corSituacao(m.situacao).color,
                         padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
                       }}>
                         {m.situacao}
