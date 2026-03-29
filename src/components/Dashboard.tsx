@@ -127,72 +127,6 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
   )
 }
 
-// ─── Gráfico de Área SVG ─────────────────────────────────────────────────────
-
-function GraficoLinha({ series }: {
-  series: { label: string; cor: string; pontos: { mes: string; valor: number }[] }[]
-}) {
-  const W = 520; const H = 110; const PAD = { t: 8, r: 10, b: 24, l: 48 }
-  const iW = W - PAD.l - PAD.r
-  const iH = H - PAD.t - PAD.b
-
-  const todosValores = series.flatMap(s => s.pontos.map(p => p.valor))
-  const maxVal = Math.max(...todosValores, 1)
-  const meses = series[0]?.pontos.map(p => p.mes) || []
-  const base = PAD.t + iH
-
-  const xPos = (i: number) => PAD.l + (i / (meses.length - 1 || 1)) * iW
-  const yPos = (v: number) => PAD.t + iH - (v / maxVal) * iH
-
-  return (
-    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-      <defs>
-        {series.map((s, si) => (
-          <linearGradient key={si} id={`grad${si}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={s.cor} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={s.cor} stopOpacity="0.01" />
-          </linearGradient>
-        ))}
-      </defs>
-
-      {/* Grade discreta */}
-      {[0, 0.5, 1].map(p => {
-        const y = PAD.t + iH * (1 - p)
-        return (
-          <g key={p}>
-            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#0090a4" strokeWidth="1" strokeDasharray="3 3" />
-            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#d1d5db">
-              {p === 0 ? '0' : `${(maxVal * p / 1000).toFixed(0)}k`}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Áreas preenchidas (ordem reversa para sobreposição correta) */}
-      {[...series].reverse().map((s, si) => {
-        const pts = s.pontos.map((p, i) => `${xPos(i)},${yPos(p.valor)}`).join(' ')
-        const area = `${PAD.l},${base} ` + s.pontos.map((p, i) => `${xPos(i)},${yPos(p.valor)}`).join(' ') + ` ${xPos(s.pontos.length - 1)},${base}`
-        return (
-          <g key={si}>
-            <polygon points={area} fill={`url(#grad${series.length - 1 - si})`} />
-            <polyline points={pts} fill="none" stroke={s.cor} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-            {s.pontos.map((p, i) => (
-              <circle key={i} cx={xPos(i)} cy={yPos(p.valor)} r="2.5" fill={s.cor} stroke="#fff" strokeWidth="1.2">
-                <title>{s.label} — {p.mes}: {fmt(p.valor)}</title>
-              </circle>
-            ))}
-          </g>
-        )
-      })}
-
-      {/* Eixo X */}
-      {meses.map((m, i) => (
-        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#9ca3af">{m}</text>
-      ))}
-    </svg>
-  )
-}
-
 // ─── Logo dos bancos ──────────────────────────────────────────────────────────
 
 function logoBanco(nome: string): { bg: string; color: string; sigla: string; emoji?: string } {
@@ -233,7 +167,6 @@ export default function Dashboard() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
-  const [movs6meses, setMovs6Meses] = useState<MovimentacaoLeve[]>([])
   const [saldosContas, setSaldosContas] = useState<Record<number, number>>({})
   const [comprometidoCartoes, setComprometidoCartoes] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
@@ -276,17 +209,6 @@ export default function Dashboard() {
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
     setMovsMes(mes || [])
-
-    // Últimos 6 meses para o gráfico de linha
-    const d6 = new Date(filtroAno, filtroMes - 7, 1)
-    const data6Inicio = `${d6.getFullYear()}-${String(d6.getMonth() + 1).padStart(2, '0')}-01`
-    const { data: seis } = await supabase
-      .from('movimentacoes')
-      .select('id,tipo,situacao,valor,data_movimentacao,numero_parcela,metodo_pagamento,cartao_id')
-      .eq('household_id', householdId)
-      .gte('data_movimentacao', data6Inicio)
-      .lte('data_movimentacao', dataFim)
-    setMovs6Meses(seis || [])
 
     // Saldo de cada conta: saldo_inicial + entradas - saídas (Pago)
     const { data: todasMovsConta } = await supabase
@@ -389,36 +311,6 @@ export default function Dashboard() {
     }
     return Object.entries(map).map(([desc, valor]) => ({ desc, valor })).sort((a, b) => b.valor - a.valor).slice(0, 10)
   }, [movsmes])
-
-  // Evolução 6 meses
-  const evolucao6Meses = useMemo(() => {
-    const mesesLabels: string[] = []
-    const receitasPorMes: number[] = []
-    const despesasPorMes: number[] = []
-
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(filtroAno, filtroMes - 1 - i, 1)
-      const m = d.getMonth() + 1
-      const a = d.getFullYear()
-      const label = MESES[m - 1].slice(0, 3)
-      mesesLabels.push(label)
-
-      const mesMovs = movs6meses.filter(mv => {
-        const [y, mo] = mv.data_movimentacao.split('-')
-        return Number(y) === a && Number(mo) === m
-      })
-
-      receitasPorMes.push(mesMovs.filter(mv => mv.tipo === 'Receita' && mv.situacao === 'Pago').reduce((s, mv) => s + Number(mv.valor), 0))
-      despesasPorMes.push(mesMovs.filter(mv => mv.tipo === 'Despesa' && mv.situacao !== 'Previsto').reduce((s, mv) => s + Number(mv.valor), 0))
-    }
-
-    return {
-      series: [
-        { label: 'Receitas', cor: '#10b981', pontos: mesesLabels.map((mes, i) => ({ mes, valor: receitasPorMes[i] })) },
-        { label: 'Despesas', cor: '#ef4444', pontos: mesesLabels.map((mes, i) => ({ mes, valor: despesasPorMes[i] })) },
-      ]
-    }
-  }, [movs6meses, filtroMes, filtroAno])
 
   const maxCategoria = porCategoria[0]?.valor || 1
   const maxDescricao = porDescricao[0]?.valor || 1
