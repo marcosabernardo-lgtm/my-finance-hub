@@ -3,13 +3,14 @@ import { supabase } from '../lib/supabase'
 import LancamentoDespesa from './LancamentoDespesa'
 import LancamentoReceita from './LancamentoReceita'
 import LancamentoFatura from './LancamentoFatura'
+import LancamentoTransferencia from './LancamentoTransferencia'
 
 type Categoria = { id: number; nome: string; classificacao: string }
 type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number }
 type Conta = { id: number; nome: string }
 
 export default function Lancamento() {
-  const [aba, setAba] = useState<'despesa' | 'receita' | 'fatura'>('despesa')
+  const [aba, setAba] = useState<'despesa' | 'receita' | 'transferencia' | 'fatura'>('despesa')
   const [householdId, setHouseholdId] = useState<string>('')
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
@@ -27,16 +28,17 @@ export default function Lancamento() {
   }, [])
 
   const abas = [
-    { key: 'despesa', label: 'Despesa', color: '#ef4444' },
-    { key: 'receita', label: 'Receita', color: '#22c55e' },
-    { key: 'fatura',  label: 'Pag. Fatura', color: '#f59e0b' },
+    { key: 'despesa',      label: 'Despesa',       color: '#ef4444' },
+    { key: 'receita',      label: 'Receita',        color: '#22c55e' },
+    { key: 'transferencia',label: 'Transferência',  color: '#8b5cf6' },
+    { key: 'fatura',       label: 'Pag. Fatura',    color: '#f59e0b' },
   ] as const
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: '24px 24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Lancamentos</h1>
-        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferencias</p>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Lançamentos</h1>
+        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferências</p>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -62,9 +64,10 @@ export default function Lancamento() {
         <p style={{ color: '#ef4444' }}>Carregando dados...</p>
       ) : (
         <>
-          {aba === 'despesa' && <LancamentoDespesa householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
-          {aba === 'receita' && <LancamentoReceita householdId={householdId} categorias={categorias} contas={contas} />}
-          {aba === 'fatura'  && <LancamentoFatura  householdId={householdId} cartoes={cartoes} contas={contas} />}
+          {aba === 'despesa'       && <LancamentoDespesa      householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
+          {aba === 'receita'       && <LancamentoReceita      householdId={householdId} categorias={categorias} contas={contas} />}
+          {aba === 'transferencia' && <LancamentoTransferencia householdId={householdId} categorias={categorias} contas={contas} />}
+          {aba === 'fatura'        && <LancamentoFatura       householdId={householdId} cartoes={cartoes} contas={contas} />}
         </>
       )}
     </div>
