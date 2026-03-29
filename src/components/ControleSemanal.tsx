@@ -66,13 +66,13 @@ const deveEntrar = (m: {
   tipo: string
   situacao: string
   metodo_pagamento: string | null
-  forma_pagamento: string | null
+  numero_parcela: string | null
 }) => {
   if (m.tipo !== 'Despesa') return false
   if (m.situacao === 'Previsto') return false
   if (m.metodo_pagamento === 'Cartão de Crédito') {
-    const fp = (m.forma_pagamento || '').toLowerCase()
-    return fp.includes('vista') || fp === 'a vista' || fp === 'à vista'
+    // Cartão só entra se for à vista (Parcela 1/1) — parcelado não compromete o semanal
+    return m.numero_parcela === 'Parcela 1/1'
   }
   return true
 }
@@ -121,7 +121,7 @@ export default function ControleSemanal() {
 
     const { data: movs } = await supabase
       .from('movimentacoes')
-      .select('id, tipo, situacao, metodo_pagamento, forma_pagamento, valor, categoria_id, semana_do_mes, descricao, numero_parcela, data_movimentacao')
+      .select('id, tipo, situacao, metodo_pagamento, numero_parcela, valor, categoria_id, semana_do_mes, descricao, data_movimentacao')
       .eq('household_id', householdId)
       .eq('tipo', 'Despesa')
       .gte('data_movimentacao', dataInicio)
@@ -131,7 +131,12 @@ export default function ControleSemanal() {
     const todasMovs = movs || []
 
     // Filtra movimentações que entram no cálculo
-    const movsValidas = todasMovs.filter(m => deveEntrar(m))
+    const movsValidas = todasMovs.filter(m => deveEntrar({
+      tipo: m.tipo,
+      situacao: m.situacao,
+      metodo_pagamento: m.metodo_pagamento,
+      numero_parcela: m.numero_parcela,
+    }))
 
     // Agrupa por categoria_id → semana, guardando os lançamentos detalhados
     const mapCatSemana: Record<number, Record<number, number>> = {}
