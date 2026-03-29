@@ -109,8 +109,8 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
           </path>
         ))}
         <circle cx={cx} cy={cy} r="35" fill="#007d8f" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#b2d8de" fontWeight="600">TOTAL</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#ffffff" fontWeight="700">
+        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="600">TOTAL</text>
+        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#111827" fontWeight="700">
           {(total / 1000).toFixed(1)}k
         </text>
       </svg>
@@ -118,8 +118,8 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
         {arcos.map((a, i) => (
           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
             <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: a.cor, flexShrink: 0 }} />
-            <span style={{ color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
-            <span style={{ color: '#b2d8de', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
+            <span style={{ color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
+            <span style={{ color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
           </div>
         ))}
       </div>
@@ -161,7 +161,7 @@ function GraficoLinha({ series }: {
         return (
           <g key={p}>
             <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#0090a4" strokeWidth="1" strokeDasharray="3 3" />
-            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#7bbcc5">
+            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#d1d5db">
               {p === 0 ? '0' : `${(maxVal * p / 1000).toFixed(0)}k`}
             </text>
           </g>
@@ -187,7 +187,7 @@ function GraficoLinha({ series }: {
 
       {/* Eixo X */}
       {meses.map((m, i) => (
-        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#b2d8de">{m}</text>
+        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#9ca3af">{m}</text>
       ))}
     </svg>
   )
@@ -216,7 +216,7 @@ function logoBanco(nome: string): { bg: string; color: string; sigla: string; em
   if (n.includes('cactus'))       return { bg: '#2D7A3A', color: '#fff', sigla: 'CAC' }
   // genérico
   const sigla = nome.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
-  return { bg: '#0090a4', color: '#fff', sigla }
+  return { bg: '#e5e7eb', color: '#374151', sigla }
 }
 
 // ─── Component Principal ──────────────────────────────────────────────────────
@@ -425,13 +425,13 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#006d7e', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#ffffff', margin: 0 }}>Dashboard</h1>
-          <p style={{ color: '#b2d8de', marginTop: '4px', fontSize: '13px' }}>Visão geral financeira — {MESES[filtroMes - 1]} {filtroAno}</p>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111827', margin: 0 }}>Dashboard</h1>
+          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>Visão geral financeira — {MESES[filtroMes - 1]} {filtroAno}</p>
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <select value={filtroMes} onChange={e => setFiltroMes(Number(e.target.value))} style={selectStyle}>
@@ -476,8 +476,8 @@ export default function Dashboard() {
                     return (
                       <div key={c.id} style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
-                        background: '#006070', borderRadius: '10px', padding: '10px 14px',
-                        border: '1px solid #EC6E21',
+                        background: '#f9fafb', borderRadius: '10px', padding: '10px 14px',
+                        border: '1px solid #e5e7eb',
                       }}>
                         {/* Logo do banco */}
                         <div style={{
@@ -490,10 +490,10 @@ export default function Dashboard() {
                           {logo.emoji || logo.sigla}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                          <div style={{ fontSize: '11px', color: '#b2d8de' }}>Conta corrente</div>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
                         </div>
-                        <div style={{ fontSize: '16px', fontWeight: 700, color: saldo >= 0 ? '#4ade80' : '#f87171', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>
                           {fmt(saldo)}
                         </div>
                       </div>
@@ -502,10 +502,10 @@ export default function Dashboard() {
                   {/* Linha total */}
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    borderTop: '1px solid #EC6E21', paddingTop: '10px', marginTop: '2px'
+                    borderTop: '1px solid #e5e7eb', paddingTop: '10px', marginTop: '2px'
                   }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#EC6E21', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</span>
-                    <span style={{ fontSize: '18px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#4ade80' : '#f87171' }}>{fmt(totalSaldoContas)}</span>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#374151', textTransform: 'uppercase' }}>Total</span>
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
                   </div>
                 </div>
               )}
@@ -524,8 +524,8 @@ export default function Dashboard() {
                     const logo = logoBanco(c.nome)
                     return (
                       <div key={c.id} style={{
-                        background: '#006070', borderRadius: '10px', padding: '10px 14px',
-                        border: '1px solid #EC6E21',
+                        background: '#f9fafb', borderRadius: '10px', padding: '10px 14px',
+                        border: '1px solid #e5e7eb',
                       }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
                           <div style={{
@@ -538,20 +538,20 @@ export default function Dashboard() {
                             {logo.emoji || logo.sigla}
                           </div>
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{c.nome}</div>
-                            <div style={{ fontSize: '11px', color: '#b2d8de' }}>Vence dia {c.data_vencimento} · Limite {fmt(c.limite_total)}</div>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{c.nome}</div>
+                            <div style={{ fontSize: '11px', color: '#6b7280' }}>Vence dia {c.data_vencimento} · Limite {fmt(c.limite_total)}</div>
                           </div>
                           <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: disponivel >= 0 ? '#4ade80' : '#f87171' }}>{fmt(disponivel)}</div>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: disponivel >= 0 ? '#065f46' : '#991b1b' }}>{fmt(disponivel)}</div>
                             <div style={{ fontSize: '10px', color: '#b2d8de' }}>disponível</div>
                           </div>
                         </div>
-                        <div style={{ background: '#005060', borderRadius: '99px', height: '5px' }}>
+                        <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '5px' }}>
                           <div style={{ background: corBarra, borderRadius: '99px', height: '5px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
                         </div>
-                        <div style={{ fontSize: '11px', color: '#b2d8de', marginTop: '4px' }}>
-                          Usado: <strong style={{ color: '#ffffff' }}>{fmt(usado)}</strong>
-                          <span style={{ color: '#EC6E21', marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
+                          Usado: <strong style={{ color: '#374151' }}>{fmt(usado)}</strong>
+                          <span style={{ color: '#6b7280', marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
                         </div>
                       </div>
                     )
@@ -569,7 +569,7 @@ export default function Dashboard() {
                 {evolucao6Meses.series.map(s => (
                   <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ width: '12px', height: '3px', background: s.cor, display: 'inline-block', borderRadius: '99px' }} />
-                    <span style={{ color: '#b2d8de' }}>{s.label}</span>
+                    <span style={{ color: '#6b7280' }}>{s.label}</span>
                   </div>
                 ))}
               </div>
@@ -593,10 +593,10 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {porCategoria.slice(0, 8).map((cat, i) => (
                     <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', color: '#7bbcc5', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                      <span style={{ fontSize: '12px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nome}</span>
+                      <span style={{ fontSize: '11px', color: '#9ca3af', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                      <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nome}</span>
                       <BarraInline valor={cat.valor} max={maxCategoria} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
                     </div>
                   ))}
                 </div>
@@ -611,11 +611,11 @@ export default function Dashboard() {
                   {porDescricao.map((d, i) => (
                     <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ fontSize: '13px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#7bbcc5' }}>{i + 1}</span>}
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#9ca3af' }}>{i + 1}</span>}
                       </span>
-                      <span style={{ fontSize: '12px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
+                      <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
                       <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
                     </div>
                   ))}
                 </div>
@@ -636,36 +636,36 @@ function CardResumo({ label, valor, sub, borda, icone }: {
   label: string; valor: string; sub: string; borda: string; icone: string
 }) {
   return (
-    <div style={{ background: '#007d8f', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #0090a4`, borderLeftWidth: '4px', borderLeftColor: borda }}>
+    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #0090a4`, borderLeftWidth: '4px', borderLeftColor: borda }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div style={{ fontSize: '11px', fontWeight: 700, color: '#EC6E21', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+        <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
       </div>
-      <div style={{ fontSize: '22px', fontWeight: 700, color: '#ffffff', margin: '8px 0 2px' }}>{valor}</div>
-      <div style={{ fontSize: '11px', color: '#b2d8de', opacity: 0.9 }}>{sub}</div>
+      <div style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '8px 0 2px' }}>{valor}</div>
+      <div style={{ fontSize: '11px', color: '#6b7280', opacity: 0.7 }}>{sub}</div>
     </div>
   )
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: '14px', fontWeight: 700, color: '#ffffff', marginBottom: '14px' }}>{children}</div>
+  return <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>{children}</div>
 }
 
 function Vazio() {
-  return <div style={{ color: '#7bbcc5', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>Sem dados para o período</div>
+  return <div style={{ color: '#9ca3af', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}>Sem dados para o período</div>
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  background: '#007d8f',
+  background: '#fff',
   borderRadius: '14px',
   padding: '20px',
-  border: '1px solid #0090a4',
-  boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+  border: '1px solid #e5e7eb',
+  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #0090a4', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#007d8f', color: '#ffffff', cursor: 'pointer', height: '38px'
+  border: '1px solid #e5e7eb', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: '#fff', color: '#ffffff', cursor: 'pointer', height: '38px'
 }
