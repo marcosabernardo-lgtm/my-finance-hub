@@ -424,15 +424,13 @@ export default function Dashboard() {
 
           {/* ── Linha 1: Cards resumo ─────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
-            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Todas as contas ativas" cor="#065f46" bg="#d1fae5" borda="#6ee7b7" icone="🏦" />
-            <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" cor="#1e40af" bg="#dbeafe" borda="#93c5fd" icone="📈" />
-            <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" cor="#991b1b" bg="#fee2e2" borda="#fca5a5" icone="📉" />
+            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Todas as contas ativas" borda="#6ee7b7" icone="🏦" />
+            <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" borda="#93c5fd" icone="📈" />
+            <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" borda="#fca5a5" icone="📉" />
             <CardResumo
               label="Saldo do Mês"
               valor={fmt(saldo)}
               sub="Receitas − Despesas"
-              cor={saldo >= 0 ? '#065f46' : '#991b1b'}
-              bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'}
               borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}
               icone={saldo >= 0 ? '✅' : '⚠️'}
             />
@@ -575,8 +573,8 @@ export default function Dashboard() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function CardResumo({ label, valor, sub, cor, bg, borda, icone }: {
-  label: string; valor: string; sub: string; cor: string; bg: string; borda: string; icone: string
+function CardResumo({ label, valor, sub, borda, icone }: {
+  label: string; valor: string; sub: string; borda: string; icone: string
 }) {
   return (
     <div style={{ background: '#006070', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #007585`, borderLeftWidth: '4px', borderLeftColor: borda }}>
