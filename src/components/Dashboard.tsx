@@ -108,7 +108,7 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
             <title>{a.label}: {fmt(a.valor)} ({(a.pct * 100).toFixed(1)}%)</title>
           </path>
         ))}
-        <circle cx={cx} cy={cy} r="35" fill="#006070" />
+        <circle cx={cx} cy={cy} r="35" fill="#007d8f" />
         <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#b2d8de" fontWeight="600">TOTAL</text>
         <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#ffffff" fontWeight="700">
           {(total / 1000).toFixed(1)}k
@@ -160,7 +160,7 @@ function GraficoLinha({ series }: {
         const y = PAD.t + iH * (1 - p)
         return (
           <g key={p}>
-            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#007585" strokeWidth="1" strokeDasharray="3 3" />
+            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#0090a4" strokeWidth="1" strokeDasharray="3 3" />
             <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#7bbcc5">
               {p === 0 ? '0' : `${(maxVal * p / 1000).toFixed(0)}k`}
             </text>
@@ -399,7 +399,7 @@ export default function Dashboard() {
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#005562', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto', background: '#006d7e', minHeight: '100vh' }}>
 
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '24px', flexWrap: 'wrap', gap: '12px' }}>
@@ -448,7 +448,7 @@ export default function Dashboard() {
                     const saldo = saldosContas[c.id] ?? 0
                     return (
                       <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#007585', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏦</div>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#0090a4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏦</div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
                           <div style={{ fontSize: '11px', color: '#7bbcc5' }}>Conta corrente</div>
@@ -459,7 +459,7 @@ export default function Dashboard() {
                       </div>
                     )
                   })}
-                  <div style={{ borderTop: '1px solid #007585', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ borderTop: '1px solid #0090a4', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>Total</span>
                     <span style={{ fontSize: '16px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
                   </div>
@@ -498,34 +498,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ── Linha 3: Gráficos pizza + barras categoria ────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-
-            {/* Pizza por classificação */}
-            <div style={cardStyle}>
-              <SectionTitle>🍕 Despesas por Classificação</SectionTitle>
-              <GraficoPizza fatias={porClassificacao} />
-            </div>
-
-            {/* Barras por categoria */}
-            <div style={cardStyle}>
-              <SectionTitle>📊 Top Categorias do Mês</SectionTitle>
-              {porCategoria.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {porCategoria.slice(0, 8).map((cat, i) => (
-                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '11px', color: '#7bbcc5', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                      <span style={{ fontSize: '12px', color: '#e0f2f5', width: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flexShrink: 0 }}>{cat.nome}</span>
-                      <BarraInline valor={cat.valor} max={maxCategoria} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '80px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* ── Linha 4: Evolução 6 meses ─────────────────────────────────── */}
+          {/* ── Linha 3: Evolução 6 meses ─────────────────────────────────── */}
           <div style={{ ...cardStyle, marginBottom: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <SectionTitle>📈 Evolução — Últimos 6 Meses</SectionTitle>
@@ -541,28 +514,51 @@ export default function Dashboard() {
             <GraficoLinha series={evolucao6Meses.series} />
           </div>
 
-          {/* ── Linha 5: Ranking por descrição ───────────────────────────── */}
-          <div style={cardStyle}>
-            <SectionTitle>🏷️ Ranking por Descrição</SectionTitle>
-            {porDescricao.length === 0 ? <Vazio /> : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {porDescricao.map((d, i) => (
-                  <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{
-                      width: '22px', height: '22px', borderRadius: '6px',
-                      background: i < 3 ? ['#fef3c7','#f3f4f6','#fef9c3'][i] : '#f9fafb',
-                      color: i < 3 ? ['#92400e','#374151','#854d0e'][i] : '#9ca3af',
-                      fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                    }}>
-                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-                    </span>
-                    <span style={{ fontSize: '13px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
-                    <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', width: '100px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* ── Linha 4: Pizza + Top Categorias + Ranking (3 colunas) ──────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+
+            {/* Pizza por classificação */}
+            <div style={cardStyle}>
+              <SectionTitle>🍕 Por Classificação</SectionTitle>
+              <GraficoPizza fatias={porClassificacao} />
+            </div>
+
+            {/* Barras por categoria */}
+            <div style={cardStyle}>
+              <SectionTitle>📊 Top Categorias</SectionTitle>
+              {porCategoria.length === 0 ? <Vazio /> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {porCategoria.slice(0, 8).map((cat, i) => (
+                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '11px', color: '#7bbcc5', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
+                      <span style={{ fontSize: '12px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nome}</span>
+                      <BarraInline valor={cat.valor} max={maxCategoria} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Ranking por descrição */}
+            <div style={cardStyle}>
+              <SectionTitle>🏷️ Ranking por Descrição</SectionTitle>
+              {porDescricao.length === 0 ? <Vazio /> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {porDescricao.map((d, i) => (
+                    <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '13px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#7bbcc5' }}>{i + 1}</span>}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#e0f2f5', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
+                      <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
 
         </>
@@ -577,7 +573,7 @@ function CardResumo({ label, valor, sub, borda, icone }: {
   label: string; valor: string; sub: string; borda: string; icone: string
 }) {
   return (
-    <div style={{ background: '#006070', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #007585`, borderLeftWidth: '4px', borderLeftColor: borda }}>
+    <div style={{ background: '#007d8f', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #0090a4`, borderLeftWidth: '4px', borderLeftColor: borda }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#EC6E21', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
@@ -599,14 +595,14 @@ function Vazio() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const cardStyle: React.CSSProperties = {
-  background: '#006070',
+  background: '#007d8f',
   borderRadius: '14px',
   padding: '20px',
-  border: '1px solid #007585',
+  border: '1px solid #0090a4',
   boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #007585', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#006070', color: '#ffffff', cursor: 'pointer', height: '38px'
+  border: '1px solid #0090a4', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: '#007d8f', color: '#ffffff', cursor: 'pointer', height: '38px'
 }
