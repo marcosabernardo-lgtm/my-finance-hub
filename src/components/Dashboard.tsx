@@ -33,17 +33,6 @@ interface Movimentacao {
   conta_origem_destino: string | null
 }
 
-// Tipo reduzido para o gráfico de evolução (query com menos campos)
-interface MovimentacaoLeve {
-  id: number
-  tipo: string
-  situacao: string
-  valor: number
-  data_movimentacao: string
-  numero_parcela: string | null
-  metodo_pagamento: string | null
-  cartao_id: number | null
-}
 
 interface Categoria {
   id: number
