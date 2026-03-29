@@ -4,7 +4,20 @@ import { useAuth } from '../hooks/useAuth'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+interface MovimentacaoDetalhe {
+  id: number
+  descricao: string
+  valor: number
+  situacao: string
+  metodo_pagamento: string | null
+  forma_pagamento: string | null
+  numero_parcela: string | null
+  data_movimentacao: string
+  semana_do_mes: number | null
+}
+
 interface LinhaControle {
+  categoriaId: number
   categoria: string
   classificacao: string
   limiteMensal: number
@@ -12,22 +25,43 @@ interface LinhaControle {
   totalReal: number
   divergencia: number
   semanas: Record<number, number>
+  // lançamentos detalhados por semana (0 = total geral)
+  movsPorSemana: Record<number, MovimentacaoDetalhe[]>
+  movsTotal: MovimentacaoDetalhe[]
 }
+
+interface DrillKey { categoriaId: number; semana: number } // semana 0 = coluna Real (total)
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
+const fmtDate = (d: string | null) => {
+  if (!d) return '—'
+  const [y, m, day] = d.split('-')
+  return `${day}/${m}/${y}`
+}
+
 const MESES = [
   'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
   'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
 ]
 
+const corSituacao = (s: string): React.CSSProperties => {
+  switch (s) {
+    case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
+    case 'Pendente': return { background: '#fef3c7', color: '#92400e' }
+    case 'Faturado': return { background: '#dbeafe', color: '#1e40af' }
+    case 'Previsto': return { background: '#f3e8ff', color: '#6b21a8' }
+    default:         return { background: '#f3f4f6', color: '#374151' }
+  }
+}
+
 // Regra: entra no cálculo se...
 // - tipo = Despesa
 // - situacao != Previsto
-// - metodo != Cartão de Crédito  OU  (metodo = Cartão de Crédito AND forma_pagamento contém 'vista' ou 'Vista')
+// - metodo != Cartão de Crédito  OU  (Cartão de Crédito AND forma_pagamento = à vista)
 const deveEntrar = (m: {
   tipo: string
   situacao: string
@@ -36,13 +70,10 @@ const deveEntrar = (m: {
 }) => {
   if (m.tipo !== 'Despesa') return false
   if (m.situacao === 'Previsto') return false
-
   if (m.metodo_pagamento === 'Cartão de Crédito') {
-    // só entra se for à vista
     const fp = (m.forma_pagamento || '').toLowerCase()
     return fp.includes('vista') || fp === 'a vista' || fp === 'à vista'
   }
-
   return true
 }
 
@@ -58,6 +89,9 @@ export default function ControleSemanal() {
 
   const [linhas, setLinhas] = useState<LinhaControle[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Drill-down: { categoriaId, semana } — semana 0 = coluna Real
+  const [drill, setDrill] = useState<DrillKey | null>(null)
 
   // ── Household ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -77,15 +111,6 @@ export default function ControleSemanal() {
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
-    // Busca categorias de despesa com limite
-    const { data: cats } = await supabase
-      .from('categorias')
-      .select('id, nome, classificacao, limite_gastos')
-      .eq('household_id', householdId)
-      .eq('classificacao', 'Despesas Essenciais')
-      .order('nome')
-
-    // Busca também não essenciais e metas
     const { data: cats2 } = await supabase
       .from('categorias')
       .select('id, nome, classificacao, limite_gastos')
@@ -94,29 +119,25 @@ export default function ControleSemanal() {
       .neq('classificacao', 'Renda Passiva')
       .order('nome')
 
-    // Busca movimentações do período (todas despesas)
     const { data: movs } = await supabase
       .from('movimentacoes')
-      .select('id, tipo, situacao, metodo_pagamento, forma_pagamento, valor, categoria_id, semana_do_mes')
+      .select('id, tipo, situacao, metodo_pagamento, forma_pagamento, valor, categoria_id, semana_do_mes, descricao, numero_parcela, data_movimentacao')
       .eq('household_id', householdId)
       .eq('tipo', 'Despesa')
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
 
-    const todasCats = cats2 || cats || []
+    const todasCats = cats2 || []
     const todasMovs = movs || []
 
     // Filtra movimentações que entram no cálculo
-    const movsValidas = todasMovs.filter(m => deveEntrar({
-      tipo: m.tipo,
-      situacao: m.situacao,
-      metodo_pagamento: m.metodo_pagamento,
-      forma_pagamento: m.forma_pagamento,
-    }))
+    const movsValidas = todasMovs.filter(m => deveEntrar(m))
 
-    // Agrupa por categoria_id → semana
+    // Agrupa por categoria_id → semana, guardando os lançamentos detalhados
     const mapCatSemana: Record<number, Record<number, number>> = {}
     const mapCatTotal: Record<number, number> = {}
+    const mapMovsSemana: Record<number, Record<number, MovimentacaoDetalhe[]>> = {}
+    const mapMovsTotal: Record<number, MovimentacaoDetalhe[]> = {}
 
     for (const m of movsValidas) {
       const catId = m.categoria_id
@@ -126,17 +147,22 @@ export default function ControleSemanal() {
 
       if (!mapCatSemana[catId]) mapCatSemana[catId] = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
       if (!mapCatTotal[catId]) mapCatTotal[catId] = 0
+      if (!mapMovsSemana[catId]) mapMovsSemana[catId] = { 1: [], 2: [], 3: [], 4: [], 5: [] }
+      if (!mapMovsTotal[catId]) mapMovsTotal[catId] = []
 
-      if (semana >= 1 && semana <= 5) mapCatSemana[catId][semana] += valor
+      if (semana >= 1 && semana <= 5) {
+        mapCatSemana[catId][semana] += valor
+        mapMovsSemana[catId][semana].push(m as MovimentacaoDetalhe)
+      }
       mapCatTotal[catId] += valor
+      mapMovsTotal[catId].push(m as MovimentacaoDetalhe)
     }
 
-    // Monta linhas — só categorias que têm lançamentos no mês
+    // Monta linhas
     const linhasComLancamentos: LinhaControle[] = []
 
     for (const cat of todasCats) {
       const total = mapCatTotal[cat.id] || 0
-      // Só inclui se tiver lançamento no mês
       if (total === 0 && !mapCatSemana[cat.id]) continue
 
       const limite = Number(cat.limite_gastos) || 0
@@ -144,6 +170,7 @@ export default function ControleSemanal() {
       const semanas = mapCatSemana[cat.id] || { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
 
       linhasComLancamentos.push({
+        categoriaId: cat.id,
         categoria: cat.nome,
         classificacao: cat.classificacao,
         limiteMensal: limite,
@@ -151,35 +178,32 @@ export default function ControleSemanal() {
         totalReal: total,
         divergencia: limite - total,
         semanas,
+        movsPorSemana: mapMovsSemana[cat.id] || { 1: [], 2: [], 3: [], 4: [], 5: [] },
+        movsTotal: mapMovsTotal[cat.id] || [],
       })
     }
 
-    // Ordena por classificação e depois nome
     linhasComLancamentos.sort((a, b) => {
       if (a.classificacao !== b.classificacao) return a.classificacao.localeCompare(b.classificacao)
       return a.categoria.localeCompare(b.categoria)
     })
 
-    // Linha TOTAL
-    const total: LinhaControle = {
-      categoria: 'TOTAL',
-      classificacao: '',
-      limiteMensal: linhasComLancamentos.reduce((s, l) => s + l.limiteMensal, 0),
-      limiteSemanal: linhasComLancamentos.reduce((s, l) => s + l.limiteSemanal, 0),
-      totalReal: linhasComLancamentos.reduce((s, l) => s + l.totalReal, 0),
-      divergencia: 0,
-      semanas: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
-    }
-    total.divergencia = total.limiteMensal - total.totalReal
-    for (let s = 1; s <= 5; s++) {
-      total.semanas[s] = linhasComLancamentos.reduce((sum, l) => sum + (l.semanas[s] || 0), 0)
-    }
-
-    setLinhas([...linhasComLancamentos, total])
+    setLinhas(linhasComLancamentos)
+    setDrill(null)
     setLoading(false)
   }, [householdId, filtroMes, filtroAno])
 
   useEffect(() => { fetchDados() }, [fetchDados])
+
+  // ── Totais da linha TOTAL ────────────────────────────────────────────────────
+  const totalLimiteMensal  = linhas.reduce((s, l) => s + l.limiteMensal, 0)
+  const totalLimiteSemanal = linhas.reduce((s, l) => s + l.limiteSemanal, 0)
+  const totalReal          = linhas.reduce((s, l) => s + l.totalReal, 0)
+  const totalDivergencia   = totalLimiteMensal - totalReal
+  const totalSemanas: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+  for (const l of linhas) {
+    for (let s = 1; s <= 5; s++) totalSemanas[s] += l.semanas[s] || 0
+  }
 
   // ── Cores ───────────────────────────────────────────────────────────────────
   const corReal = (real: number, limite: number) => {
@@ -189,22 +213,29 @@ export default function ControleSemanal() {
 
   const corDivergencia = (div: number) => div >= 0 ? '#10B981' : '#EF4444'
 
-  const corSemana = (valor: number, limiteSemanal: number) => {
+  const corSemanaCell = (valor: number, limiteSemanal: number) => {
     if (valor === 0) return { color: '#9CA3AF', bg: 'transparent' }
     if (limiteSemanal === 0) return { color: '#F59E0B', bg: 'transparent' }
     const pct = valor / limiteSemanal
-    if (pct > 1)   return { color: '#fff', bg: '#EF4444' }   // vermelho — ultrapassou
-    if (pct >= 0.8) return { color: '#fff', bg: '#F59E0B' }  // amarelo — perto do limite
-    return { color: '#fff', bg: '#10B981' }                   // verde — ok
+    if (pct > 1)    return { color: '#fff', bg: '#EF4444' }
+    if (pct >= 0.8) return { color: '#fff', bg: '#F59E0B' }
+    return { color: '#fff', bg: '#10B981' }
   }
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
-
-  // ── Agrupa por classificação para separadores ────────────────────────────────
   const classificacaoAtual = { value: '' }
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // Toggle drill-down
+  const toggleDrill = (categoriaId: number, semana: number, valor: number) => {
+    if (valor === 0) return
+    setDrill(prev =>
+      prev?.categoriaId === categoriaId && prev?.semana === semana
+        ? null
+        : { categoriaId, semana }
+    )
+  }
 
+  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
@@ -213,24 +244,14 @@ export default function ControleSemanal() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Controle Semanal</h1>
           <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
-            Despesas reais por categoria e semana — débito, PIX, dinheiro, boleto e cartão à vista
+            Clique em qualquer valor para ver os lançamentos · débito, PIX, dinheiro, boleto e cartão à vista
           </p>
         </div>
-
-        {/* Seletor mês/ano */}
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <select
-            value={filtroMes}
-            onChange={e => setFiltroMes(Number(e.target.value))}
-            style={selectStyle}
-          >
+          <select value={filtroMes} onChange={e => setFiltroMes(Number(e.target.value))} style={selectStyle}>
             {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
-          <select
-            value={filtroAno}
-            onChange={e => setFiltroAno(Number(e.target.value))}
-            style={selectStyle}
-          >
+          <select value={filtroAno} onChange={e => setFiltroAno(Number(e.target.value))} style={selectStyle}>
             {anos.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
@@ -249,21 +270,23 @@ export default function ControleSemanal() {
             {l.label}
           </div>
         ))}
+        <div style={{ fontSize: '12px', color: '#9ca3af', marginLeft: 'auto' }}>
+          💡 Clique em qualquer valor para ver os lançamentos
+        </div>
       </div>
 
       {/* Tabela */}
       <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
         {loading ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
-        ) : linhas.length <= 1 ? (
+        ) : linhas.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>
             Nenhuma despesa encontrada para {MESES[filtroMes - 1]} {filtroAno}.
           </div>
         ) : (
-          <div style={{ overflowX: 'auto', maxHeight: '70vh', overflowY: 'auto' }}>
+          <div style={{ overflowX: 'auto', maxHeight: '75vh', overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
 
-              {/* Cabeçalho fixo */}
               <thead>
                 <tr style={{ background: '#111827', position: 'sticky', top: 0, zIndex: 10 }}>
                   {['Categoria', 'Limite Mensal', 'Real', 'Divergência', 'Limite Semanal', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'].map(col => (
@@ -280,11 +303,9 @@ export default function ControleSemanal() {
 
               <tbody>
                 {linhas.map((linha, idx) => {
-                  const isTotal = linha.categoria === 'TOTAL'
-
                   // Separador de classificação
                   let separador = null
-                  if (!isTotal && linha.classificacao !== classificacaoAtual.value) {
+                  if (linha.classificacao !== classificacaoAtual.value) {
                     classificacaoAtual.value = linha.classificacao
                     separador = (
                       <tr key={`sep-${linha.classificacao}`}>
@@ -301,61 +322,75 @@ export default function ControleSemanal() {
                     )
                   }
 
-                  const rowBg = isTotal ? '#111827' : idx % 2 === 0 ? '#fff' : '#fafafa'
-                  const textColor = isTotal ? '#f9fafb' : '#374151'
+                  const drillRealAberto   = drill?.categoriaId === linha.categoriaId && drill?.semana === 0
+                  const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa'
 
                   return (
-                    <>
+                    <React.Fragment key={linha.categoriaId}>
                       {separador}
-                      <tr key={linha.categoria} style={{ background: rowBg, borderBottom: '1px solid #f3f4f6' }}>
+
+                      {/* Linha da categoria */}
+                      <tr style={{ background: drillRealAberto ? '#fffbeb' : rowBg, borderBottom: '1px solid #f3f4f6' }}>
 
                         {/* Categoria */}
-                        <td style={{ ...tdBase, color: textColor, fontWeight: isTotal ? 700 : 500, whiteSpace: 'nowrap' }}>
+                        <td style={{ ...tdBase, fontWeight: 500, color: '#111827', whiteSpace: 'nowrap' }}>
                           {linha.categoria}
                         </td>
 
                         {/* Limite Mensal */}
-                        <td style={{ ...tdNum, color: isTotal ? '#d1d5db' : '#6b7280', fontWeight: isTotal ? 700 : 400 }}>
+                        <td style={{ ...tdNum, color: '#6b7280' }}>
                           {fmt(linha.limiteMensal)}
                         </td>
 
-                        {/* Real */}
-                        <td style={{ ...tdNum, color: isTotal ? corReal(linha.totalReal, linha.limiteMensal) : corReal(linha.totalReal, linha.limiteMensal), fontWeight: 700 }}>
+                        {/* Real — clicável */}
+                        <td
+                          style={{ ...tdNum, fontWeight: 700, color: corReal(linha.totalReal, linha.limiteMensal), cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}
+                          onClick={() => toggleDrill(linha.categoriaId, 0, linha.totalReal)}
+                          title='Ver lançamentos do mês'
+                        >
                           {fmt(linha.totalReal)}
                         </td>
 
                         {/* Divergência */}
                         <td style={{ ...tdNum, color: corDivergencia(linha.divergencia), fontWeight: 600 }}>
-                          {linha.divergencia >= 0 ? '' : ''}{fmt(linha.divergencia)}
+                          {fmt(linha.divergencia)}
                         </td>
 
                         {/* Limite Semanal */}
-                        <td style={{ ...tdNum, color: isTotal ? '#d1d5db' : '#6b7280' }}>
+                        <td style={{ ...tdNum, color: '#6b7280' }}>
                           {fmt(linha.limiteSemanal)}
                         </td>
 
                         {/* Semanas 1–5 */}
                         {[1, 2, 3, 4, 5].map(s => {
                           const val = linha.semanas[s] || 0
-                          const { color, bg } = isTotal
-                            ? { color: val > 0 ? corReal(val, linha.limiteSemanal) : '#6b7280', bg: 'transparent' }
-                            : corSemana(val, linha.limiteSemanal)
+                          const { color, bg } = corSemanaCell(val, linha.limiteSemanal)
+                          const aberto = drill?.categoriaId === linha.categoriaId && drill?.semana === s
 
                           return (
-                            <td key={s} style={{
-                              ...tdNum,
-                              color: isTotal ? color : color,
-                              fontWeight: 600,
-                            }}>
+                            <td
+                              key={s}
+                              onClick={() => toggleDrill(linha.categoriaId, s, val)}
+                              title={val > 0 ? 'Ver lançamentos da semana' : ''}
+                              style={{
+                                ...tdNum,
+                                fontWeight: 600,
+                                cursor: val > 0 ? 'pointer' : 'default',
+                                background: aberto ? '#fffbeb' : 'transparent',
+                                borderBottom: aberto ? '2px solid #f59e0b' : 'none',
+                              }}
+                            >
                               {val === 0
-                                ? <span style={{ color: isTotal ? '#4b5563' : '#d1d5db' }}>{fmt(0)}</span>
+                                ? <span style={{ color: '#d1d5db' }}>{fmt(0)}</span>
                                 : (
                                   <span style={{
                                     display: 'inline-block',
                                     background: bg,
                                     borderRadius: '6px',
-                                    padding: bg !== 'transparent' ? '2px 6px' : '0',
+                                    padding: bg !== 'transparent' ? '2px 8px' : '0',
                                     color,
+                                    textDecoration: 'underline dotted',
+                                    textUnderlineOffset: '3px',
                                   }}>
                                     {fmt(val)}
                                   </span>
@@ -364,11 +399,107 @@ export default function ControleSemanal() {
                             </td>
                           )
                         })}
-
                       </tr>
-                    </>
+
+                      {/* ── Drill-down: lançamentos ── */}
+                      {(drill?.categoriaId === linha.categoriaId) && drill !== null && (() => {
+                        const movsDrill = drill.semana === 0
+                          ? linha.movsTotal
+                          : (linha.movsPorSemana[drill.semana] || [])
+                        const titulo = drill.semana === 0
+                          ? `${linha.categoria} — Todos os lançamentos do mês`
+                          : `${linha.categoria} — Semana ${drill.semana}`
+
+                        return (
+                          <tr>
+                            <td colSpan={10} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+                              <div style={{ padding: '12px 16px 14px' }}>
+
+                                {/* Cabeçalho do drill */}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                                    📋 {titulo}
+                                    <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                                      {movsDrill.length} lançamento{movsDrill.length !== 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                  <button
+                                    onClick={() => setDrill(null)}
+                                    style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af' }}
+                                  >×</button>
+                                </div>
+
+                                {movsDrill.length === 0 ? (
+                                  <div style={{ color: '#9ca3af', fontSize: '12px' }}>Nenhum lançamento.</div>
+                                ) : (
+                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                    <thead>
+                                      <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
+                                        {['Data','Descrição','Valor','Situação','Método','Parcela'].map(h => (
+                                          <th key={h} style={{
+                                            padding: '5px 10px',
+                                            textAlign: h === 'Valor' ? 'right' : 'left',
+                                            fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap'
+                                          }}>{h}</th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {movsDrill
+                                        .slice()
+                                        .sort((a, b) => a.data_movimentacao.localeCompare(b.data_movimentacao))
+                                        .map((m, i) => (
+                                          <tr key={m.id} style={{ background: i % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                                            <td style={tdDrill}>{fmtDate(m.data_movimentacao)}</td>
+                                            <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</td>
+                                            <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{fmt(Number(m.valor))}</td>
+                                            <td style={tdDrill}>
+                                              <span style={{ ...corSituacao(m.situacao), padding: '2px 7px', borderRadius: '99px', fontSize: '11px', fontWeight: 600 }}>
+                                                {m.situacao}
+                                              </span>
+                                            </td>
+                                            <td style={{ ...tdDrill, color: '#6b7280' }}>{m.metodo_pagamento || '—'}</td>
+                                            <td style={{ ...tdDrill, color: '#6b7280' }}>{m.numero_parcela || '—'}</td>
+                                          </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                      <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
+                                        <td colSpan={2} style={{ padding: '5px 10px', fontWeight: 700, color: '#92400e' }}>Total</td>
+                                        <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
+                                          {fmt(movsDrill.reduce((s, m) => s + Number(m.valor), 0))}
+                                        </td>
+                                        <td colSpan={3} />
+                                      </tr>
+                                    </tfoot>
+                                  </table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })()}
+
+                    </React.Fragment>
                   )
                 })}
+
+                {/* ── Linha TOTAL ── */}
+                <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
+                  <td style={{ ...tdBase, fontWeight: 700, color: '#f9fafb' }}>TOTAL</td>
+                  <td style={{ ...tdNum, color: '#d1d5db', fontWeight: 700 }}>{fmt(totalLimiteMensal)}</td>
+                  <td style={{ ...tdNum, fontWeight: 700, color: corReal(totalReal, totalLimiteMensal) }}>{fmt(totalReal)}</td>
+                  <td style={{ ...tdNum, fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>{fmt(totalDivergencia)}</td>
+                  <td style={{ ...tdNum, color: '#9ca3af' }}>{fmt(totalLimiteSemanal)}</td>
+                  {[1, 2, 3, 4, 5].map(s => {
+                    const val = totalSemanas[s] || 0
+                    return (
+                      <td key={s} style={{ ...tdNum, fontWeight: 700, color: val > 0 ? corReal(val, totalLimiteSemanal) : '#4b5563' }}>
+                        {fmt(val)}
+                      </td>
+                    )
+                  })}
+                </tr>
               </tbody>
 
             </table>
@@ -376,8 +507,8 @@ export default function ControleSemanal() {
         )}
       </div>
 
-      {/* Nota de rodapé */}
-      {!loading && linhas.length > 1 && (
+      {/* Rodapé */}
+      {!loading && linhas.length > 0 && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', textAlign: 'right' }}>
           * Inclui: Débito · PIX · Dinheiro · Boleto · Cartão de Crédito à vista &nbsp;|&nbsp; Exclui: Cartão parcelado · Situação Previsto
         </div>
@@ -399,6 +530,12 @@ const tdNum: React.CSSProperties = {
   textAlign: 'right',
   verticalAlign: 'middle',
   whiteSpace: 'nowrap',
+}
+
+const tdDrill: React.CSSProperties = {
+  padding: '5px 10px',
+  color: '#374151',
+  verticalAlign: 'middle',
 }
 
 const selectStyle: React.CSSProperties = {
