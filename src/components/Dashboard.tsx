@@ -127,45 +127,57 @@ function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor:
   )
 }
 
-// ─── Gráfico de Linha SVG ─────────────────────────────────────────────────────
+// ─── Gráfico de Área SVG ─────────────────────────────────────────────────────
 
 function GraficoLinha({ series }: {
   series: { label: string; cor: string; pontos: { mes: string; valor: number }[] }[]
 }) {
-  const W = 520; const H = 160; const PAD = { t: 10, r: 10, b: 30, l: 55 }
+  const W = 520; const H = 110; const PAD = { t: 8, r: 10, b: 24, l: 48 }
   const iW = W - PAD.l - PAD.r
   const iH = H - PAD.t - PAD.b
 
   const todosValores = series.flatMap(s => s.pontos.map(p => p.valor))
   const maxVal = Math.max(...todosValores, 1)
   const meses = series[0]?.pontos.map(p => p.mes) || []
+  const base = PAD.t + iH
 
   const xPos = (i: number) => PAD.l + (i / (meses.length - 1 || 1)) * iW
   const yPos = (v: number) => PAD.t + iH - (v / maxVal) * iH
 
   return (
     <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
-      {/* Grade */}
-      {[0, 0.25, 0.5, 0.75, 1].map(p => {
+      <defs>
+        {series.map((s, si) => (
+          <linearGradient key={si} id={`grad${si}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={s.cor} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={s.cor} stopOpacity="0.01" />
+          </linearGradient>
+        ))}
+      </defs>
+
+      {/* Grade discreta */}
+      {[0, 0.5, 1].map(p => {
         const y = PAD.t + iH * (1 - p)
         return (
           <g key={p}>
-            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#f3f4f6" strokeWidth="1" />
-            <text x={PAD.l - 6} y={y + 4} textAnchor="end" fontSize="9" fill="#9ca3af">
+            <line x1={PAD.l} y1={y} x2={W - PAD.r} y2={y} stroke="#f3f4f6" strokeWidth="1" strokeDasharray="3 3" />
+            <text x={PAD.l - 5} y={y + 3} textAnchor="end" fontSize="8" fill="#d1d5db">
               {p === 0 ? '0' : `${(maxVal * p / 1000).toFixed(0)}k`}
             </text>
           </g>
         )
       })}
 
-      {/* Linhas */}
-      {series.map((s, si) => {
-        const pontos = s.pontos.map((p, i) => `${xPos(i)},${yPos(p.valor)}`).join(' ')
+      {/* Áreas preenchidas (ordem reversa para sobreposição correta) */}
+      {[...series].reverse().map((s, si) => {
+        const pts = s.pontos.map((p, i) => `${xPos(i)},${yPos(p.valor)}`).join(' ')
+        const area = `${PAD.l},${base} ` + s.pontos.map((p, i) => `${xPos(i)},${yPos(p.valor)}`).join(' ') + ` ${xPos(s.pontos.length - 1)},${base}`
         return (
           <g key={si}>
-            <polyline points={pontos} fill="none" stroke={s.cor} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+            <polygon points={area} fill={`url(#grad${series.length - 1 - si})`} />
+            <polyline points={pts} fill="none" stroke={s.cor} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
             {s.pontos.map((p, i) => (
-              <circle key={i} cx={xPos(i)} cy={yPos(p.valor)} r="3.5" fill={s.cor} stroke="#fff" strokeWidth="1.5">
+              <circle key={i} cx={xPos(i)} cy={yPos(p.valor)} r="2.5" fill={s.cor} stroke="#fff" strokeWidth="1.2">
                 <title>{s.label} — {p.mes}: {fmt(p.valor)}</title>
               </circle>
             ))}
@@ -175,7 +187,7 @@ function GraficoLinha({ series }: {
 
       {/* Eixo X */}
       {meses.map((m, i) => (
-        <text key={i} x={xPos(i)} y={H - 6} textAnchor="middle" fontSize="9" fill="#9ca3af">{m}</text>
+        <text key={i} x={xPos(i)} y={H - 4} textAnchor="middle" fontSize="8" fill="#9ca3af">{m}</text>
       ))}
     </svg>
   )
