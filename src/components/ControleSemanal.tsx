@@ -69,8 +69,9 @@ const deveEntrar = (m: {
 }) => {
   if (m.tipo !== 'Despesa') return false
   if (m.situacao === 'Previsto') return false
+  // Cartão de Crédito só entra se for à vista (Parcela 1/1)
+  // PIX, Débito, Boleto, Dinheiro entram independente da parcela
   if (m.metodo_pagamento === 'Cartão de Crédito') {
-    // Cartão só entra se for à vista (Parcela 1/1) — parcelado não compromete o semanal
     return m.numero_parcela === 'Parcela 1/1'
   }
   return true
