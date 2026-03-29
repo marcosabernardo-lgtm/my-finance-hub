@@ -250,7 +250,12 @@ export default function Dashboard() {
       .reduce((s, m) => s + Number(m.valor), 0),
     [movsmes])
 
-  const saldo = totalReceitas - totalDespesas
+  // Total cartão crédito do mês — todas as despesas com cartao_id, independente de parcela/situação (exceto Previsto)
+  const totalCartaoCredito = useMemo(() =>
+    movsmes.filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && m.cartao_id !== null)
+      .reduce((s, m) => s + Number(m.valor), 0),
+    [movsmes])
+
   const totalSaldoContas = Object.values(saldosContas).reduce((s, v) => s + v, 0)
 
   // Por categoria
@@ -334,13 +339,7 @@ export default function Dashboard() {
             <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Todas as contas ativas" borda="#6ee7b7" icone="🏦" />
             <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" borda="#93c5fd" icone="📈" />
             <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" borda="#fca5a5" icone="📉" />
-            <CardResumo
-              label="Saldo do Mês"
-              valor={fmt(saldo)}
-              sub="Receitas − Despesas"
-              borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}
-              icone={saldo >= 0 ? '✅' : '⚠️'}
-            />
+            <CardResumo label="Despesas Cartão Crédito" valor={fmt(totalCartaoCredito)} sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
           </div>
 
           {/* ── Linha 2: Contas + Cartões ─────────────────────────────────── */}
