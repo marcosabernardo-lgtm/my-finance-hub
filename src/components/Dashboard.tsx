@@ -193,6 +193,32 @@ function GraficoLinha({ series }: {
   )
 }
 
+// ─── Logo dos bancos ──────────────────────────────────────────────────────────
+
+function logoBanco(nome: string): { bg: string; color: string; sigla: string; emoji?: string } {
+  const n = nome.toLowerCase()
+  if (n.includes('nubank'))       return { bg: '#8A05BE', color: '#fff', sigla: 'NU' }
+  if (n.includes('itaú') || n.includes('itau')) return { bg: '#EC7000', color: '#fff', sigla: 'ITÁ' }
+  if (n.includes('bradesco'))     return { bg: '#CC092F', color: '#fff', sigla: 'BRA' }
+  if (n.includes('santander'))    return { bg: '#EC0000', color: '#fff', sigla: 'SAN' }
+  if (n.includes('caixa'))        return { bg: '#006CA8', color: '#fff', sigla: 'CEF' }
+  if (n.includes('bb') || n.includes('brasil')) return { bg: '#F8D100', color: '#003087', sigla: 'BB' }
+  if (n.includes('sicredi'))      return { bg: '#00813D', color: '#fff', sigla: 'SIC' }
+  if (n.includes('sicoob'))       return { bg: '#006937', color: '#fff', sigla: 'SCB' }
+  if (n.includes('inter'))        return { bg: '#FF7A00', color: '#fff', sigla: 'INT' }
+  if (n.includes('c6'))           return { bg: '#242424', color: '#fff', sigla: 'C6' }
+  if (n.includes('neon'))         return { bg: '#00E5FF', color: '#000', sigla: 'NEO' }
+  if (n.includes('mercado') || n.includes('pago')) return { bg: '#00AEEF', color: '#fff', sigla: 'MP' }
+  if (n.includes('picpay'))       return { bg: '#21C25E', color: '#fff', sigla: 'PIC' }
+  if (n.includes('swile') || n.includes('swi')) return { bg: '#FF6B6B', color: '#fff', sigla: 'SWI' }
+  if (n.includes('pernambucanas') || n.includes('perna')) return { bg: '#E30613', color: '#fff', sigla: 'PER' }
+  if (n.includes('havan'))        return { bg: '#003087', color: '#fff', sigla: 'HAV' }
+  if (n.includes('cactus'))       return { bg: '#2D7A3A', color: '#fff', sigla: 'CAC' }
+  // genérico
+  const sigla = nome.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
+  return { bg: '#0090a4', color: '#fff', sigla }
+}
+
 // ─── Component Principal ──────────────────────────────────────────────────────
 
 export default function Dashboard() {
@@ -446,22 +472,40 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {contas.map(c => {
                     const saldo = saldosContas[c.id] ?? 0
+                    const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#0090a4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px', flexShrink: 0 }}>🏦</div>
+                      <div key={c.id} style={{
+                        display: 'flex', alignItems: 'center', gap: '12px',
+                        background: '#006070', borderRadius: '10px', padding: '10px 14px',
+                        border: '1px solid #EC6E21',
+                      }}>
+                        {/* Logo do banco */}
+                        <div style={{
+                          width: '38px', height: '38px', borderRadius: '8px',
+                          background: logo.bg, display: 'flex', alignItems: 'center',
+                          justifyContent: 'center', flexShrink: 0,
+                          fontSize: logo.emoji ? '20px' : '11px',
+                          fontWeight: 700, color: logo.color, letterSpacing: '-0.5px',
+                        }}>
+                          {logo.emoji || logo.sigla}
+                        </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                          <div style={{ fontSize: '11px', color: '#7bbcc5' }}>Conta corrente</div>
+                          <div style={{ fontSize: '11px', color: '#b2d8de' }}>Conta corrente</div>
                         </div>
-                        <div style={{ fontSize: '15px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: saldo >= 0 ? '#4ade80' : '#f87171', whiteSpace: 'nowrap' }}>
                           {fmt(saldo)}
                         </div>
                       </div>
                     )
                   })}
-                  <div style={{ borderTop: '1px solid #0090a4', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#ffffff' }}>Total</span>
-                    <span style={{ fontSize: '16px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
+                  {/* Linha total */}
+                  <div style={{
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    borderTop: '1px solid #EC6E21', paddingTop: '10px', marginTop: '2px'
+                  }}>
+                    <span style={{ fontSize: '13px', fontWeight: 700, color: '#EC6E21', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total</span>
+                    <span style={{ fontSize: '18px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#4ade80' : '#f87171' }}>{fmt(totalSaldoContas)}</span>
                   </div>
                 </div>
               )}
@@ -471,24 +515,43 @@ export default function Dashboard() {
             <div style={cardStyle}>
               <SectionTitle>💳 Cartões de Crédito</SectionTitle>
               {cartoes.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {cartoes.map(c => {
                     const usado = comprometidoCartoes[c.id] || 0
                     const disponivel = c.limite_total - usado
                     const pct = c.limite_total > 0 ? (usado / c.limite_total) * 100 : 0
-                    const cor = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981'
+                    const corBarra = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981'
+                    const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{c.nome}</span>
-                          <span style={{ fontSize: '12px', color: '#6b7280' }}>Vence dia {c.data_vencimento}</span>
+                      <div key={c.id} style={{
+                        background: '#006070', borderRadius: '10px', padding: '10px 14px',
+                        border: '1px solid #EC6E21',
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                          <div style={{
+                            width: '34px', height: '34px', borderRadius: '8px',
+                            background: logo.bg, display: 'flex', alignItems: 'center',
+                            justifyContent: 'center', flexShrink: 0,
+                            fontSize: logo.emoji ? '18px' : '10px',
+                            fontWeight: 700, color: logo.color,
+                          }}>
+                            {logo.emoji || logo.sigla}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#ffffff' }}>{c.nome}</div>
+                            <div style={{ fontSize: '11px', color: '#b2d8de' }}>Vence dia {c.data_vencimento} · Limite {fmt(c.limite_total)}</div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: disponivel >= 0 ? '#4ade80' : '#f87171' }}>{fmt(disponivel)}</div>
+                            <div style={{ fontSize: '10px', color: '#b2d8de' }}>disponível</div>
+                          </div>
                         </div>
-                        <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', marginBottom: '4px' }}>
-                          <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
+                        <div style={{ background: '#005060', borderRadius: '99px', height: '5px' }}>
+                          <div style={{ background: corBarra, borderRadius: '99px', height: '5px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
-                          <span style={{ color: '#7bbcc5' }}>Usado: <strong style={{ color: '#ffffff' }}>{fmt(usado)}</strong></span>
-                          <span style={{ color: disponivel >= 0 ? '#065f46' : '#991b1b', fontWeight: 600 }}>Disponível: {fmt(disponivel)}</span>
+                        <div style={{ fontSize: '11px', color: '#b2d8de', marginTop: '4px' }}>
+                          Usado: <strong style={{ color: '#ffffff' }}>{fmt(usado)}</strong>
+                          <span style={{ color: '#EC6E21', marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
                         </div>
                       </div>
                     )
