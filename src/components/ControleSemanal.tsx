@@ -10,7 +10,6 @@ interface MovimentacaoDetalhe {
   valor: number
   situacao: string
   metodo_pagamento: string | null
-  forma_pagamento: string | null
   numero_parcela: string | null
   data_movimentacao: string
   semana_do_mes: number | null
