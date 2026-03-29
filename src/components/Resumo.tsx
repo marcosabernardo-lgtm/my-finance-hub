@@ -124,7 +124,7 @@ export default function Resumo() {
     movimentacoes.filter(m =>
       m.tipo === 'Receita' &&
       m.situacao === 'Pago' &&
-      m.metodo_pagamento !== 'Transferência'  // exclui entradas de transferência entre contas
+      m.metodo_pagamento !== 'Transferência entre Contas'
     ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
