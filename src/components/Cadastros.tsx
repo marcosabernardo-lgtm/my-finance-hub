@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 
 type Categoria = { id: number; nome: string; classificacao: string; limite_gastos: number; exemplos: string }
 type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number; limite_total: number; ativo: boolean }
@@ -24,6 +25,9 @@ const btnStyle: React.CSSProperties = {
 type Aba = 'cat-despesa' | 'cat-receita' | 'cartoes' | 'contas'
 
 export default function Cadastros() {
+  const { user } = useAuth()
+  const [householdId, setHouseholdId] = useState<string | null>(null)
+
   const [aba, setAba] = useState<Aba>('cat-despesa')
   const [categoriasDespesa, setCategoriasDespesa] = useState<Categoria[]>([])
   const [categoriasReceita, setCategoriasReceita] = useState<Categoria[]>([])
@@ -55,17 +59,30 @@ export default function Cadastros() {
   const [mensagem, setMensagem] = useState('')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => { carregarTudo() }, [])
+  // ── Busca householdId do usuário logado ──────────────────────────────────────
+  useEffect(() => {
+    if (!user) return
+    supabase.from('households').select('id').eq('owner_id', user.id).single()
+      .then(({ data }) => { if (data) setHouseholdId(data.id) })
+  }, [user])
+
+  useEffect(() => {
+    if (householdId) carregarTudo()
+  }, [householdId])
 
   const carregarTudo = () => {
-    supabase.from('categorias').select('*').order('nome').then(({ data }) => {
-      if (data) {
-        setCategoriasDespesa(data.filter(c => c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'))
-        setCategoriasReceita(data.filter(c => c.classificacao === 'Renda Ativa' || c.classificacao === 'Renda Passiva'))
-      }
-    })
-    supabase.from('cartoes').select('*').order('nome').then(({ data }) => data && setCartoes(data))
-    supabase.from('contas').select('*').order('nome').then(({ data }) => data && setContas(data))
+    if (!householdId) return
+    supabase.from('categorias').select('*').eq('household_id', householdId).order('nome')
+      .then(({ data }) => {
+        if (data) {
+          setCategoriasDespesa(data.filter(c => c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'))
+          setCategoriasReceita(data.filter(c => c.classificacao === 'Renda Ativa' || c.classificacao === 'Renda Passiva'))
+        }
+      })
+    supabase.from('cartoes').select('*').eq('household_id', householdId).order('nome')
+      .then(({ data }) => data && setCartoes(data))
+    supabase.from('contas').select('*').eq('household_id', householdId).order('nome')
+      .then(({ data }) => data && setContas(data))
   }
 
   const excluir = async (tabela: string, id: number) => {
@@ -74,8 +91,10 @@ export default function Cadastros() {
     carregarTudo()
   }
 
+  // ── Categorias Despesa ───────────────────────────────────────────────────────
   const salvarCategoriaDespesa = async () => {
     if (!nomeCategoriaDespesa) return setMensagem('Informe o nome da categoria')
+    if (!householdId) return setMensagem('Erro: household não encontrado')
     setLoading(true)
     if (editandoCategoriaDespesa) {
       const { error } = await supabase.from('categorias').update({
@@ -87,6 +106,7 @@ export default function Cadastros() {
       else { setMensagem('Categoria atualizada!'); setEditandoCategoriaDespesa(null) }
     } else {
       const { error } = await supabase.from('categorias').insert({
+        household_id: householdId,   // ✅ corrigido
         nome: nomeCategoriaDespesa, classificacao: classificacaoDespesa,
         limite_gastos: limiteGastosDespesa ? Number(limiteGastosDespesa) : null,
         exemplos: exemplosDespesa || null,
@@ -105,8 +125,10 @@ export default function Cadastros() {
     setExemplosDespesa(c.exemplos ?? ''); setMensagem('')
   }
 
+  // ── Categorias Receita ───────────────────────────────────────────────────────
   const salvarCategoriaReceita = async () => {
     if (!nomeCategoriaReceita) return setMensagem('Informe o nome da categoria')
+    if (!householdId) return setMensagem('Erro: household não encontrado')
     setLoading(true)
     if (editandoCategoriaReceita) {
       const { error } = await supabase.from('categorias').update({
@@ -117,8 +139,10 @@ export default function Cadastros() {
       else { setMensagem('Categoria atualizada!'); setEditandoCategoriaReceita(null) }
     } else {
       const { error } = await supabase.from('categorias').insert({
+        household_id: householdId,   // ✅ corrigido
         nome: nomeCategoriaReceita, classificacao: classificacaoReceita,
-        limite_gastos: limiteGastosReceita ? Number(limiteGastosReceita) : 0, exemplos: null,
+        limite_gastos: limiteGastosReceita ? Number(limiteGastosReceita) : 0,
+        exemplos: null,
       })
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Categoria salva!')
@@ -133,9 +157,11 @@ export default function Cadastros() {
     setLimiteGastosReceita(c.limite_gastos ? String(c.limite_gastos) : ''); setMensagem('')
   }
 
+  // ── Cartões ──────────────────────────────────────────────────────────────────
   const salvarCartao = async () => {
     if (!nomeCartao || !dataFechamento || !dataVencimento)
       return setMensagem('Preencha nome, fechamento e vencimento')
+    if (!householdId) return setMensagem('Erro: household não encontrado')
     setLoading(true)
     if (editandoCartao) {
       const { error } = await supabase.from('cartoes').update({
@@ -147,9 +173,11 @@ export default function Cadastros() {
       else { setMensagem('Cartão atualizado!'); setEditandoCartao(null) }
     } else {
       const { error } = await supabase.from('cartoes').insert({
+        household_id: householdId,   // ✅ corrigido
         nome: nomeCartao, data_fechamento: Number(dataFechamento),
         data_vencimento: Number(dataVencimento),
-        limite_total: limiteTotal ? Number(limiteTotal) : null, ativo: true,
+        limite_total: limiteTotal ? Number(limiteTotal) : null,
+        ativo: true,
       })
       if (error) setMensagem('Erro: ' + error.message)
       else setMensagem('Cartão salvo!')
@@ -165,8 +193,10 @@ export default function Cadastros() {
     setLimiteTotal(c.limite_total ? String(c.limite_total) : ''); setMensagem('')
   }
 
+  // ── Contas ───────────────────────────────────────────────────────────────────
   const salvarConta = async () => {
     if (!nomeConta) return setMensagem('Informe o nome da conta')
+    if (!householdId) return setMensagem('Erro: household não encontrado')
     setLoading(true)
     if (editandoConta) {
       const { error } = await supabase.from('contas').update({
@@ -178,6 +208,7 @@ export default function Cadastros() {
       else { setMensagem('Conta atualizada!'); setEditandoConta(null) }
     } else {
       const { error } = await supabase.from('contas').insert({
+        household_id: householdId,   // ✅ corrigido
         nome: nomeConta,
         saldo_inicial: saldoInicial ? Number(saldoInicial) : 0,
         data_inicial: dataInicial || null,
