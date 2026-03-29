@@ -12,29 +12,31 @@ import Lancamento from "./components/Lancamento";
 import ConfirmarDebito from "./components/ConfirmarDebito";
 import ExtratoConta from "./components/ExtratoConta";
 import UploadPlanilha from "./components/UploadPlanilha";
+import Dashboard from "./components/Dashboard";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen, Upload
+  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen, Upload, LayoutDashboard
 } from "lucide-react";
 
 type Pagina =
-  | "home" | "resumo" | "movimentacoes"
+  | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
-  { label: "Cadastros",         key: "cadastros",     icon: Database    },
-  { label: "Lançar",            key: "lancamento",    icon: PlusCircle  },
-  { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle },
-  { label: "Resumo",            key: "resumo",        icon: BarChart3   },
-  { label: "Movimentações",     key: "movimentacoes", icon: List        },
-  { label: "Semanal",           key: "semanal",       icon: Calendar    },
-  { label: "Fatura Cartão",     key: "fatura",        icon: CreditCard  },
-  { label: "Extrato Conta",     key: "extrato",       icon: BookOpen    },
-  { label: "Cartões",           key: "cartoes",       icon: Wallet      },
-  { label: "DRE",               key: "dre",           icon: FileText    },
-  { label: "Importar",          key: "upload",        icon: Upload      },
+  { label: "Cadastros",         key: "cadastros",     icon: Database        },
+  { label: "Lançar",            key: "lancamento",    icon: PlusCircle      },
+  { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle     },
+  { label: "Dashboard",         key: "dashboard",     icon: LayoutDashboard },
+  { label: "Resumo",            key: "resumo",        icon: BarChart3       },
+  { label: "Movimentações",     key: "movimentacoes", icon: List            },
+  { label: "Semanal",           key: "semanal",       icon: Calendar        },
+  { label: "Fatura Cartão",     key: "fatura",        icon: CreditCard      },
+  { label: "Extrato Conta",     key: "extrato",       icon: BookOpen        },
+  { label: "Cartões",           key: "cartoes",       icon: Wallet          },
+  { label: "DRE",               key: "dre",           icon: FileText        },
+  { label: "Importar",          key: "upload",        icon: Upload          },
 ]
 
 const cardConfig: {
@@ -71,6 +73,11 @@ const cardConfig: {
     key: "fatura", label: "Fatura Cartão", group: "lancamentos",
     desc: "Gerencie e pague faturas dos cartões",
     icon: CreditCard, accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24",
+  },
+  {
+    key: "dashboard", label: "Dashboard", group: "analises",
+    desc: "Visão geral com saldos, cartões e gráficos",
+    icon: LayoutDashboard, accent: "#10b981", iconBg: "#052e16", iconColor: "#34d399",
   },
   {
     key: "resumo", label: "Resumo", group: "analises",
@@ -257,6 +264,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
 
   const renderConteudo = () => {
     switch (pagina) {
+      case "dashboard":     return <Dashboard />
       case "lancamento":    return <Lancamento />
       case "confirmar":     return <ConfirmarDebito />
       case "resumo":        return <Resumo />
