@@ -19,7 +19,7 @@ import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, LayoutDashboard, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Menu,
+  LogOut, Home as HomeIcon,
 } from "lucide-react";
 
 type Pagina =
