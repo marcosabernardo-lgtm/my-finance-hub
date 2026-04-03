@@ -327,22 +327,21 @@ export default function Alertas() {
   }, [movsMesAtual, categorias])
 
   // ── Risco de estouro ──────────────────────────────────────────────────────
+  // Mesma regra do Resumo: Real = Pago + Pendente Parcela 1/1, filtrado por data_movimentacao
   const riscoEstouro = useMemo(() => {
+    // Real: já confirmado no mês (mesma regra entraNoReal do Resumo)
     const gastosPorCat: Record<number, number> = {}
     for (const m of movsMesAtual) {
-      if (m.situacao === 'Pendente' && m.numero_parcela !== 'Parcela 1/1') continue
       if (!m.categoria_id) continue
+      const entraNoReal = m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')
+      if (!entraNoReal) continue
       gastosPorCat[m.categoria_id] = (gastosPorCat[m.categoria_id] || 0) + Number(m.valor)
     }
-    const pendentesNoMes = movs.filter(m => {
-      if (m.situacao !== 'Pendente') return false
-      const ref = m.data_pagamento || m.data_movimentacao
-      const d = new Date(ref + 'T00:00:00')
-      return d.getMonth() + 1 === mesAtual && d.getFullYear() === anoAtual
-    })
+    // Projeção: Real + Pendentes do mês que ainda não entram no real
     const projecaoPorCat: Record<number, number> = { ...gastosPorCat }
-    for (const m of pendentesNoMes) {
+    for (const m of movsMesAtual) {
       if (!m.categoria_id) continue
+      if (m.situacao !== 'Pendente' || m.numero_parcela === 'Parcela 1/1') continue
       projecaoPorCat[m.categoria_id] = (projecaoPorCat[m.categoria_id] || 0) + Number(m.valor)
     }
     return categorias
@@ -563,27 +562,32 @@ export default function Alertas() {
           {/* ── 5. Risco de estouro ───────────────────────────────────────── */}
           <Secao titulo="Risco de Estouro se Não Controlar" icone="🎯" cor="#ea580c" count={riscoEstouro.length}>
             {riscoEstouro.map(c => (
-              <div key={c.id} style={{ background: '#fff7ed', border: '1px solid #fed7aa', borderLeft: '4px solid #ea580c', borderRadius: '10px', padding: '12px 16px', marginBottom: '8px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                  <span style={{ fontSize: '16px' }}>🎯</span>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', flex: 1 }}>{c.nome}</span>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '14px', fontWeight: 700, color: '#ea580c' }}>{fmt(c.projecao)}</div>
-                    <div style={{ fontSize: '10px', color: '#9ca3af' }}>projeção com pendentes</div>
+              <BlocoExpandivel
+                key={c.id} icone="🎯" titulo={c.nome}
+                total={c.projecao}
+                cor="#ea580c" fundo="#fff7ed" borda="#fed7aa"
+                badge={`Projeção: ${c.pctProjecao}%`} badgeCor="#ea580c"
+              >
+                <div style={{ padding: '4px 8px 8px' }}>
+                  <div style={{ background: '#fed7aa', borderRadius: '99px', height: '6px', marginBottom: '6px' }}>
+                    <div style={{ background: '#ea580c', width: `${Math.min(c.pctProjecao, 100)}%`, height: '6px', borderRadius: '99px' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>
+                    <span>Hoje: {fmt(c.gastoAtual)} ({c.pctAtual}%)</span>
+                    <span>Limite: {fmt(c.limite_gastos || 0)}</span>
+                  </div>
+                  <div style={{ fontSize: '11px', color: '#ea580c', fontWeight: 600, marginBottom: '10px' }}>
+                    ⚠️ Restam apenas {fmt(c.faltaParaEstourar)} antes de estourar
                   </div>
                 </div>
-                <div style={{ background: '#fed7aa', borderRadius: '99px', height: '6px', marginBottom: '6px' }}>
-                  <div style={{ background: '#ea580c', width: `${Math.min(c.pctProjecao, 100)}%`, height: '6px', borderRadius: '99px' }} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b7280' }}>
-                  <span>Hoje: {fmt(c.gastoAtual)} ({c.pctAtual}%)</span>
-                  <span>Limite: {fmt(c.limite_gastos || 0)}</span>
-                  <span style={{ color: '#ea580c', fontWeight: 600 }}>Projeção: {c.pctProjecao}%</span>
-                </div>
-                <div style={{ marginTop: '6px', fontSize: '11px', color: '#ea580c', fontWeight: 600 }}>
-                  ⚠️ Restam apenas {fmt(c.faltaParaEstourar)} antes de estourar
-                </div>
-              </div>
+                {movsMesAtual
+                  .filter(m => m.categoria_id === c.id && (m.situacao === 'Pago' || m.situacao === 'Pendente'))
+                  .sort((a, b) => Number(b.valor) - Number(a.valor))
+                  .map(m => (
+                    <LinhaItem key={m.id} descricao={m.descricao} data={m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} />
+                  ))
+                }
+              </BlocoExpandivel>
             ))}
           </Secao>
 
