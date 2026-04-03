@@ -192,7 +192,7 @@ interface DadosIA {
   totalSaldoInvestimentos: number
 }
 
-function IAAnalistaFinanceira({ dados, mesSelecionado, anoSelecionado }: { dados: DadosIA; mesSelecionado: number; anoSelecionado: number }) {
+function IAAnalistaFinanceira({ dados }: { dados: DadosIA }) {
   const [analise, setAnalise] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState<string>('')
@@ -809,7 +809,7 @@ export default function Dashboard() {
 
           {/* ── IA Analista ────────────────────────────────────────────────── */}
           <div style={{ marginBottom: '20px' }}>
-            <IAAnalistaFinanceira dados={dadosIA} mesSelecionado={filtroMes} anoSelecionado={filtroAno} />
+            <IAAnalistaFinanceira dados={dadosIA} />
           </div>
 
           {/* ── Linha 3: Contas + Cartões ─────────────────────────────────── */}
