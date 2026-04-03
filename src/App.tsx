@@ -13,22 +13,24 @@ import ConfirmarDebito from "./components/ConfirmarDebito";
 import ExtratoConta from "./components/ExtratoConta";
 import UploadPlanilha from "./components/UploadPlanilha";
 import Dashboard from "./components/Dashboard";
+import Alertas from "./components/Alertas";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
-  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen, Upload, LayoutDashboard
+  FileText, Database, PlusCircle, CheckCircle, Layers, BookOpen, Upload, LayoutDashboard, Bell
 } from "lucide-react";
 
 type Pagina =
   | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas"
 
 const abas: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Cadastros",         key: "cadastros",     icon: Database        },
   { label: "Lançar",            key: "lancamento",    icon: PlusCircle      },
   { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle     },
   { label: "Dashboard",         key: "dashboard",     icon: LayoutDashboard },
+  { label: "Alertas",           key: "alertas",       icon: Bell            },
   { label: "Resumo",            key: "resumo",        icon: BarChart3       },
   { label: "Movimentações",     key: "movimentacoes", icon: List            },
   { label: "Semanal",           key: "semanal",       icon: Calendar        },
@@ -78,6 +80,11 @@ const cardConfig: {
     key: "dashboard", label: "Dashboard", group: "analises",
     desc: "Visão geral com saldos, cartões e gráficos",
     icon: LayoutDashboard, accent: "#10b981", iconBg: "#052e16", iconColor: "#34d399",
+  },
+  {
+    key: "alertas", label: "Alertas", group: "analises",
+    desc: "Vencidos, limites estourados e riscos do mês",
+    icon: Bell, accent: "#ef4444", iconBg: "#450a0a", iconColor: "#fca5a5",
   },
   {
     key: "resumo", label: "Resumo", group: "analises",
@@ -265,6 +272,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
   const renderConteudo = () => {
     switch (pagina) {
       case "dashboard":     return <Dashboard />
+      case "alertas":       return <Alertas />
       case "lancamento":    return <Lancamento />
       case "confirmar":     return <ConfirmarDebito />
       case "resumo":        return <Resumo />
@@ -306,13 +314,16 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
         {abas.map((aba) => {
           const Icon = aba.icon
           const ativa = aba.key === pagina
+          const isAlertas = aba.key === "alertas"
           return (
             <button key={aba.key} onClick={() => setPagina(aba.key)} style={{
-              backgroundColor: ativa ? "#eff6ff" : "transparent",
-              border: ativa ? "1px solid #2563eb" : "1px solid #e5e7eb",
-              color: ativa ? "#1d4ed8" : "#374151",
+              backgroundColor: ativa ? (isAlertas ? "#fef2f2" : "#eff6ff") : "transparent",
+              border: ativa
+                ? `1px solid ${isAlertas ? "#ef4444" : "#2563eb"}`
+                : isAlertas ? "1px solid #fecaca" : "1px solid #e5e7eb",
+              color: ativa ? (isAlertas ? "#991b1b" : "#1d4ed8") : isAlertas ? "#ef4444" : "#374151",
               padding: "6px 12px", borderRadius: 6,
-              fontWeight: ativa ? 600 : 400,
+              fontWeight: ativa ? 600 : isAlertas ? 600 : 400,
               display: "flex", alignItems: "center", gap: 5,
               cursor: "pointer", fontSize: 12,
               transition: "all 0.15s",
