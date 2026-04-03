@@ -15,10 +15,28 @@ export default function Login() {
 
   // Detecta se veio do link de recuperação de senha
   useEffect(() => {
+    // Verifica hash da URL
     const hash = window.location.hash
     if (hash.includes('type=recovery')) {
       setModo('nova_senha')
+      return
     }
+
+    // Verifica sessão ativa do Supabase (token já processado)
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session?.user) {
+        // Verifica se é uma sessão de recovery pelo evento
+      }
+    })
+
+    // Escuta evento de recovery do Supabase
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setModo('nova_senha')
+      }
+    })
+
+    return () => { listener.subscription.unsubscribe() }
   }, [])
 
   const limpar = () => { setMensagem(''); setErro('') }

@@ -455,7 +455,11 @@ export default function App() {
     </div>
   )
 
-  if (!user) return <Login />
+  // Se veio do link de recovery, mostra o Login na tela de nova senha
+  const isRecovery = typeof window !== 'undefined' &&
+    (window.location.hash.includes('type=recovery'))
+
+  if (!user || isRecovery) return <Login />
 
   return (
     <ThemeCtx.Provider value={{ theme, tokens, toggle }}>
