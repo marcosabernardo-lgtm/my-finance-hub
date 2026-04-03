@@ -163,13 +163,16 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
       )
 
       const data = await response.json()
+      console.log('STATUS:', response.status)
+      console.log('RESPOSTA:', JSON.stringify(data))
+
       if (data?.content?.[0]?.text) {
         setAnalise(data.content[0].text)
       } else {
-        setErro('Não foi possível obter a análise. Tente novamente.')
+        setErro(`Erro ${response.status}: ${JSON.stringify(data)}`)
       }
-    } catch {
-      setErro('Erro ao conectar com a IA. Verifique sua conexão.')
+    } catch (err) {
+      setErro(`Exceção: ${String(err)}`)
     } finally {
       setLoading(false)
     }
