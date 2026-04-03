@@ -143,8 +143,7 @@ Com base nesses dados, forneça:
 Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um amigo que entende de finanças.`
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData.session?.access_token
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtdnVqdnl1dHZ3b2plY3dtcnV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMDEwMDgsImV4cCI6MjA4OTY3NzAwOH0.udql_zBepK2fzAxaGcsNsLavZuUSG7vefqSrVT8bABA'
 
       const response = await fetch(
         'https://wmvujvyutvwojecwmruy.supabase.co/functions/v1/anthropic-proxy',
@@ -152,7 +151,7 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
           },
           body: JSON.stringify({
             model: 'claude-sonnet-4-20250514',
@@ -163,16 +162,13 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
       )
 
       const data = await response.json()
-      console.log('STATUS:', response.status)
-      console.log('RESPOSTA:', JSON.stringify(data))
-
       if (data?.content?.[0]?.text) {
         setAnalise(data.content[0].text)
       } else {
-        setErro(`Erro ${response.status}: ${JSON.stringify(data)}`)
+        setErro('Não foi possível obter a análise. Tente novamente.')
       }
-    } catch (err) {
-      setErro(`Exceção: ${String(err)}`)
+    } catch {
+      setErro('Erro ao conectar com a IA. Verifique sua conexão.')
     } finally {
       setLoading(false)
     }
