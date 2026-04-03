@@ -54,37 +54,6 @@ const CORES_GRAFICO = [
   '#92400e','#1e40af',
 ]
 
-// ─── Score A/B/C ──────────────────────────────────────────────────────────────
-
-function calcularScore(essencial: number, naoEssencial: number, metas: number, totalReceita: number): {
-  score: 'A' | 'B' | 'C' | 'D'
-  cor: string
-  descricao: string
-  pctEssencial: number
-  pctNaoEssencial: number
-  pctMetas: number
-} {
-  if (totalReceita === 0) return { score: 'D', cor: '#9ca3af', descricao: 'Sem receita no período', pctEssencial: 0, pctNaoEssencial: 0, pctMetas: 0 }
-  const pctEssencial    = (essencial    / totalReceita) * 100
-  const pctNaoEssencial = (naoEssencial / totalReceita) * 100
-  const pctMetas        = (metas        / totalReceita) * 100
-
-  let score: 'A' | 'B' | 'C' | 'D'
-  let cor: string
-  let descricao: string
-
-  if (pctEssencial <= 50 && pctNaoEssencial <= 30 && pctMetas >= 20) {
-    score = 'A'; cor = '#10b981'; descricao = 'Excelente! Dentro da regra 50/30/20.'
-  } else if (pctEssencial <= 60 && pctNaoEssencial <= 35 && pctMetas >= 10) {
-    score = 'B'; cor = '#f59e0b'; descricao = 'Bom, mas há espaço para melhorar.'
-  } else if (pctEssencial <= 75 && pctMetas >= 5) {
-    score = 'C'; cor = '#ef4444'; descricao = 'Atenção: gastos acima do recomendado.'
-  } else {
-    score = 'D'; cor = '#7f1d1d'; descricao = 'Crítico: orçamento desequilibrado.'
-  }
-  return { score, cor, descricao, pctEssencial, pctNaoEssencial, pctMetas }
-}
-
 // ─── Mini gráfico de barras inline ────────────────────────────────────────────
 
 function BarraInline({ valor, max, cor }: { valor: number; max: number; cor: string }) {
@@ -92,58 +61,6 @@ function BarraInline({ valor, max, cor }: { valor: number; max: number; cor: str
   return (
     <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', flex: 1 }}>
       <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${pct}%`, transition: 'width 0.4s ease' }} />
-    </div>
-  )
-}
-
-// ─── Gráfico Pizza SVG ────────────────────────────────────────────────────────
-
-function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor: string }[] }) {
-  const total = fatias.reduce((s, f) => s + f.valor, 0)
-  if (total === 0) return <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px' }}>Sem dados</div>
-
-  let angulo = -90
-  const raio = 70
-  const cx = 90; const cy = 90
-
-  const arcos = fatias.map(f => {
-    const pct = f.valor / total
-    const graus = pct * 360
-    const rad1 = (angulo * Math.PI) / 180
-    const rad2 = ((angulo + graus) * Math.PI) / 180
-    const x1 = cx + raio * Math.cos(rad1)
-    const y1 = cy + raio * Math.sin(rad1)
-    const x2 = cx + raio * Math.cos(rad2)
-    const y2 = cy + raio * Math.sin(rad2)
-    const largeArc = graus > 180 ? 1 : 0
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${raio} ${raio} 0 ${largeArc} 1 ${x2} ${y2} Z`
-    angulo += graus
-    return { ...f, d, pct }
-  })
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-      <svg width="180" height="180" viewBox="0 0 180 180">
-        {arcos.map((a, i) => (
-          <path key={i} d={a.d} fill={a.cor} stroke="#fff" strokeWidth="2">
-            <title>{a.label}: {fmt(a.valor)} ({(a.pct * 100).toFixed(1)}%)</title>
-          </path>
-        ))}
-        <circle cx={cx} cy={cy} r="35" fill="#007d8f" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#fff" fontWeight="600">TOTAL</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#fff" fontWeight="700">
-          {(total / 1000).toFixed(1)}k
-        </text>
-      </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: '140px' }}>
-        {arcos.map((a, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: a.cor, flexShrink: 0 }} />
-            <span style={{ color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
-            <span style={{ color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }
@@ -181,12 +98,7 @@ interface DadosIA {
   totalReceitas: number
   totalDespesas: number
   saldoMes: number
-  scoreLabel: string
-  pctEssencial: number
-  pctNaoEssencial: number
-  pctMetas: number
   topCategorias: { nome: string; valor: number; classificacao: string }[]
-  alertasLimite: { nome: string; gasto: number; limite: number }[]
   comparativos: { nome: string; atual: number; anterior: number; diff: number }[]
   totalSaldoContas: number
   totalSaldoInvestimentos: number
@@ -212,22 +124,13 @@ RESUMO FINANCEIRO:
 - Receitas: ${fmt(dados.totalReceitas)}
 - Despesas: ${fmt(dados.totalDespesas)}
 - Saldo do mês: ${fmt(dados.saldoMes)} (${dados.saldoMes >= 0 ? 'positivo ✅' : 'negativo ❌'})
-- Score financeiro: ${dados.scoreLabel}
 - Saldo total em contas correntes: ${fmt(dados.totalSaldoContas)}
 - Total investido: ${fmt(dados.totalSaldoInvestimentos)}
-
-DISTRIBUIÇÃO DOS GASTOS (regra 50/30/20):
-- Essenciais: ${dados.pctEssencial.toFixed(1)}% (ideal: ≤ 50%)
-- Não Essenciais: ${dados.pctNaoEssencial.toFixed(1)}% (ideal: ≤ 30%)
-- Metas/Investimentos: ${dados.pctMetas.toFixed(1)}% (ideal: ≥ 20%)
 
 TOP CATEGORIAS DE GASTOS:
 ${dados.topCategorias.map(c => `- ${c.nome} (${c.classificacao}): ${fmt(c.valor)}`).join('\n')}
 
-${dados.alertasLimite.length > 0 ? `CATEGORIAS QUE ESTOURARAM O LIMITE:
-${dados.alertasLimite.map(a => `- ${a.nome}: gastou ${fmt(a.gasto)} de um limite de ${fmt(a.limite)} (${((a.gasto/a.limite)*100).toFixed(0)}%)`).join('\n')}` : 'LIMITES: Todas as categorias dentro do limite definido.'}
-
-${dados.comparativos.length > 0 ? `COMPARATIVO COM MÊS ANTERIOR:
+${dados.comparativos.length > 0 ? `COMPARATIVO COM MÊS ANTERIOR (maiores variações):
 ${dados.comparativos.map(c => `- ${c.nome}: ${fmt(c.atual)} vs ${fmt(c.anterior)} (${c.diff >= 0 ? '+' : ''}${fmt(c.diff)})`).join('\n')}` : ''}
 
 Com base nesses dados, forneça:
@@ -264,8 +167,7 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
   }
 
   const renderAnalise = (texto: string) => {
-    const linhas = texto.split('\n')
-    return linhas.map((linha, i) => {
+    return texto.split('\n').map((linha, i) => {
       if (linha.startsWith('**') && linha.endsWith('**')) {
         return <p key={i} style={{ fontWeight: 700, color: '#111827', marginBottom: '4px', marginTop: i > 0 ? '14px' : 0 }}>{linha.replace(/\*\*/g, '')}</p>
       }
@@ -307,7 +209,6 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
             fontSize: '13px',
             fontWeight: 700,
             cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'opacity 0.2s',
             whiteSpace: 'nowrap',
             boxShadow: loading ? 'none' : '0 2px 8px rgba(0,125,143,0.3)',
           }}
@@ -348,97 +249,6 @@ Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um
   )
 }
 
-// ─── Score Card ───────────────────────────────────────────────────────────────
-
-function ScoreCard({ score, cor, descricao, pctEssencial, pctNaoEssencial, pctMetas }: {
-  score: string; cor: string; descricao: string
-  pctEssencial: number; pctNaoEssencial: number; pctMetas: number
-}) {
-  const regras = [
-    { label: 'Essenciais', pct: pctEssencial, meta: 50, ideal: '≤ 50%', cor: '#2563eb' },
-    { label: 'Não Essenciais', pct: pctNaoEssencial, meta: 30, ideal: '≤ 30%', cor: '#f59e0b' },
-    { label: 'Metas / Invest.', pct: pctMetas, meta: 20, ideal: '≥ 20%', cor: '#10b981' },
-  ]
-
-  return (
-    <div style={{ ...cardStyle, border: `2px solid ${cor}20`, background: `linear-gradient(135deg, ${cor}08 0%, #fff 60%)` }}>
-      <SectionTitle>📊 Score Financeiro — Regra 50/30/20</SectionTitle>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        {/* Score badge */}
-        <div style={{
-          width: '72px', height: '72px', borderRadius: '16px', flexShrink: 0,
-          background: cor, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          flexDirection: 'column', boxShadow: `0 4px 16px ${cor}40`,
-        }}>
-          <span style={{ fontSize: '32px', fontWeight: 900, color: '#fff', lineHeight: 1 }}>{score}</span>
-        </div>
-        {/* Descrição */}
-        <div style={{ flex: 1 }}>
-          <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 10px', fontWeight: 500 }}>{descricao}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {regras.map(r => {
-              const ok = r.label === 'Metas / Invest.' ? r.pct >= r.meta : r.pct <= r.meta
-              return (
-                <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '10px', color: '#9ca3af', width: '110px', flexShrink: 0 }}>{r.label} ({r.ideal})</span>
-                  <div style={{ flex: 1, background: '#f3f4f6', borderRadius: '99px', height: '7px', overflow: 'hidden' }}>
-                    <div style={{
-                      background: ok ? r.cor : '#ef4444',
-                      width: `${Math.min(r.pct, 100)}%`,
-                      height: '100%', borderRadius: '99px',
-                      transition: 'width 0.5s ease',
-                    }} />
-                  </div>
-                  <span style={{ fontSize: '11px', fontWeight: 700, color: ok ? r.cor : '#ef4444', width: '38px', textAlign: 'right' }}>
-                    {r.pct.toFixed(0)}%
-                  </span>
-                  <span style={{ fontSize: '13px' }}>{ok ? '✅' : '⚠️'}</span>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Alertas de Limite ────────────────────────────────────────────────────────
-
-function AlertasLimite({ alertas }: { alertas: { nome: string; gasto: number; limite: number; pct: number }[] }) {
-  if (alertas.length === 0) return null
-
-  return (
-    <div style={{ ...cardStyle, border: '1px solid #fecaca', background: 'linear-gradient(135deg, #fff5f5 0%, #fff 60%)' }}>
-      <SectionTitle>🚨 Categorias com Limite Estourado</SectionTitle>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {alertas.map(a => {
-          const excesso = a.gasto - a.limite
-          const cor = a.pct > 150 ? '#7f1d1d' : a.pct > 110 ? '#991b1b' : '#b45309'
-          return (
-            <div key={a.nome} style={{ background: '#fff', border: `1px solid ${cor}30`, borderLeft: `4px solid ${cor}`, borderRadius: '8px', padding: '10px 14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{a.nome}</span>
-                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '11px', color: '#9ca3af' }}>limite: {fmt(a.limite)}</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: cor }}>{fmt(a.gasto)}</span>
-                  <span style={{ fontSize: '11px', background: cor, color: '#fff', borderRadius: '99px', padding: '1px 7px' }}>{a.pct.toFixed(0)}%</span>
-                </div>
-              </div>
-              <div style={{ background: '#fee2e2', borderRadius: '99px', height: '5px' }}>
-                <div style={{ background: cor, width: `${Math.min(a.pct, 100)}%`, height: '5px', borderRadius: '99px', transition: 'width 0.4s' }} />
-              </div>
-              <p style={{ fontSize: '11px', color: cor, margin: '4px 0 0', fontWeight: 500 }}>
-                Excedeu em {fmt(excesso)} neste mês
-              </p>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 // ─── Comparativo Mês Anterior ─────────────────────────────────────────────────
 
 function ComparativoMes({ comparativos, totalAtual, totalAnterior }: {
@@ -453,44 +263,42 @@ function ComparativoMes({ comparativos, totalAtual, totalAnterior }: {
     <div style={cardStyle}>
       <SectionTitle>📅 Comparativo com Mês Anterior</SectionTitle>
 
-      {/* Total geral */}
       <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', marginBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>Total de Despesas</span>
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '15px', fontWeight: 700, color: '#111827' }}>{fmt(totalAtual)}</div>
-          <div style={{ fontSize: '11px', color: corTotal, fontWeight: 600 }}>
-            {diffTotal >= 0 ? '▲' : '▼'} {fmt(Math.abs(diffTotal))} vs mês anterior
-          </div>
+          {totalAnterior > 0 && (
+            <div style={{ fontSize: '11px', color: corTotal, fontWeight: 600 }}>
+              {diffTotal >= 0 ? '▲' : '▼'} {fmt(Math.abs(diffTotal))} vs mês anterior
+            </div>
+          )}
         </div>
       </div>
 
       {comparativos.length === 0 ? (
         <div style={{ color: '#9ca3af', fontSize: '13px', textAlign: 'center', padding: '16px 0' }}>Sem dados do mês anterior para comparar</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '10px', color: '#9ca3af', paddingBottom: '4px', borderBottom: '1px solid #f3f4f6' }}>
+            <span style={{ width: '72px', textAlign: 'right' }}>Mês ant.</span>
+            <span style={{ width: '72px', textAlign: 'right' }}>Atual</span>
+            <span style={{ width: '64px', textAlign: 'right' }}>Diferença</span>
+          </div>
           {comparativos.slice(0, 8).map(c => {
             const cor = c.diff > 0 ? '#ef4444' : c.diff < 0 ? '#10b981' : '#9ca3af'
             const icon = c.diff > 0 ? '▲' : c.diff < 0 ? '▼' : '●'
             return (
-              <div key={c.nome} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #f3f4f6' }}>
-                <span style={{ fontSize: '11px', color: cor, width: '12px', textAlign: 'center' }}>{icon}</span>
+              <div key={c.nome} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 0', borderBottom: '1px solid #f9fafb' }}>
+                <span style={{ fontSize: '11px', color: cor, width: '12px', textAlign: 'center', flexShrink: 0 }}>{icon}</span>
                 <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</span>
-                <span style={{ fontSize: '12px', color: '#6b7280', width: '70px', textAlign: 'right' }}>{fmt(c.anterior)}</span>
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '70px', textAlign: 'right' }}>{fmt(c.atual)}</span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: cor, width: '60px', textAlign: 'right' }}>
+                <span style={{ fontSize: '12px', color: '#9ca3af', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(c.anterior)}</span>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(c.atual)}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: cor, width: '64px', textAlign: 'right', flexShrink: 0 }}>
                   {c.diff >= 0 ? '+' : ''}{fmt(c.diff)}
                 </span>
               </div>
             )
           })}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#9ca3af', paddingTop: '4px' }}>
-            <span>Categoria</span>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <span style={{ width: '70px', textAlign: 'right' }}>Mês ant.</span>
-              <span style={{ width: '70px', textAlign: 'right' }}>Atual</span>
-              <span style={{ width: '60px', textAlign: 'right' }}>Diferença</span>
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -518,14 +326,12 @@ export default function Dashboard() {
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
-  // ── Household ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return
     supabase.from('households').select('id').eq('owner_id', user.id).single()
       .then(({ data }) => { if (data) setHouseholdId(data.id) })
   }, [user])
 
-  // ── Referências ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) return
     supabase.from('contas').select('id,nome,saldo_inicial,data_inicial,tipo').eq('household_id', householdId).eq('ativo', true).order('nome')
@@ -536,7 +342,6 @@ export default function Dashboard() {
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
-  // ── Busca dados ─────────────────────────────────────────────────────────────
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
@@ -546,7 +351,6 @@ export default function Dashboard() {
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
-    // Mês anterior
     const mesAnterior = filtroMes === 1 ? 12 : filtroMes - 1
     const anoAnterior = filtroMes === 1 ? filtroAno - 1 : filtroAno
     const mesAntStr = String(mesAnterior).padStart(2, '0')
@@ -554,7 +358,6 @@ export default function Dashboard() {
     const ultimoDiaAnt = new Date(anoAnterior, mesAnterior, 0).getDate()
     const dataFimAnt = `${anoAnterior}-${mesAntStr}-${ultimoDiaAnt}`
 
-    // Movimentações do mês atual
     const { data: mes } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
@@ -563,7 +366,6 @@ export default function Dashboard() {
       .lte('data_movimentacao', dataFim)
     setMovsMes(mes || [])
 
-    // Movimentações do mês anterior
     const { data: anterior } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
@@ -572,7 +374,6 @@ export default function Dashboard() {
       .lte('data_movimentacao', dataFimAnt)
     setMovsAnterior(anterior || [])
 
-    // Saldo de cada conta
     const { data: todasMovsConta } = await supabase
       .from('movimentacoes')
       .select('conta_origem_destino,tipo,valor,situacao')
@@ -592,7 +393,6 @@ export default function Dashboard() {
     }
     setSaldosContas(saldos)
 
-    // Comprometido por cartão
     const dataHoje = hoje.toISOString().split('T')[0]
     const { data: pendCartao } = await supabase
       .from('movimentacoes')
@@ -613,27 +413,27 @@ export default function Dashboard() {
 
   useEffect(() => { fetchDados() }, [fetchDados])
 
-  // ── Cálculos do mês ─────────────────────────────────────────────────────────
+  // ── Cálculos ────────────────────────────────────────────────────────────────
+
   const totalReceitas = useMemo(() =>
-    movsmes.filter(m =>
-      m.tipo === 'Receita' && m.situacao === 'Pago' && m.metodo_pagamento !== 'Transferência entre Contas'
-    ).reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+    movsmes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago' && m.metodo_pagamento !== 'Transferência entre Contas')
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalDespesas = useMemo(() =>
     movsmes.filter(m => m.tipo === 'Despesa' && (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')))
-      .reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalCartaoCredito = useMemo(() =>
     movsmes.filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && m.cartao_id !== null)
-      .reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
+
+  const totalDespesasAnterior = useMemo(() =>
+    movsAnterior.filter(m => m.tipo === 'Despesa' && (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')))
+      .reduce((s, m) => s + Number(m.valor), 0), [movsAnterior])
 
   const totalSaldoContas        = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
   const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
 
-  // Por categoria — mês atual
   const porCategoria = useMemo(() => {
     const map: Record<number, number> = {}
     for (const m of movsmes) {
@@ -650,7 +450,6 @@ export default function Dashboard() {
       .sort((a, b) => b.valor - a.valor)
   }, [movsmes, categorias])
 
-  // Por categoria — mês anterior
   const porCategoriaAnterior = useMemo(() => {
     const map: Record<number, number> = {}
     for (const m of movsAnterior) {
@@ -660,14 +459,8 @@ export default function Dashboard() {
     return map
   }, [movsAnterior])
 
-  const totalDespesasAnterior = useMemo(() =>
-    movsAnterior.filter(m => m.tipo === 'Despesa' && (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')))
-      .reduce((s, m) => s + Number(m.valor), 0),
-    [movsAnterior])
-
-  // Comparativo por categoria
-  const comparativos = useMemo(() => {
-    return porCategoria
+  const comparativos = useMemo(() =>
+    porCategoria
       .map(c => ({
         nome: c.nome,
         classificacao: c.classificacao,
@@ -676,51 +469,9 @@ export default function Dashboard() {
         diff: c.valor - (porCategoriaAnterior[c.id] || 0),
       }))
       .filter(c => c.anterior > 0 || c.atual > 0)
-      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))
-  }, [porCategoria, porCategoriaAnterior])
+      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff)),
+    [porCategoria, porCategoriaAnterior])
 
-  // Por classificação (pizza)
-  const porClassificacao = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const m of movsmes) {
-      if (m.tipo !== 'Despesa' || m.situacao === 'Previsto') continue
-      const cat = categorias.find(c => c.id === m.categoria_id)
-      const classif = cat?.classificacao || 'Outros'
-      if (['Renda Ativa', 'Renda Passiva'].includes(classif)) continue
-      map[classif] = (map[classif] || 0) + Number(m.valor)
-    }
-    const cores: Record<string, string> = {
-      'Despesas Essenciais': '#2563eb',
-      'Despesas Não Essenciais': '#f59e0b',
-      'Metas / Investimentos': '#10b981',
-      'Outros': '#9ca3af',
-    }
-    return Object.entries(map).map(([label, valor]) => ({ label, valor, cor: cores[label] || '#6b7280' }))
-  }, [movsmes, categorias])
-
-  // Score 50/30/20
-  const scoreInfo = useMemo(() => {
-    const essencial    = porClassificacao.find(p => p.label === 'Despesas Essenciais')?.valor    || 0
-    const naoEssencial = porClassificacao.find(p => p.label === 'Despesas Não Essenciais')?.valor || 0
-    const metas        = porClassificacao.find(p => p.label === 'Metas / Investimentos')?.valor   || 0
-    return calcularScore(essencial, naoEssencial, metas, totalReceitas)
-  }, [porClassificacao, totalReceitas])
-
-  // Alertas de limite
-  const alertasLimite = useMemo(() => {
-    return porCategoria
-      .map(cat => {
-        const catDados = categorias.find(c => c.id === cat.id)
-        const limite = catDados?.limite_mensal
-        if (!limite || limite <= 0) return null
-        const pct = (cat.valor / limite) * 100
-        if (pct <= 100) return null
-        return { nome: cat.nome, gasto: cat.valor, limite, pct }
-      })
-      .filter(Boolean) as { nome: string; gasto: number; limite: number; pct: number }[]
-  }, [porCategoria, categorias])
-
-  // Por descrição (ranking)
   const porDescricao = useMemo(() => {
     const map: Record<string, number> = {}
     for (const m of movsmes) {
@@ -733,23 +484,17 @@ export default function Dashboard() {
   const maxCategoria = porCategoria[0]?.valor || 1
   const maxDescricao = porDescricao[0]?.valor || 1
 
-  // Dados para IA
   const dadosIA: DadosIA = useMemo(() => ({
     mes: MESES[filtroMes - 1],
     ano: filtroAno,
     totalReceitas,
     totalDespesas,
     saldoMes: totalReceitas - totalDespesas,
-    scoreLabel: scoreInfo.score,
-    pctEssencial: scoreInfo.pctEssencial,
-    pctNaoEssencial: scoreInfo.pctNaoEssencial,
-    pctMetas: scoreInfo.pctMetas,
     topCategorias: porCategoria.slice(0, 6).map(c => ({ nome: c.nome, valor: c.valor, classificacao: c.classificacao })),
-    alertasLimite: alertasLimite.map(a => ({ nome: a.nome, gasto: a.gasto, limite: a.limite })),
     comparativos: comparativos.slice(0, 5).map(c => ({ nome: c.nome, atual: c.atual, anterior: c.anterior, diff: c.diff })),
     totalSaldoContas,
     totalSaldoInvestimentos,
-  }), [filtroMes, filtroAno, totalReceitas, totalDespesas, scoreInfo, porCategoria, alertasLimite, comparativos, totalSaldoContas, totalSaldoInvestimentos])
+  }), [filtroMes, filtroAno, totalReceitas, totalDespesas, porCategoria, comparativos, totalSaldoContas, totalSaldoInvestimentos])
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -789,22 +534,9 @@ export default function Dashboard() {
               }
               borda="#fca5a5"
               icone="📉"
-              subCor={totalDespesas > totalDespesasAnterior ? '#ef4444' : '#10b981'}
+              subCor={totalDespesasAnterior > 0 ? (totalDespesas > totalDespesasAnterior ? '#ef4444' : '#10b981') : undefined}
             />
             <CardResumo label="Despesas Cartão" valor={fmt(totalCartaoCredito)} sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
-          </div>
-
-          {/* ── Score + Alertas ────────────────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: alertasLimite.length > 0 ? '1fr 1fr' : '1fr', gap: '14px', marginBottom: '20px' }}>
-            <ScoreCard
-              score={scoreInfo.score}
-              cor={scoreInfo.cor}
-              descricao={scoreInfo.descricao}
-              pctEssencial={scoreInfo.pctEssencial}
-              pctNaoEssencial={scoreInfo.pctNaoEssencial}
-              pctMetas={scoreInfo.pctMetas}
-            />
-            {alertasLimite.length > 0 && <AlertasLimite alertas={alertasLimite} />}
           </div>
 
           {/* ── IA Analista ────────────────────────────────────────────────── */}
@@ -812,10 +544,9 @@ export default function Dashboard() {
             <IAAnalistaFinanceira dados={dadosIA} />
           </div>
 
-          {/* ── Linha 3: Contas + Cartões ─────────────────────────────────── */}
+          {/* ── Contas + Cartões ───────────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
 
-            {/* Saldos por conta — correntes + investimentos */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
 
               {/* Contas Correntes */}
@@ -917,19 +648,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* ── Linha 4: Pizza + Comparativo ─────────────────────────────── */}
+          {/* ── Comparativo + Top Categorias ──────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-            <div style={cardStyle}>
-              <SectionTitle>🍕 Por Classificação</SectionTitle>
-              <GraficoPizza fatias={porClassificacao} />
-            </div>
             <ComparativoMes comparativos={comparativos} totalAtual={totalDespesas} totalAnterior={totalDespesasAnterior} />
-          </div>
 
-          {/* ── Linha 5: Top Categorias + Ranking ────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-
-            {/* Barras por categoria */}
             <div style={cardStyle}>
               <SectionTitle>📊 Top Categorias</SectionTitle>
               {porCategoria.length === 0 ? <Vazio /> : (
@@ -955,26 +677,25 @@ export default function Dashboard() {
                 </div>
               )}
             </div>
+          </div>
 
-            {/* Ranking por descrição */}
-            <div style={cardStyle}>
-              <SectionTitle>🏷️ Ranking por Descrição</SectionTitle>
-              {porDescricao.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {porDescricao.map((d, i) => (
-                    <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#9ca3af' }}>{i + 1}</span>}
-                      </span>
-                      <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
-                      <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
+          {/* ── Ranking por Descrição ─────────────────────────────────────── */}
+          <div style={cardStyle}>
+            <SectionTitle>🏷️ Ranking por Descrição</SectionTitle>
+            {porDescricao.length === 0 ? <Vazio /> : (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px 32px' }}>
+                {porDescricao.map((d, i) => (
+                  <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '13px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#9ca3af' }}>{i + 1}</span>}
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
+                    <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
         </>
@@ -989,13 +710,13 @@ function CardResumo({ label, valor, sub, borda, icone, subCor }: {
   label: string; valor: string; sub: string; borda: string; icone: string; subCor?: string
 }) {
   return (
-    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', border: `1px solid #0090a4`, borderLeftWidth: '4px', borderLeftColor: borda, borderLeftStyle: 'solid' }}>
+    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', border: '1px solid #e5e7eb', borderLeft: `4px solid ${borda}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
       </div>
       <div style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '8px 0 2px' }}>{valor}</div>
-      <div style={{ fontSize: '11px', color: subCor || '#6b7280', opacity: subCor ? 1 : 0.7, fontWeight: subCor ? 600 : 400 }}>{sub}</div>
+      <div style={{ fontSize: '11px', color: subCor || '#6b7280', fontWeight: subCor ? 600 : 400 }}>{sub}</div>
     </div>
   )
 }
