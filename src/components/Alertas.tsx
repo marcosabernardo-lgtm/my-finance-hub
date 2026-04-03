@@ -25,13 +25,6 @@ interface Categoria {
   limite_gastos: number | null
 }
 
-interface Cartao {
-  id: number
-  nome: string
-  limite_total: number
-  data_vencimento: number
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
