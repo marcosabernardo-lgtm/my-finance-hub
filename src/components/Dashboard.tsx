@@ -143,15 +143,24 @@ Com base nesses dados, forneça:
 Seja direto, use emojis com moderação, evite linguagem genérica. Fale como um amigo que entende de finanças.`
 
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
+
+      const response = await fetch(
+        'https://wmvujvyutvwojecwmruy.supabase.co/functions/v1/anthropic-proxy',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            model: 'claude-sonnet-4-20250514',
+            max_tokens: 1000,
+            messages: [{ role: 'user', content: prompt }],
+          }),
+        }
+      )
 
       const data = await response.json()
       if (data?.content?.[0]?.text) {
