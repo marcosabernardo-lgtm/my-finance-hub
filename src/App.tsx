@@ -14,6 +14,7 @@ import ExtratoConta from "./components/ExtratoConta";
 import UploadPlanilha from "./components/UploadPlanilha";
 import Dashboard from "./components/Dashboard";
 import Alertas from "./components/Alertas";
+import NotificacoesConfig from "./components/NotificacoesConfig";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
@@ -103,7 +104,7 @@ const useTheme = () => useContext(ThemeCtx)
 type Pagina =
   | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes"
 
 const grupos: {
   label: string
@@ -112,8 +113,9 @@ const grupos: {
   {
     label: "Configuração",
     items: [
-      { label: "Cadastros", key: "cadastros", icon: Database },
-      { label: "Importar",  key: "upload",    icon: Upload   },
+      { label: "Cadastros",      key: "cadastros",     icon: Database },
+      { label: "Importar",       key: "upload",        icon: Upload   },
+      { label: "Notificações",   key: "notificacoes",  icon: Bell     },
     ],
   },
   {
@@ -416,6 +418,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "dre":           return <DRE />
       case "cadastros":     return <Cadastros />
       case "upload":        return <UploadPlanilha />
+      case "notificacoes":  return <NotificacoesConfig />
       default:              return null
     }
   }
