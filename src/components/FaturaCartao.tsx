@@ -55,23 +55,30 @@ export default function FaturaCartao() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
 
-  // Filtros
   const [cartaoId, setCartaoId] = useState<string>('')
   const [filtroMes, setFiltroMes] = useState(hoje.getMonth() + 1)
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear())
   const [filtroSituacao, setFiltroSituacao] = useState<'Pendente' | 'Previsto' | ''>('')
 
-  // Dados da tabela (filtrados por mês/ano selecionado)
   const [lancamentosMes, setLancamentosMes] = useState<Lancamento[]>([])
-
-  // Totais globais do cartão (sem filtro de mês — limite real comprometido)
   const [totalPendenteGlobal, setTotalPendenteGlobal] = useState(0)
   const [atualizandoSituacao, setAtualizandoSituacao] = useState<number | null>(null)
   const [editandoValor, setEditandoValor] = useState<number | null>(null)
   const [valorTemp, setValorTemp] = useState('')
   const [totalPrevistoGlobal, setTotalPrevistoGlobal] = useState(0)
-
   const [loading, setLoading] = useState(false)
+
+  // ── Conferidos — apenas estado local, sem salvar no banco ──────────────────
+  const [conferidos, setConferidos] = useState<Set<number>>(new Set())
+
+  const toggleConferido = (id: number) => {
+    setConferidos(prev => {
+      const novo = new Set(prev)
+      if (novo.has(id)) novo.delete(id)
+      else novo.add(id)
+      return novo
+    })
+  }
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
@@ -80,7 +87,6 @@ export default function FaturaCartao() {
     [cartoes, cartaoId]
   )
 
-  // ── Household ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return
     supabase
@@ -88,7 +94,6 @@ export default function FaturaCartao() {
       .then(({ data }) => { if (data) setHouseholdId(data.id) })
   }, [user])
 
-  // ── Cartões + Categorias ────────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) return
     supabase
@@ -108,25 +113,23 @@ export default function FaturaCartao() {
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
-  // ── Busca dados ─────────────────────────────────────────────────────────────
   const fetchFatura = useCallback(async () => {
     if (!householdId || !cartaoId) return
     setLoading(true)
+    // Limpa conferidos ao mudar de mês/cartão
+    setConferidos(new Set())
 
     const mesStr = String(filtroMes).padStart(2, '0')
     const dataInicio = `${filtroAno}-${mesStr}-01`
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
-    // Query 1 — tabela: lançamentos do mês/ano selecionado (pelo data_pagamento)
-    const situacoesBusca = ['Pendente', 'Previsto', 'Faturado']
-
     const { data: dadosMes } = await supabase
       .from('movimentacoes')
       .select('id, data_movimentacao, data_pagamento, categoria_id, descricao, valor, forma_pagamento, numero_parcela, situacao')
       .eq('household_id', householdId)
       .eq('cartao_id', cartaoId)
-      .in('situacao', situacoesBusca)
+      .in('situacao', ['Pendente', 'Previsto', 'Faturado'])
       .gte('data_pagamento', dataInicio)
       .lte('data_pagamento', dataFim)
       .order('data_movimentacao', { ascending: true })
@@ -134,8 +137,6 @@ export default function FaturaCartao() {
 
     setLancamentosMes(dadosMes || [])
 
-    // Query 2 — cards: TODOS os Pendentes/Previstos do cartão, sem filtro de mês
-    // O Total Pendente representa o limite real já comprometido (todas as parcelas futuras)
     const { data: globais } = await supabase
       .from('movimentacoes')
       .select('valor, situacao')
@@ -144,41 +145,34 @@ export default function FaturaCartao() {
       .in('situacao', ['Pendente', 'Previsto'])
 
     const lista = globais || []
-    setTotalPendenteGlobal(
-      lista.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0)
-    )
-    setTotalPrevistoGlobal(
-      lista.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0)
-    )
-
+    setTotalPendenteGlobal(lista.filter(m => m.situacao === 'Pendente').reduce((s, m) => s + Number(m.valor), 0))
+    setTotalPrevistoGlobal(lista.filter(m => m.situacao === 'Previsto').reduce((s, m) => s + Number(m.valor), 0))
     setLoading(false)
   }, [householdId, cartaoId, filtroMes, filtroAno])
 
   useEffect(() => { fetchFatura() }, [fetchFatura])
 
-  // ── Filtragem local por situação (apenas na tabela) ─────────────────────────
   const lancamentosFiltrados = useMemo(() => {
     if (!filtroSituacao) return lancamentosMes
     return lancamentosMes.filter(l => l.situacao === filtroSituacao)
   }, [lancamentosMes, filtroSituacao])
 
-  // Total exibido no rodapé da tabela (respeita filtro de situação)
   const totalTabelaFiltrada = useMemo(() =>
     lancamentosFiltrados.reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentosFiltrados]
-  )
+    [lancamentosFiltrados])
 
-  // Total da fatura do mês
   const totalFaturaMes = useMemo(() =>
     lancamentosMes.reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentosMes]
-  )
+    [lancamentosMes])
 
-  // Total apenas Previsto do mês selecionado
   const totalPrevistMes = useMemo(() =>
     lancamentosMes.filter(l => l.situacao === 'Previsto').reduce((s, l) => s + Number(l.valor), 0),
-    [lancamentosMes]
-  )
+    [lancamentosMes])
+
+  // Total conferido
+  const totalConferido = useMemo(() =>
+    lancamentosFiltrados.filter(l => conferidos.has(l.id)).reduce((s, l) => s + Number(l.valor), 0),
+    [lancamentosFiltrados, conferidos])
 
   const atualizarSituacao = async (id: number, novaSituacao: string) => {
     setAtualizandoSituacao(id)
@@ -195,19 +189,17 @@ export default function FaturaCartao() {
     setEditandoValor(null)
   }
 
-  // ── Cálculos dos cards (sempre globais, sem filtro de mês) ──────────────────
   const limite = cartaoAtual?.limite_total || 0
   const saldoReal = limite - totalPendenteGlobal
   const saldoSimulado = limite - totalPendenteGlobal - totalPrevistoGlobal
 
-  // ── Helpers visuais ─────────────────────────────────────────────────────────
   const catNome = (id: number | null) =>
     id ? (categorias.find(c => c.id === id)?.nome || '—') : '—'
 
   const corSituacao = (s: string) =>
     s === 'Pendente'
-      ? { bg: '#fef3c7', color: '#92400e' }
-      : { bg: '#f3e8ff', color: '#6b21a8' }
+      ? { background: '#fef3c7', color: '#92400e' }
+      : { background: '#f3e8ff', color: '#6b21a8' }
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -222,208 +214,192 @@ export default function FaturaCartao() {
         </p>
       </div>
 
-      {/* ── Filtros ─────────────────────────────────────────────────────────── */}
-      <div style={{
-        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px',
-        padding: '16px 20px', marginBottom: '20px',
-        display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
-      }}>
-
+      {/* Filtros */}
+      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end' }}>
         <div style={{ flex: '1 1 200px' }}>
           <label style={labelStyle}>Cartão</label>
           <select value={cartaoId} onChange={e => setCartaoId(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
             {cartoes.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </select>
         </div>
-
         <div>
           <label style={labelStyle}>Mês Pagamento</label>
           <select value={filtroMes} onChange={e => setFiltroMes(Number(e.target.value))} style={selectStyle}>
             {MESES.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
           </select>
         </div>
-
         <div>
           <label style={labelStyle}>Ano</label>
           <select value={filtroAno} onChange={e => setFiltroAno(Number(e.target.value))} style={selectStyle}>
             {anos.map(a => <option key={a} value={a}>{a}</option>)}
           </select>
         </div>
-
         <div>
           <label style={labelStyle}>Situação</label>
           <div style={{ display: 'flex', gap: '8px' }}>
             {(['', 'Pendente', 'Previsto'] as const).map(s => (
-              <button
-                key={s}
-                onClick={() => setFiltroSituacao(s)}
-                style={{
-                  padding: '7px 14px', borderRadius: '8px', fontSize: '12px',
-                  fontWeight: 600, cursor: 'pointer', height: '38px',
-                  border: filtroSituacao === s ? 'none' : '1px solid #d1d5db',
-                  background: filtroSituacao === s
-                    ? s === '' ? '#2563eb' : s === 'Pendente' ? '#92400e' : '#6b21a8'
-                    : '#fff',
-                  color: filtroSituacao === s ? '#fff' : '#374151',
-                }}
-              >
+              <button key={s} onClick={() => setFiltroSituacao(s)} style={{
+                padding: '7px 14px', borderRadius: '8px', fontSize: '12px',
+                fontWeight: 600, cursor: 'pointer', height: '38px',
+                border: filtroSituacao === s ? 'none' : '1px solid #d1d5db',
+                background: filtroSituacao === s
+                  ? s === '' ? '#2563eb' : s === 'Pendente' ? '#92400e' : '#6b21a8'
+                  : '#fff',
+                color: filtroSituacao === s ? '#fff' : '#374151',
+              }}>
                 {s === '' ? 'Todos' : s}
               </button>
             ))}
           </div>
         </div>
-
       </div>
 
-      {/* ── Cards (totais globais do cartão) ─────────────────────────────────── */}
+      {/* Cards */}
       {cartaoAtual && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '20px' }}>
-
-          <CardInfo
-            label={`Total Fatura — ${MESES[filtroMes - 1]}`}
-            valor={fmt(totalFaturaMes)}
-            sub={`${lancamentosMes.length} lançamento${lancamentosMes.length !== 1 ? 's' : ''} no mês`}
-            corValor='#1d4ed8'
-            bg='#eff6ff'
-          />
-          <CardInfo
-            label='Total Pendente'
-            valor={fmt(totalPendenteGlobal)}
-            sub='Todas as parcelas futuras'
-            corValor='#92400e'
-            bg='#fef3c7'
-          />
-
-          <CardInfo
-            label='Total Previsto'
-            valor={fmt(totalPrevistMes)}
-            sub={`Mês ${MESES[filtroMes - 1]} — não consome limite`}
-            corValor='#6b21a8'
-            bg='#f3e8ff'
-          />
-
-          <CardInfo
-            label='Limite do Cartão'
-            valor={fmt(limite)}
-            sub={`Vence dia ${cartaoAtual.data_vencimento} · Fecha dia ${cartaoAtual.data_fechamento}`}
-            corValor='#1e40af'
-            bg='#dbeafe'
-          />
-
-          <CardInfo
-            label='Saldo Disponível'
-            valor={fmt(saldoReal)}
-            sub='Limite − Pendente (global)'
-            corValor={saldoReal >= 0 ? '#065f46' : '#991b1b'}
-            bg={saldoReal >= 0 ? '#d1fae5' : '#fee2e2'}
-          />
-
+          <CardInfo label={`Total Fatura — ${MESES[filtroMes - 1]}`} valor={fmt(totalFaturaMes)} sub={`${lancamentosMes.length} lançamento${lancamentosMes.length !== 1 ? 's' : ''} no mês`} corValor='#1d4ed8' bg='#eff6ff' />
+          <CardInfo label='Total Pendente' valor={fmt(totalPendenteGlobal)} sub='Todas as parcelas futuras' corValor='#92400e' bg='#fef3c7' />
+          <CardInfo label='Total Previsto' valor={fmt(totalPrevistMes)} sub={`Mês ${MESES[filtroMes - 1]} — não consome limite`} corValor='#6b21a8' bg='#f3e8ff' />
+          <CardInfo label='Limite do Cartão' valor={fmt(limite)} sub={`Vence dia ${cartaoAtual.data_vencimento} · Fecha dia ${cartaoAtual.data_fechamento}`} corValor='#1e40af' bg='#dbeafe' />
+          <CardInfo label='Saldo Disponível' valor={fmt(saldoReal)} sub='Limite − Pendente (global)' corValor={saldoReal >= 0 ? '#065f46' : '#991b1b'} bg={saldoReal >= 0 ? '#d1fae5' : '#fee2e2'} />
           {totalPrevistoGlobal > 0 && (
-            <CardInfo
-              label='Saldo Simulado'
-              valor={fmt(saldoSimulado)}
-              sub='Limite − Pendente − Previsto'
-              corValor={saldoSimulado >= 0 ? '#065f46' : '#991b1b'}
-              bg={saldoSimulado >= 0 ? '#d1fae5' : '#fee2e2'}
-              destaque
-            />
+            <CardInfo label='Saldo Simulado' valor={fmt(saldoSimulado)} sub='Limite − Pendente − Previsto' corValor={saldoSimulado >= 0 ? '#065f46' : '#991b1b'} bg={saldoSimulado >= 0 ? '#d1fae5' : '#fee2e2'} destaque />
           )}
-
         </div>
       )}
 
-      {/* ── Tabela (lançamentos do mês selecionado) ──────────────────────────── */}
+      {/* Tabela */}
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
 
-        {/* Cabeçalho da tabela com contexto do mês */}
+        {/* Cabeçalho da tabela */}
         <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
             Lançamentos — {MESES[filtroMes - 1]} {filtroAno}
           </span>
-          <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-            Filtrado por data de pagamento
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {conferidos.size > 0 && (
+              <span style={{ fontSize: '12px', color: '#065f46', fontWeight: 600, background: '#d1fae5', padding: '3px 10px', borderRadius: '99px' }}>
+                ✅ {conferidos.size} conferido{conferidos.size !== 1 ? 's' : ''} — {fmt(totalConferido)}
+              </span>
+            )}
+            <span style={{ fontSize: '12px', color: '#9ca3af' }}>Filtrado por data de pagamento</span>
+          </div>
         </div>
 
         {loading ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
         ) : lancamentosFiltrados.length === 0 ? (
           <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>
-            {!cartaoId
-              ? 'Selecione um cartão para ver a fatura.'
-              : `Nenhum lançamento encontrado para ${MESES[filtroMes - 1]} ${filtroAno}.`}
+            {!cartaoId ? 'Selecione um cartão para ver a fatura.' : `Nenhum lançamento encontrado para ${MESES[filtroMes - 1]} ${filtroAno}.`}
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                  {/* Coluna do check */}
+                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                    <span title="Conferir lançamentos" style={{ fontSize: '12px', color: '#9ca3af' }}>✓</span>
+                  </th>
                   {['Dt. Movimentação','Dt. Pagamento','Categoria','Descrição','Valor','Forma de Pgto','Nº Parcela','Situação'].map(h => (
-                    <th key={h} style={{
-                      padding: '10px 12px', textAlign: h === 'Valor' ? 'right' : 'left',
-                      fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px'
-                    }}>
+                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px' }}>
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {lancamentosFiltrados.map((l, idx) => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid #f3f4f6', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <td style={tdStyle}>{fmtDate(l.data_movimentacao)}</td>
-                    <td style={tdStyle}>{fmtDate(l.data_pagamento)}</td>
-                    <td style={{ ...tdStyle, color: '#6b7280' }}>{catNome(l.categoria_id)}</td>
-                    <td style={{ ...tdStyle, maxWidth: '220px' }}>
-                      <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {l.descricao}
-                      </div>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, color: '#991b1b', whiteSpace: 'nowrap' }}>
-                      {editandoValor === l.id ? (
-                        <input
-                          type="number" step="0.01" autoFocus
-                          value={valorTemp}
-                          onChange={e => setValorTemp(e.target.value)}
-                          onKeyDown={e => { if (e.key === 'Enter') salvarValor(l.id); if (e.key === 'Escape') setEditandoValor(null) }}
-                          onBlur={() => salvarValor(l.id)}
-                          style={{ width: 90, padding: '2px 6px', borderRadius: 4, border: '1px solid #2563eb', fontSize: 12, textAlign: 'right' }}
-                        />
-                      ) : (
-                        <span
-                          onClick={() => { setEditandoValor(l.id); setValorTemp(String(Number(l.valor))) }}
-                          title="Clique para editar o valor"
-                          style={{ cursor: 'pointer', borderBottom: '1px dotted #991b1b' }}
+                {lancamentosFiltrados.map((l, idx) => {
+                  const conferido = conferidos.has(l.id)
+                  return (
+                    <tr
+                      key={l.id}
+                      style={{
+                        borderBottom: '1px solid #f3f4f6',
+                        background: conferido
+                          ? '#f0fdf4'
+                          : idx % 2 === 0 ? '#fff' : '#fafafa',
+                        transition: 'background 0.2s',
+                        opacity: conferido ? 0.75 : 1,
+                      }}
+                    >
+                      {/* Checkbox de conferência */}
+                      <td style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        <div
+                          onClick={() => toggleConferido(l.id)}
+                          title={conferido ? 'Desmarcar' : 'Marcar como conferido'}
+                          style={{
+                            width: '20px', height: '20px', borderRadius: '5px', cursor: 'pointer',
+                            border: `2px solid ${conferido ? '#16a34a' : '#d1d5db'}`,
+                            background: conferido ? '#16a34a' : '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto', transition: 'all 0.15s',
+                          }}
                         >
-                          − {fmt(Number(l.valor))}
-                        </span>
-                      )}
-                    </td>
-                    <td style={{ ...tdStyle, color: '#6b7280' }}>{l.forma_pagamento || '—'}</td>
-                    <td style={{ ...tdStyle, color: '#6b7280' }}>{l.numero_parcela || '—'}</td>
-                    <td style={tdStyle}>
-                      <select
-                        value={l.situacao}
-                        disabled={atualizandoSituacao === l.id}
-                        onChange={e => atualizarSituacao(l.id, e.target.value)}
-                        style={{
-                          ...corSituacao(l.situacao),
-                          padding: '2px 8px', borderRadius: '99px',
-                          fontSize: '11px', fontWeight: 600,
-                          border: 'none', cursor: 'pointer', outline: 'none',
-                        }}
-                      >
-                        <option value="Pendente">Pendente</option>
-                        <option value="Previsto">Previsto</option>
-                        <option value="Pago">Pago</option>
-                        <option value="Faturado">Faturado</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                          {conferido && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                        </div>
+                      </td>
+
+                      <td style={tdStyle}>{fmtDate(l.data_movimentacao)}</td>
+                      <td style={tdStyle}>{fmtDate(l.data_pagamento)}</td>
+                      <td style={{ ...tdStyle, color: '#6b7280' }}>{catNome(l.categoria_id)}</td>
+                      <td style={{ ...tdStyle, maxWidth: '220px' }}>
+                        <div style={{
+                          fontWeight: 500,
+                          color: conferido ? '#6b7280' : '#111827',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          textDecoration: conferido ? 'line-through' : 'none',
+                        }}>
+                          {l.descricao}
+                        </div>
+                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, color: conferido ? '#6b7280' : '#991b1b', whiteSpace: 'nowrap' }}>
+                        {editandoValor === l.id ? (
+                          <input
+                            type="number" step="0.01" autoFocus
+                            value={valorTemp}
+                            onChange={e => setValorTemp(e.target.value)}
+                            onKeyDown={e => { if (e.key === 'Enter') salvarValor(l.id); if (e.key === 'Escape') setEditandoValor(null) }}
+                            onBlur={() => salvarValor(l.id)}
+                            style={{ width: 90, padding: '2px 6px', borderRadius: 4, border: '1px solid #2563eb', fontSize: 12, textAlign: 'right' }}
+                          />
+                        ) : (
+                          <span
+                            onClick={() => { setEditandoValor(l.id); setValorTemp(String(Number(l.valor))) }}
+                            title="Clique para editar o valor"
+                            style={{ cursor: 'pointer', borderBottom: conferido ? 'none' : '1px dotted #991b1b' }}
+                          >
+                            − {fmt(Number(l.valor))}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ ...tdStyle, color: '#6b7280' }}>{l.forma_pagamento || '—'}</td>
+                      <td style={{ ...tdStyle, color: '#6b7280' }}>{l.numero_parcela || '—'}</td>
+                      <td style={tdStyle}>
+                        <select
+                          value={l.situacao}
+                          disabled={atualizandoSituacao === l.id}
+                          onChange={e => atualizarSituacao(l.id, e.target.value)}
+                          style={{
+                            ...corSituacao(l.situacao),
+                            padding: '2px 8px', borderRadius: '99px',
+                            fontSize: '11px', fontWeight: 600,
+                            border: 'none', cursor: 'pointer', outline: 'none',
+                          }}
+                        >
+                          <option value="Pendente">Pendente</option>
+                          <option value="Previsto">Previsto</option>
+                          <option value="Pago">Pago</option>
+                          <option value="Faturado">Faturado</option>
+                        </select>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
               <tfoot>
                 <tr style={{ background: '#f9fafb', borderTop: '2px solid #e5e7eb' }}>
+                  <td />
                   <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, color: '#374151', fontSize: '13px' }}>
                     Total {filtroSituacao ? `(${filtroSituacao})` : '(Todos)'}
                     <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
@@ -435,6 +411,18 @@ export default function FaturaCartao() {
                   </td>
                   <td colSpan={3} />
                 </tr>
+                {conferidos.size > 0 && (
+                  <tr style={{ background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
+                    <td />
+                    <td colSpan={4} style={{ padding: '8px 12px', fontWeight: 700, color: '#065f46', fontSize: '12px' }}>
+                      ✅ Conferido ({conferidos.size} lançamento{conferidos.size !== 1 ? 's' : ''})
+                    </td>
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#065f46', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                      − {fmt(totalConferido)}
+                    </td>
+                    <td colSpan={3} />
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>
@@ -448,34 +436,17 @@ export default function FaturaCartao() {
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function CardInfo({ label, valor, sub, corValor, bg, destaque }: {
-  label: string
-  valor: string
-  sub: string
-  corValor: string
-  bg: string
-  destaque?: boolean
+  label: string; valor: string; sub: string; corValor: string; bg: string; destaque?: boolean
 }) {
   return (
-    <div style={{
-      background: bg, borderRadius: '12px', padding: '14px 16px',
-      border: destaque ? `2px dashed ${corValor}` : 'none',
-      position: 'relative'
-    }}>
+    <div style={{ background: bg, borderRadius: '12px', padding: '14px 16px', border: destaque ? `2px dashed ${corValor}` : 'none', position: 'relative' }}>
       {destaque && (
-        <span style={{
-          position: 'absolute', top: '8px', right: '8px',
-          background: '#6b21a8', color: '#fff', fontSize: '9px',
-          fontWeight: 700, padding: '2px 6px', borderRadius: '99px'
-        }}>
+        <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#6b21a8', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '99px' }}>
           SIMULAÇÃO
         </span>
       )}
-      <div style={{ fontSize: '11px', fontWeight: 600, color: corValor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-        {label}
-      </div>
-      <div style={{ fontSize: '20px', fontWeight: 700, color: corValor, marginTop: '4px', marginBottom: '4px' }}>
-        {valor}
-      </div>
+      <div style={{ fontSize: '11px', fontWeight: 600, color: corValor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: '20px', fontWeight: 700, color: corValor, marginTop: '4px', marginBottom: '4px' }}>{valor}</div>
       <div style={{ fontSize: '11px', color: corValor, opacity: 0.7 }}>{sub}</div>
     </div>
   )
