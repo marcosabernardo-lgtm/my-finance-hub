@@ -152,7 +152,6 @@ export default function Alertas() {
   const [householdId, setHouseholdId] = useState<string | null>(null)
   const [movs, setMovs] = useState<Movimentacao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [loading, setLoading] = useState(false)
 
   // ── Household ───────────────────────────────────────────────────────────────
@@ -183,12 +182,7 @@ export default function Alertas() {
       .eq('household_id', householdId)
     setCategorias(cats || [])
 
-    const { data: cards } = await supabase
-      .from('cartoes')
-      .select('id,nome,limite_total,data_vencimento')
-      .eq('household_id', householdId)
-      .eq('ativo', true)
-    setCartoes(cards || [])
+
 
     setLoading(false)
   }, [householdId])
