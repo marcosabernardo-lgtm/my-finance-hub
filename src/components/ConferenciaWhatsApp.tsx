@@ -24,23 +24,23 @@ type Rascunho = {
 
 type Categoria = { id: number; nome: string }
 type Conta = { nome: string }
-type Cartao = { id: number; nome: string; data_vencimento: number }
+type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimento: number }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtData = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
 
-function calcularDataPagamento(dataCompra: string, diaVencimento: number): string {
-  const compra = new Date(dataCompra + 'T12:00:00')
-  const diaCompra = compra.getDate()
-  let mes = compra.getMonth()
-  let ano = compra.getFullYear()
-  // Se o dia da compra é após o vencimento, o pagamento é no próximo mês
-  if (diaCompra > diaVencimento) mes++
-  if (mes > 11) { mes = 0; ano++ }
-  // Garante que o dia existe no mês
-  const ultimoDia = new Date(ano, mes + 1, 0).getDate()
-  const dia = Math.min(diaVencimento, ultimoDia)
-  return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+function calcularDataPagamento(dataCompra: string, cartao: Cartao): string {
+  const d = new Date(dataCompra + 'T12:00:00')
+  const fechMesCompra = new Date(d.getFullYear(), d.getMonth(), cartao.data_fechamento)
+  const dataFechReal = d <= fechMesCompra
+    ? fechMesCompra
+    : new Date(d.getFullYear(), d.getMonth() + 1, cartao.data_fechamento)
+  let venc: Date
+  if (cartao.data_vencimento < cartao.data_fechamento)
+    venc = new Date(dataFechReal.getFullYear(), dataFechReal.getMonth() + 1, cartao.data_vencimento)
+  else
+    venc = new Date(dataFechReal.getFullYear(), dataFechReal.getMonth(), cartao.data_vencimento)
+  return venc.toISOString().split('T')[0]
 }
 
 const cor = {
@@ -67,7 +67,7 @@ export default function ConferenciaWhatsApp() {
       supabase.from('cupons_pendentes').select('*').eq('household_id', HOUSEHOLD_ID).eq('origem', 'whatsapp').eq('situacao', 'pendente').order('created_at', { ascending: false }),
       supabase.from('categorias').select('id, nome').eq('household_id', HOUSEHOLD_ID).eq('tipo', 'Despesa').order('nome'),
       supabase.from('contas').select('nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).eq('tipo', 'corrente').order('nome'),
-      supabase.from('cartoes').select('id, nome, data_vencimento').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
+      supabase.from('cartoes').select('id, nome, data_fechamento, data_vencimento').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
     ])
     setRascunhos((r || []).map(item => ({
       ...item,
@@ -110,8 +110,8 @@ export default function ConferenciaWhatsApp() {
       const valorParcela = Number((valor / parcelas).toFixed(2))
       const inserts = []
       for (let i = 0; i < parcelas; i++) {
-        const diaVenc = cartoes.find(c => c.id === cartaoId)?.data_vencimento || 10
-        const dataPrimeiraParcela = calcularDataPagamento(data, diaVenc)
+        const cartaoObj = cartoes.find(c => c.id === cartaoId) || { id: 0, nome: '', data_fechamento: 1, data_vencimento: 10 }
+        const dataPrimeiraParcela = calcularDataPagamento(data, cartaoObj)
         const dataBase = new Date(dataPrimeiraParcela + 'T12:00:00')
         dataBase.setMonth(dataBase.getMonth() + i)
         inserts.push({
@@ -130,7 +130,7 @@ export default function ConferenciaWhatsApp() {
         household_id: HOUSEHOLD_ID, tipo: 'Despesa', descricao, valor,
         data_movimentacao: data,
         data_pagamento: isCredito
-          ? calcularDataPagamento(data, cartoes.find(c => c.id === cartaoId)?.data_vencimento || 10)
+          ? calcularDataPagamento(data, cartoes.find(c => c.id === cartaoId) || { id: 0, nome: '', data_fechamento: 1, data_vencimento: 10 })
           : data,
         categoria_id: categoriaId || null,
         cartao_id: isCredito ? (cartaoId || null) : null,
