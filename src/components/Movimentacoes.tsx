@@ -80,6 +80,7 @@ export default function Movimentacoes() {
   const [filtroSituacao, setFiltroSituacao] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroMetodo, setFiltroMetodo] = useState('')
+  const [filtroConta, setFiltroConta] = useState('')
   const [filtroBusca, setFiltroBusca] = useState('')   // ✅ busca por descrição — persiste entre meses
 
   // UI State
@@ -149,6 +150,7 @@ export default function Movimentacoes() {
     if (opts.situacao && m.situacao !== opts.situacao) return false
     if (opts.categoria && String(m.categoria_id) !== opts.categoria) return false
     if (opts.metodo && m.metodo_pagamento !== opts.metodo) return false
+    if ((opts as any).conta && m.conta_origem_destino !== (opts as any).conta) return false
     if (opts.busca && !m.descricao.toLowerCase().includes(opts.busca.toLowerCase())) return false
     return true
   })
@@ -160,9 +162,10 @@ export default function Movimentacoes() {
       situacao: filtroSituacao,
       categoria: filtroCategoria,
       metodo: filtroMetodo,
+      conta: filtroConta,
       busca: filtroBusca,
     }),
-    [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroMetodo, filtroBusca]
+    [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroMetodo, filtroConta, filtroBusca]
   )
 
   // Opções disponíveis por filtro (excluindo o próprio filtro do cálculo)
@@ -187,6 +190,11 @@ export default function Movimentacoes() {
     return [...new Set(base.map(m => m.metodo_pagamento).filter(Boolean) as string[])].sort()
   }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroBusca])
 
+  const contasDisponiveis = useMemo(() => {
+    const base = aplicarFiltros(todasMovimentacoes, { tipo: filtroTipo, situacao: filtroSituacao, categoria: filtroCategoria, metodo: filtroMetodo, busca: filtroBusca })
+    return [...new Set(base.map(m => m.conta_origem_destino).filter(Boolean) as string[])].sort()
+  }, [todasMovimentacoes, filtroTipo, filtroSituacao, filtroCategoria, filtroMetodo, filtroBusca])
+
   // ✅ Trocar mês/ano NÃO limpa filtros — eles persistem
   const handleMesAno = (mes: number, ano: number) => {
     setFiltroMes(mes)
@@ -200,6 +208,7 @@ export default function Movimentacoes() {
     setFiltroSituacao('')
     setFiltroCategoria('')
     setFiltroMetodo('')
+    setFiltroConta('')
     setFiltroBusca('')
   }
 
@@ -481,6 +490,18 @@ export default function Movimentacoes() {
             disabled={metodosDisponiveis.length === 0}>
             <option value=''>Todos {metodosDisponiveis.length > 0 ? `(${metodosDisponiveis.length})` : ''}</option>
             {metodosDisponiveis.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        {/* Conta / Cartão */}
+        <div>
+          <label style={labelStyle}>
+            Conta / Cartão {filtroConta && <span style={badgeFiltro}>✓</span>}
+          </label>
+          <select value={filtroConta} onChange={e => setFiltroConta(e.target.value)} style={selectStyle}
+            disabled={contasDisponiveis.length === 0}>
+            <option value=''>Todas {contasDisponiveis.length > 0 ? `(${contasDisponiveis.length})` : ''}</option>
+            {contasDisponiveis.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
 
