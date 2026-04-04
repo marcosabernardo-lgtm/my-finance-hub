@@ -85,7 +85,7 @@ export default function ConferenciaWhatsApp() {
     const metodo = (edicao.metodo_pagamento as string) ?? r.metodo_pagamento
     const conta = (edicao.conta_origem_destino as string) ?? r.conta_origem_destino
     const cartaoId = (edicao.cartao_id as number) ?? r.cartao_id
-    const cartaoNome = cartoes.find(c => c.id === cartaoId)?.nome || r.cartao_nome
+
     const parcelas = Number(edicao.parcelas ?? r.parcelas ?? 1)
     const data = r.data_compra
     const isCredito = metodo === 'Crédito'
