@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from "react";
+import { useState, createContext, useContext } from "react";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./components/Login";
 import Resumo from "./components/Resumo";
@@ -255,7 +255,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
   pagina: Pagina; setPagina: (p: Pagina) => void; signOut: () => void
   email: string; recolhida: boolean; setRecolhida: (v: boolean) => void
 }) {
-  const { tokens, theme, toggle } = useTheme()
+  const { tokens } = useTheme()
 
   return (
     <div style={{
@@ -470,7 +470,7 @@ export default function App() {
   if (!user || isRecovery) return <Login />
 
   return (
-    <ThemeCtx.Provider value={{ theme, tokens, toggle }}>
+    <ThemeCtx.Provider value={{ theme, tokens: DARK, toggle: () => {} }}>
       <AppContent signOut={signOut} email={user.email ?? ""} />
     </ThemeCtx.Provider>
   )
