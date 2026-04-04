@@ -22,7 +22,7 @@ import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, ChevronDown, Sparkles, MessageSquare,
+  LogOut, Home as HomeIcon, ChevronDown, Sparkles, MessageSquare, LayoutDashboard,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
