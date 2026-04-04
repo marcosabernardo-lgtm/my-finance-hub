@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 
 const HOUSEHOLD_ID = 'fdfc5a94-c5e4-42d1-b1c2-015dfa492556'
@@ -30,22 +30,14 @@ const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 const fmtData = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
 
 export default function ConferenciaWhatsApp() {
-  const [darkMode, setDarkMode] = useState(localStorage.getItem('fh_theme') === 'dark')
-
-  useEffect(() => {
-    const check = () => setDarkMode(localStorage.getItem('fh_theme') === 'dark')
-    window.addEventListener('storage', check)
-    return () => window.removeEventListener('storage', check)
-  }, [])
-
   const cor = {
-    bg: darkMode ? '#0b1120' : '#f8fafc',
-    card: darkMode ? '#16213e' : '#ffffff',
-    texto: darkMode ? '#e2e8f0' : '#1a202c',
-    sub: darkMode ? '#94a3b8' : '#64748b',
-    borda: darkMode ? '#1e2d45' : '#e2e8f0',
-    input: darkMode ? '#0d1526' : '#f7fafc',
-    hover: darkMode ? '#1e2d45' : '#f1f5f9',
+    bg: '#f8fafc',
+    card: '#ffffff',
+    texto: '#1a202c',
+    sub: '#64748b',
+    borda: '#e2e8f0',
+    input: '#f7fafc',
+    hover: '#f1f5f9',
   }
 
   const [rascunhos, setRascunhos] = useState<Rascunho[]>([])
