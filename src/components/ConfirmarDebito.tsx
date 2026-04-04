@@ -46,6 +46,8 @@ export default function ConfirmarDebito() {
   const [loading, setLoading] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [filtroMes, setFiltroMes] = useState(mesAtual())
+  const [editandoId, setEditandoId] = useState<number | null>(null)
+  const [valorEditado, setValorEditado] = useState<string>('')
 
   function mesAtual() {
     const d = new Date()
@@ -120,19 +122,44 @@ export default function ConfirmarDebito() {
   useEffect(() => { carregarCartoes() }, [carregarCartoes])
   useEffect(() => { carregarPrevistos() }, [carregarPrevistos])
 
-  const confirmarDebito = async (p: Previsto) => {
+  const confirmarDebito = async (p: Previsto, valorFinal?: number) => {
     setLoading(true)
     setMensagem('')
     const isCartao = !!p.cartao_id
     const novaSituacao = isCartao ? 'Pendente' : 'Pago'
-    const { error } = await supabase.from('movimentacoes').update({ situacao: novaSituacao }).eq('id', p.id)
+    const updatePayload: any = { situacao: novaSituacao }
+    if (valorFinal !== undefined && valorFinal !== p.valor) {
+      updatePayload.valor = valorFinal
+    }
+    const { error } = await supabase.from('movimentacoes').update(updatePayload).eq('id', p.id)
     if (error) setMensagem('Erro: ' + error.message)
     else {
       setMensagem(`"${p.descricao}" confirmado como ${novaSituacao}!`)
+      setEditandoId(null)
       carregarPrevistos()
       carregarCartoes()
     }
     setLoading(false)
+  }
+
+  const iniciarEdicao = (p: Previsto) => {
+    setEditandoId(p.id)
+    setValorEditado(String(p.valor).replace('.', ','))
+  }
+
+  const cancelarEdicao = () => {
+    setEditandoId(null)
+    setValorEditado('')
+  }
+
+  const confirmarComValor = (p: Previsto) => {
+    const valorLimpo = valorEditado.replace(',', '.')
+    const valorFinal = parseFloat(valorLimpo)
+    if (isNaN(valorFinal) || valorFinal <= 0) {
+      setMensagem('Valor inválido!')
+      return
+    }
+    confirmarDebito(p, valorFinal)
   }
 
   const confirmarTodos = async () => {
@@ -311,16 +338,56 @@ export default function ConfirmarDebito() {
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() => confirmarDebito(p)}
-                        disabled={loading}
-                        style={{
-                          padding: '7px 14px', backgroundColor: '#22c55e', color: 'white',
-                          border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
-                          whiteSpace: 'nowrap', fontSize: 13, flexShrink: 0
-                        }}>
-                        Confirmar
-                      </button>
+                      {editandoId === p.id ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 12, color: '#6b7280' }}>R$</span>
+                            <input
+                              type="text"
+                              value={valorEditado}
+                              onChange={e => setValorEditado(e.target.value.replace(/[^0-9,]/g, ''))}
+                              autoFocus
+                              style={{
+                                width: 90, padding: '6px 8px', border: '2px solid #22c55e',
+                                borderRadius: 6, fontSize: 14, fontWeight: 700,
+                                color: '#111827', outline: 'none', textAlign: 'right',
+                              }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button
+                              onClick={cancelarEdicao}
+                              style={{
+                                padding: '5px 10px', backgroundColor: '#f3f4f6', color: '#6b7280',
+                                border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer',
+                                fontWeight: 600, fontSize: 12,
+                              }}>
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={() => confirmarComValor(p)}
+                              disabled={loading}
+                              style={{
+                                padding: '5px 10px', backgroundColor: '#22c55e', color: 'white',
+                                border: 'none', borderRadius: 6, cursor: 'pointer',
+                                fontWeight: 600, fontSize: 12,
+                              }}>
+                              ✓ OK
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => iniciarEdicao(p)}
+                          disabled={loading}
+                          style={{
+                            padding: '7px 14px', backgroundColor: '#22c55e', color: 'white',
+                            border: 'none', borderRadius: 6, cursor: 'pointer', fontWeight: 600,
+                            whiteSpace: 'nowrap', fontSize: 13, flexShrink: 0
+                          }}>
+                          Confirmar
+                        </button>
+                      )}
                     </div>
                   )
                 })}
