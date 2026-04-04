@@ -69,7 +69,12 @@ export default function ConferenciaWhatsApp() {
       supabase.from('contas').select('nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).eq('tipo', 'corrente').order('nome'),
       supabase.from('cartoes').select('id, nome, data_vencimento').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
     ])
-    setRascunhos(r || [])
+    setRascunhos((r || []).map(item => ({
+      ...item,
+      metodo_pagamento: item.metodo_pagamento === 'Credito' ? 'Crédito'
+        : item.metodo_pagamento === 'Debito' ? 'Débito'
+        : item.metodo_pagamento
+    })))
     setCategorias(cats || [])
     setContas(conts || [])
     setCartoes(carts || [])
