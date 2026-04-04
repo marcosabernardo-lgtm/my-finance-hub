@@ -24,10 +24,24 @@ type Rascunho = {
 
 type Categoria = { id: number; nome: string }
 type Conta = { nome: string }
-type Cartao = { id: number; nome: string }
+type Cartao = { id: number; nome: string; data_vencimento: number }
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtData = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
+
+function calcularDataPagamento(dataCompra: string, diaVencimento: number): string {
+  const compra = new Date(dataCompra + 'T12:00:00')
+  const diaCompra = compra.getDate()
+  let mes = compra.getMonth()
+  let ano = compra.getFullYear()
+  // Se o dia da compra é após o vencimento, o pagamento é no próximo mês
+  if (diaCompra > diaVencimento) mes++
+  if (mes > 11) { mes = 0; ano++ }
+  // Garante que o dia existe no mês
+  const ultimoDia = new Date(ano, mes + 1, 0).getDate()
+  const dia = Math.min(diaVencimento, ultimoDia)
+  return `${ano}-${String(mes + 1).padStart(2, '0')}-${String(dia).padStart(2, '0')}`
+}
 
 const cor = {
   bg: '#f8fafc',
@@ -53,7 +67,7 @@ export default function ConferenciaWhatsApp() {
       supabase.from('cupons_pendentes').select('*').eq('household_id', HOUSEHOLD_ID).eq('origem', 'whatsapp').eq('situacao', 'pendente').order('created_at', { ascending: false }),
       supabase.from('categorias').select('id, nome').eq('household_id', HOUSEHOLD_ID).eq('tipo', 'Despesa').order('nome'),
       supabase.from('contas').select('nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).eq('tipo', 'corrente').order('nome'),
-      supabase.from('cartoes').select('id, nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
+      supabase.from('cartoes').select('id, nome, data_vencimento').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
     ])
     setRascunhos(r || [])
     setCategorias(cats || [])
@@ -81,22 +95,26 @@ export default function ConferenciaWhatsApp() {
     const metodo = (edicao.metodo_pagamento as string) ?? r.metodo_pagamento
     const conta = (edicao.conta_origem_destino as string) ?? r.conta_origem_destino
     const cartaoId = (edicao.cartao_id as number) ?? r.cartao_id
+    const cartaoNome = cartoes.find(c => c.id === cartaoId)?.nome || r.cartao_nome || ''
+    const metodoFinal = isCredito ? cartaoNome : metodo
     const parcelas = Number(edicao.parcelas ?? r.parcelas ?? 1)
     const data = r.data_compra
-    const isCredito = metodo === 'Crédito' || metodo === 'Credito'
+    const isCredito = metodo === 'Crédito'
 
     if (isCredito && parcelas > 1) {
       const valorParcela = Number((valor / parcelas).toFixed(2))
       const inserts = []
       for (let i = 0; i < parcelas; i++) {
-        const dataBase = new Date(data + 'T12:00:00')
+        const diaVenc = cartoes.find(c => c.id === cartaoId)?.data_vencimento || 10
+        const dataPrimeiraParcela = calcularDataPagamento(data, diaVenc)
+        const dataBase = new Date(dataPrimeiraParcela + 'T12:00:00')
         dataBase.setMonth(dataBase.getMonth() + i)
         inserts.push({
           household_id: HOUSEHOLD_ID, tipo: 'Despesa', descricao,
           valor: i === parcelas - 1 ? Number((valor - valorParcela * (parcelas - 1)).toFixed(2)) : valorParcela,
           data_movimentacao: data, data_pagamento: dataBase.toISOString().split('T')[0],
           categoria_id: categoriaId || null, cartao_id: cartaoId || null,
-          metodo_pagamento: 'Crédito', situacao: 'Previsto',
+          metodo_pagamento: metodoFinal, situacao: 'Previsto',
           numero_parcela: `${i + 1}/${parcelas}`, forma_pagamento: 'Parcelado', classificacao: 'Variável',
         })
       }
@@ -109,7 +127,10 @@ export default function ConferenciaWhatsApp() {
         categoria_id: categoriaId || null,
         cartao_id: isCredito ? (cartaoId || null) : null,
         conta_origem_destino: !isCredito ? (conta || null) : null,
-        metodo_pagamento: metodo,
+        data_pagamento: isCredito
+          ? calcularDataPagamento(data, cartoes.find(c => c.id === cartaoId)?.data_vencimento || 10)
+          : data,
+        metodo_pagamento: metodoFinal,
         situacao: isCredito ? 'Pendente' : 'Pago',
         numero_parcela: '1/1', forma_pagamento: 'À Vista', classificacao: 'Variável',
       })
@@ -156,7 +177,7 @@ export default function ConferenciaWhatsApp() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {rascunhos.map(r => {
             const metodoAtual = getEdicao(r.id, 'metodo_pagamento', r.metodo_pagamento) as string
-            const isCredito = metodoAtual === 'Crédito' || metodoAtual === 'Credito'
+            const isCredito = metodoAtual === 'Crédito'
             const parcelasAtual = Number(getEdicao(r.id, 'parcelas', r.parcelas) ?? 1)
             const valorAtual = Number(getEdicao(r.id, 'valor_total', r.valor_total))
             const categoriaAtual = getEdicao(r.id, 'categoria_id', r.categoria_id)
@@ -206,8 +227,8 @@ export default function ConferenciaWhatsApp() {
                     <label style={labelStyle}>Pagamento</label>
                     <select value={metodoAtual} onChange={e => setEdicao(r.id, 'metodo_pagamento', e.target.value)} style={inputStyle}>
                       <option value="PIX">PIX</option>
-                      <option value="Debito">Débito</option>
-                      <option value="Credito">Crédito</option>
+                      <option value="Débito">Débito</option>
+                      <option value="Crédito">Crédito</option>
                     </select>
                   </div>
 
