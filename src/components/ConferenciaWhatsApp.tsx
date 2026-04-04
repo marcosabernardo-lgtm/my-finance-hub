@@ -95,11 +95,11 @@ export default function ConferenciaWhatsApp() {
     const metodo = (edicao.metodo_pagamento as string) ?? r.metodo_pagamento
     const conta = (edicao.conta_origem_destino as string) ?? r.conta_origem_destino
     const cartaoId = (edicao.cartao_id as number) ?? r.cartao_id
-    const cartaoNome = cartoes.find(c => c.id === cartaoId)?.nome || r.cartao_nome || ''
-    const metodoFinal = isCredito ? cartaoNome : metodo
     const parcelas = Number(edicao.parcelas ?? r.parcelas ?? 1)
     const data = r.data_compra
     const isCredito = metodo === 'Crédito'
+    const cartaoNome = cartoes.find(c => c.id === cartaoId)?.nome || r.cartao_nome || ''
+    const metodoFinal = isCredito ? cartaoNome : metodo
 
     if (isCredito && parcelas > 1) {
       const valorParcela = Number((valor / parcelas).toFixed(2))
@@ -123,13 +123,13 @@ export default function ConferenciaWhatsApp() {
     } else {
       const { error } = await supabase.from('movimentacoes').insert({
         household_id: HOUSEHOLD_ID, tipo: 'Despesa', descricao, valor,
-        data_movimentacao: data, data_pagamento: data,
-        categoria_id: categoriaId || null,
-        cartao_id: isCredito ? (cartaoId || null) : null,
-        conta_origem_destino: !isCredito ? (conta || null) : null,
+        data_movimentacao: data,
         data_pagamento: isCredito
           ? calcularDataPagamento(data, cartoes.find(c => c.id === cartaoId)?.data_vencimento || 10)
           : data,
+        categoria_id: categoriaId || null,
+        cartao_id: isCredito ? (cartaoId || null) : null,
+        conta_origem_destino: !isCredito ? (conta || null) : null,
         metodo_pagamento: metodoFinal,
         situacao: isCredito ? 'Pendente' : 'Pago',
         numero_parcela: '1/1', forma_pagamento: 'À Vista', classificacao: 'Variável',
