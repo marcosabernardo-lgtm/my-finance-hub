@@ -77,7 +77,7 @@ const DARK: ThemeTokens = {
 
 
 const ThemeCtx = createContext<{ theme: Theme; tokens: ThemeTokens; toggle: () => void }>({
-  theme: "dark", tokens: DARK
+  theme: "dark", tokens: DARK, toggle: () => {}
 })
 
 const useTheme = () => useContext(ThemeCtx)
@@ -453,9 +453,6 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
 export default function App() {
   const { user, loading, signOut } = useAuth()
   const [theme] = useState<Theme>("dark")
-
-  const toggle = () => {}
-  const tokens = DARK
 
   if (loading) return (
     <div style={{ color: "white", backgroundColor: "#0b1120", width: "100vw", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18 }}>
