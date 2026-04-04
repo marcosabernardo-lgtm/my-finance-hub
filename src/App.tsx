@@ -15,12 +15,13 @@ import UploadPlanilha from "./components/UploadPlanilha";
 import Dashboard from "./components/Dashboard";
 import Alertas from "./components/Alertas";
 import NotificacoesConfig from "./components/NotificacoesConfig";
+import ConsultorIA from "./components/ConsultorIA";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown,
+  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Sparkles,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -104,7 +105,7 @@ const useTheme = () => useContext(ThemeCtx)
 type Pagina =
   | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes" | "consultor"
 
 const grupos: {
   label: string
@@ -129,10 +130,11 @@ const grupos: {
   {
     label: "Análises",
     items: [
-      { label: "Alertas", key: "alertas", icon: Bell,     accent: "#ef4444" },
-      { label: "Resumo",  key: "resumo",  icon: BarChart3                   },
-      { label: "Semanal", key: "semanal", icon: Calendar                    },
-      { label: "DRE",     key: "dre",     icon: FileText                    },
+      { label: "Consultor IA", key: "consultor", icon: Sparkles, accent: "#667eea" },
+      { label: "Alertas",      key: "alertas",   icon: Bell,     accent: "#ef4444" },
+      { label: "Resumo",       key: "resumo",    icon: BarChart3                   },
+      { label: "Semanal",      key: "semanal",   icon: Calendar                    },
+      { label: "DRE",          key: "dre",       icon: FileText                    },
     ],
   },
   {
@@ -156,6 +158,7 @@ const cardConfig: {
   { key: "lancamento",    label: "Lançar",            group: "lancamentos",  desc: "Registre despesas, receitas e transferências",   icon: PlusCircle,      accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
   { key: "confirmar",     label: "Confirmar Débitos", group: "lancamentos",  desc: "Confirme lançamentos previstos em aberto",       icon: CheckCircle,     accent: "#22c55e", iconBg: "#14532d", iconColor: "#4ade80" },
   { key: "movimentacoes", label: "Movimentações",     group: "lancamentos",  desc: "Histórico completo com filtros avançados",       icon: List,            accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf" },
+  { key: "consultor",     label: "Consultor IA",      group: "analises",     desc: "Análise personalizada com IA baseada nos seus dados",    icon: Sparkles,        accent: "#667eea", iconBg: "#1e1b4b", iconColor: "#a5b4fc" },
   { key: "alertas",       label: "Alertas",           group: "analises",     desc: "Vencidos, limites estourados e riscos do mês",   icon: Bell,            accent: "#ef4444", iconBg: "#450a0a", iconColor: "#fca5a5" },
   { key: "resumo",        label: "Resumo",            group: "analises",     desc: "Visão geral de receitas, despesas e saldo",      icon: BarChart3,       accent: "#8b5cf6", iconBg: "#2e1065", iconColor: "#a78bfa" },
   { key: "semanal",       label: "Controle Semanal",  group: "analises",     desc: "Despesas por semana e categoria",                icon: Calendar,        accent: "#06b6d4", iconBg: "#083344", iconColor: "#22d3ee" },
@@ -475,6 +478,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "cadastros":     return <Cadastros />
       case "upload":        return <UploadPlanilha />
       case "notificacoes":  return <NotificacoesConfig />
+      case "consultor":     return <ConsultorIA />
       default:              return null
     }
   }
