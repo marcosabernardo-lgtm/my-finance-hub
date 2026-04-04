@@ -8,7 +8,6 @@ const SUPABASE_SERVICE_KEY = Deno.env.get('SB_SERVICE_ROLE_KEY')!;
 const EVOLUTION_API_URL = Deno.env.get('EVOLUTION_API_URL')!;
 const EVOLUTION_API_KEY = Deno.env.get('EVOLUTION_API_KEY')!;
 const EVOLUTION_INSTANCE = Deno.env.get('EVOLUTION_INSTANCE') ?? 'my-finance-hub';
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -16,8 +15,6 @@ const CORS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
-
-// ─── Tipos ───────────────────────────────────────────────────────────────────
 
 type Etapa =
   | 'aguardando_categoria'
@@ -48,29 +45,18 @@ type Sessao = {
   cartoes: { id: number; nome: string }[];
 };
 
-// ─── Sessões no Supabase ──────────────────────────────────────────────────────
-
 async function getSessao(numero: string): Promise<Sessao | null> {
-  const { data } = await supabase
-    .from('whatsapp_sessions')
-    .select('dados')
-    .eq('numero', numero)
-    .single();
+  const { data } = await supabase.from('whatsapp_sessions').select('dados').eq('numero', numero).single();
   return data?.dados || null;
 }
 
 async function setSessao(numero: string, sessao: Sessao): Promise<void> {
-  await supabase.from('whatsapp_sessions').upsert(
-    { numero, dados: sessao, updated_at: new Date().toISOString() },
-    { onConflict: 'numero' }
-  );
+  await supabase.from('whatsapp_sessions').upsert({ numero, dados: sessao, updated_at: new Date().toISOString() }, { onConflict: 'numero' });
 }
 
 async function deleteSessao(numero: string): Promise<void> {
   await supabase.from('whatsapp_sessions').delete().eq('numero', numero);
 }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function hojeISO(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' });
@@ -91,526 +77,241 @@ async function enviarWhatsApp(numero: string, mensagem: string): Promise<void> {
       headers: { 'Content-Type': 'application/json', 'apikey': EVOLUTION_API_KEY },
       body: JSON.stringify({ number: numero, text: mensagem }),
     });
-  } catch (e) {
-    console.error('Erro ao enviar WhatsApp:', e);
+  } catch (e) { console.error('Erro envio:', e); }
+}
+
+function interpretarDespesa(texto: string): { descricao: string; valor: number } | null {
+  let t = texto.replace(/\s+reais\s*$/i, '').replace(/r\$\s*/gi, '').trim();
+  let valor = 0, descricao = '';
+
+  const m1 = t.match(/^(\d+(?:[.,]\d{1,2})?)\s+(?:no|na|de|do|da|em|pelo|pela|num|numa)\s+(.+)$/i);
+  const m2 = t.match(/^(\d+(?:[.,]\d{1,2})?)\s+(.+)$/);
+  const m3 = t.match(/^(.+?)\s+(?:de|por)\s+(\d+(?:[.,]\d{1,2})?)$/i);
+  const m4 = t.match(/^(.+?)\s+(\d+(?:[.,]\d{1,2})?)$/);
+
+  if (m1) { valor = parseFloat(m1[1].replace(',', '.')); descricao = m1[2].trim(); }
+  else if (m3) { descricao = m3[1].trim(); valor = parseFloat(m3[2].replace(',', '.')); }
+  else if (m2) { valor = parseFloat(m2[1].replace(',', '.')); descricao = m2[2].trim(); }
+  else if (m4) { descricao = m4[1].trim(); valor = parseFloat(m4[2].replace(',', '.')); }
+
+  if (!valor || valor <= 0 || !descricao) return null;
+  descricao = descricao.charAt(0).toUpperCase() + descricao.slice(1);
+  return { descricao, valor };
+}
+
+function sugerirCategorias(descricao: string, categorias: { id: number; nome: string }[]): { id: number; nome: string }[] {
+  const d = descricao.toLowerCase();
+  const keywords: Record<string, string[]> = {
+    'alimenta': ['mercado', 'supermercado', 'giassi', 'bistek', 'angeloni', 'restaurante', 'lanche', 'pizza', 'hamburguer', 'padaria', 'ifood', 'rappi'],
+    'saude': ['farmacia', 'drogaria', 'medico', 'hospital', 'remedio', 'exame', 'consulta', 'dentista'],
+    'transporte': ['uber', 'gasolina', 'combustivel', 'estacionamento', 'onibus', 'taxi', 'posto'],
+    'educa': ['escola', 'faculdade', 'curso', 'livro'],
+    'lazer': ['cinema', 'netflix', 'spotify', 'show', 'ingresso', 'bar'],
+    'conta': ['luz', 'agua', 'internet', 'telefone', 'energia', 'gas', 'condominio', 'aluguel'],
+    'vestuario': ['roupa', 'sapato', 'tenis', 'calcado', 'renner', 'riachuelo'],
+  };
+  const porNome = categorias.filter(c => d.includes(c.nome.toLowerCase()) || c.nome.toLowerCase().includes(d));
+  if (porNome.length > 0) return porNome.slice(0, 5);
+  for (const [catKey, words] of Object.entries(keywords)) {
+    if (words.some(w => d.includes(w))) {
+      const cat = categorias.find(c => c.nome.toLowerCase().includes(catKey));
+      if (cat) return [cat, ...categorias.filter(c => c.id !== cat.id).slice(0, 4)];
+    }
   }
+  return categorias.slice(0, 5);
 }
-
-// ─── Claude interpreta a despesa ─────────────────────────────────────────────
-
-async function interpretarDespesa(texto: string): Promise<{ descricao: string; valor: number } | null> {
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 150,
-      system: `Você extrai despesas de mensagens em português brasileiro.
-Responda APENAS com JSON válido: {"descricao": "string", "valor": number}
-Se não for uma despesa com valor claro: {"erro": "nao_entendi"}
-Regras:
-- descricao = estabelecimento ou o que foi comprado (ex: "Giassi", "Conta de Luz", "Farmácia")
-- valor = número decimal com ponto (ex: 45.90)
-- Vírgula vira ponto decimal
-Exemplos:
-"gastei 45,90 no Giassi" → {"descricao":"Giassi","valor":45.90}
-"paguei 120,50 de luz" → {"descricao":"Conta de Luz","valor":120.50}
-"farmácia 38 reais" → {"descricao":"Farmácia","valor":38}
-"oi tudo bem" → {"erro":"nao_entendi"}`,
-      messages: [{ role: 'user', content: texto }],
-    }),
-  });
-  const data = await res.json();
-  try {
-    const t = data.content?.[0]?.text?.replace(/```json|```/g, '').trim() || '{}';
-    const parsed = JSON.parse(t);
-    if (parsed.erro || !parsed.valor || !parsed.descricao) return null;
-    return { descricao: String(parsed.descricao), valor: Number(parsed.valor) };
-  } catch { return null; }
-}
-
-// ─── Sugere categorias via Claude ────────────────────────────────────────────
-
-async function sugerirCategorias(
-  descricao: string,
-  categorias: { id: number; nome: string }[]
-): Promise<{ id: number; nome: string }[]> {
-  const lista = categorias.map(c => c.nome).join(', ');
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 100,
-      system: `Dado uma despesa e lista de categorias, retorne as 3 mais adequadas.
-Responda APENAS com JSON: {"sugestoes":["Cat1","Cat2","Cat3"]}
-Use exatamente os nomes da lista.`,
-      messages: [{ role: 'user', content: `Despesa: "${descricao}"\nCategorias: ${lista}` }],
-    }),
-  });
-  const data = await res.json();
-  try {
-    const t = data.content?.[0]?.text?.replace(/```json|```/g, '').trim() || '{}';
-    const parsed = JSON.parse(t);
-    return (parsed.sugestoes || [])
-      .map((nome: string) => categorias.find(c => c.nome === nome))
-      .filter(Boolean)
-      .slice(0, 3);
-  } catch { return categorias.slice(0, 3); }
-}
-
-// ─── Buscar dados do household ────────────────────────────────────────────────
 
 async function buscarHousehold(numero: string): Promise<string | null> {
-  const numeroLimpo = numero.replace('@s.whatsapp.net', '').replace(/\D/g, '');
-  
-  // Primeiro tenta encontrar pelo número exato
-  const { data } = await supabase
-    .from('notification_settings')
-    .select('household_id')
-    .eq('whatsapp_number', numeroLimpo)
-    .eq('ativo', true)
-    .single();
-  
+  const n = numero.replace('@s.whatsapp.net', '').replace(/\D/g, '');
+  const { data } = await supabase.from('notification_settings').select('household_id').eq('whatsapp_number', n).eq('ativo', true).single();
   if (data?.household_id) return data.household_id;
-
-  // Se não encontrar, retorna o primeiro household ativo (permite que qualquer
-  // número do mesmo grupo familiar use o bot)
-  const { data: qualquer } = await supabase
-    .from('notification_settings')
-    .select('household_id')
-    .eq('ativo', true)
-    .single();
-  
-  return qualquer?.household_id || null;
+  const { data: q } = await supabase.from('notification_settings').select('household_id').eq('ativo', true).single();
+  return q?.household_id || null;
 }
 
-async function buscarCategorias(householdId: string): Promise<{ id: number; nome: string }[]> {
-  const { data } = await supabase
-    .from('categorias')
-    .select('id, nome')
-    .eq('household_id', householdId)
-    .order('nome');
+async function buscarCategorias(hid: string) {
+  const { data } = await supabase.from('categorias').select('id, nome').eq('household_id', hid).eq('tipo', 'Despesa').order('nome');
   return data || [];
 }
 
-async function buscarContas(householdId: string): Promise<string[]> {
-  const { data } = await supabase
-    .from('contas')
-    .select('nome')
-    .eq('household_id', householdId)
-    .eq('ativo', true)
-    .eq('tipo', 'corrente')
-    .order('nome');
-  return (data || []).map(c => c.nome);
+async function buscarContas(hid: string): Promise<string[]> {
+  const { data } = await supabase.from('contas').select('nome').eq('household_id', hid).eq('ativo', true).eq('tipo', 'corrente').order('nome');
+  return (data || []).map((c: any) => c.nome);
 }
 
-async function buscarCartoes(householdId: string): Promise<{ id: number; nome: string }[]> {
-  const { data } = await supabase
-    .from('cartoes')
-    .select('id, nome')
-    .eq('household_id', householdId)
-    .eq('ativo', true)
-    .order('nome');
+async function buscarCartoes(hid: string) {
+  const { data } = await supabase.from('cartoes').select('id, nome').eq('household_id', hid).eq('ativo', true).order('nome');
   return data || [];
 }
 
-// ─── Salvar rascunho em cupons_pendentes ─────────────────────────────────────
-
-async function salvarDespesa(householdId: string, s: Sessao): Promise<boolean> {
+async function salvarDespesa(hid: string, s: Sessao): Promise<boolean> {
   const { error } = await supabase.from('cupons_pendentes').insert({
-    household_id: householdId,
-    origem: 'whatsapp',
-    numero_whatsapp: s.numero_whatsapp || '',
-    nome_remetente: s.nome_remetente || '',
-    estabelecimento: s.descricao,
-    valor_total: s.valor,
-    data_compra: s.data,
-    categoria_id: s.categoria_id || null,
-    categoria_sugerida: s.categoria_nome || null,
-    metodo_pagamento: s.metodo || '',
-    conta_origem_destino: s.conta || null,
-    cartao_id: s.cartao_id || null,
-    cartao_nome: s.cartao_nome || null,
-    parcelas: s.parcelas || 1,
-    situacao: 'pendente',
+    household_id: hid, origem: 'whatsapp',
+    numero_whatsapp: s.numero_whatsapp || '', nome_remetente: s.nome_remetente || '',
+    estabelecimento: s.descricao, valor_total: s.valor, data_compra: s.data,
+    categoria_id: s.categoria_id || null, categoria_sugerida: s.categoria_nome || null,
+    metodo_pagamento: s.metodo || '', conta_origem_destino: s.conta || null,
+    cartao_id: s.cartao_id || null, cartao_nome: s.cartao_nome || null,
+    parcelas: s.parcelas || 1, situacao: 'pendente',
   });
   return !error;
 }
 
-// ─── Monta resumo da despesa ──────────────────────────────────────────────────
-
 function montaResumo(s: Sessao): string {
   const parcelas = s.parcelas || 1;
-  const valorParcela = formatMoney(s.valor / parcelas);
-  const parcelaInfo = parcelas > 1 ? ` (${parcelas}x ${valorParcela})` : '';
-  const pagamento = s.metodo === 'Crédito'
-    ? `💳 Crédito — ${s.cartao_nome}${parcelaInfo}`
-    : `${s.metodo === 'PIX' ? '⚡' : '🏦'} ${s.metodo} — ${s.conta}`;
-
-  return `📋 *Resumo da despesa:*\n` +
-    `📦 ${s.descricao} — *${formatMoney(s.valor)}*\n` +
-    `🏷️ ${s.categoria_nome}\n` +
-    `${pagamento}\n` +
-    `📅 ${hojeFormatado()}\n\n` +
-    `Confirma? Digite *sim* ou *não*`;
+  const parcelaInfo = parcelas > 1 ? ` (${parcelas}x ${formatMoney(s.valor / parcelas)})` : '';
+  const pagamento = s.metodo === 'Credito' || s.metodo === 'Credito'
+    ? `Credito — ${s.cartao_nome}${parcelaInfo}`
+    : `${s.metodo} — ${s.conta}`;
+  return `Resumo da despesa:\n` +
+    `${s.descricao} — ${formatMoney(s.valor)}\n` +
+    `Categoria: ${s.categoria_nome}\n` +
+    `Pagamento: ${pagamento}\n` +
+    `Data: ${hojeFormatado()}\n\n` +
+    `Confirma? Digite sim ou nao`;
 }
 
-// ─── Processar mensagem ───────────────────────────────────────────────────────
-
-async function processarMensagem(numero: string, texto: string): Promise<void> {
-  const textoLimpo = texto.trim().toLowerCase();
-
-  // Cancelar a qualquer momento
-  if (['cancelar', 'cancel', 'sair', 'parar'].includes(textoLimpo)) {
+async function processarMensagem(numero: string, texto: string, body: any): Promise<void> {
+  const tl = texto.trim().toLowerCase();
+  if (['cancelar', 'cancel', 'sair'].includes(tl)) {
     await deleteSessao(numero);
-    await enviarWhatsApp(numero, '❌ Lançamento cancelado. Quando quiser lançar uma despesa, é só me contar!');
+    await enviarWhatsApp(numero, 'Lancamento cancelado. Quando quiser lancar, e so me contar!');
     return;
   }
 
   const sessao = await getSessao(numero);
 
-  // ── Sem sessão ativa: tenta interpretar como nova despesa ──────────────────
   if (!sessao) {
-    const householdId = await buscarHousehold(numero);
-    if (!householdId) {
-      await enviarWhatsApp(numero,
-        '⚠️ Seu número não está cadastrado no my-finance-hub.\n' +
-        'Acesse o app e configure as notificações WhatsApp com seu número.'
-      );
-      return;
-    }
-
-    const despesa = await interpretarDespesa(texto);
-    if (!despesa) {
-      await enviarWhatsApp(numero,
-        '🤔 Não entendi. Me informe uma despesa como:\n' +
-        '_"gastei 45,90 no Giassi"_\n' +
-        '_"farmácia 38 reais"_\n' +
-        '_"conta de luz 120,50"_'
-      );
-      return;
-    }
-
-    // Busca dados necessários
-    const [categorias, contas, cartoes] = await Promise.all([
-      buscarCategorias(householdId),
-      buscarContas(householdId),
-      buscarCartoes(householdId),
-    ]);
-
-    // Sugere categorias
-    const sugeridas = await sugerirCategorias(despesa.descricao, categorias);
-    const outras = categorias.filter(c => !sugeridas.find(s => s.id === c.id)).slice(0, 2);
-    const todasSugeridas = [...sugeridas, ...outras].slice(0, 5);
-
-    const listaCats = todasSugeridas.map((c, i) => `${i + 1}️⃣ ${c.nome}`).join('\n');
-
+    const hid = await buscarHousehold(numero);
+    if (!hid) { await enviarWhatsApp(numero, 'Seu numero nao esta cadastrado no my-finance-hub. Acesse o app e configure as notificacoes WhatsApp.'); return; }
+    const despesa = interpretarDespesa(texto);
+    if (!despesa) { await enviarWhatsApp(numero, 'Nao entendi. Exemplos:\ngastei 45,90 no Giassi\nfarmacia 38 reais\nconta de luz 120,50'); return; }
+    const [cats, contas, cartoes] = await Promise.all([buscarCategorias(hid), buscarContas(hid), buscarCartoes(hid)]);
+    const sugeridas = sugerirCategorias(despesa.descricao, cats);
+    const listaCats = sugeridas.map((c: any, i: number) => `${i + 1} ${c.nome}`).join('\n');
     const pushName = body?.data?.pushName || '';
-    const novaSessao: Sessao = {
-      etapa: 'aguardando_categoria',
-      household_id: householdId,
-      descricao: despesa.descricao,
-      valor: despesa.valor,
-      data: hojeISO(),
-      numero_whatsapp: numero,
-      nome_remetente: pushName,
-      categorias: todasSugeridas,
-      contas,
-      cartoes,
-    };
-
-    await setSessao(numero, novaSessao);
-    await enviarWhatsApp(numero,
-      `🛒 *${despesa.descricao}* — *${formatMoney(despesa.valor)}*\n\n` +
-      `Qual a categoria?\n${listaCats}\n\n` +
-      `_(ou digite o nome da categoria)_`
-    );
+    await setSessao(numero, { etapa: 'aguardando_categoria', household_id: hid, descricao: despesa.descricao, valor: despesa.valor, data: hojeISO(), numero_whatsapp: numero, nome_remetente: pushName, categorias: sugeridas, contas, cartoes });
+    await enviarWhatsApp(numero, `${despesa.descricao} — ${formatMoney(despesa.valor)}\n\nQual a categoria?\n${listaCats}\n\n(ou digite o nome da categoria)`);
     return;
   }
 
-  // ── Com sessão ativa: processa conforme a etapa ────────────────────────────
-
   switch (sessao.etapa) {
-
-    // ── Categoria ──────────────────────────────────────────────────────────────
     case 'aguardando_categoria': {
-      let cat: { id: number; nome: string } | undefined;
-
-      const num = parseInt(textoLimpo);
-      if (!isNaN(num) && num >= 1 && num <= sessao.categorias.length) {
-        cat = sessao.categorias[num - 1];
-      } else {
-        // Busca pelo nome digitado
-        const todasCats = await buscarCategorias(sessao.household_id);
-        cat = todasCats.find(c => c.nome.toLowerCase().includes(textoLimpo));
-      }
-
-      if (!cat) {
-        const listaCats = sessao.categorias.map((c, i) => `${i + 1}️⃣ ${c.nome}`).join('\n');
-        await enviarWhatsApp(numero,
-          `❓ Não encontrei essa categoria. Escolha uma opção:\n${listaCats}\n\n_(ou digite o nome)_`
-        );
-        return;
-      }
-
-      const novoEstado: Sessao = { ...sessao, etapa: 'aguardando_pagamento', categoria_id: cat.id, categoria_nome: cat.nome };
-      await setSessao(numero, novoEstado);
-      await enviarWhatsApp(numero,
-        `✅ Categoria: *${cat.nome}*\n\n` +
-        `Forma de pagamento?\n` +
-        `1️⃣ PIX\n2️⃣ Débito\n3️⃣ Crédito`
-      );
+      let cat: any;
+      const num = parseInt(tl);
+      if (!isNaN(num) && num >= 1 && num <= sessao.categorias.length) cat = sessao.categorias[num - 1];
+      else { const all = await buscarCategorias(sessao.household_id); cat = all.find((c: any) => c.nome.toLowerCase().includes(tl)); }
+      if (!cat) { await enviarWhatsApp(numero, `Categoria nao encontrada. Escolha:\n${sessao.categorias.map((c: any, i: number) => `${i + 1} ${c.nome}`).join('\n')}`); return; }
+      await setSessao(numero, { ...sessao, etapa: 'aguardando_pagamento', categoria_id: cat.id, categoria_nome: cat.nome });
+      await enviarWhatsApp(numero, `Categoria: ${cat.nome}\n\nForma de pagamento?\n1 PIX\n2 Debito\n3 Credito`);
       break;
     }
-
-    // ── Pagamento ──────────────────────────────────────────────────────────────
     case 'aguardando_pagamento': {
-      const opcoes: Record<string, string> = { '1': 'PIX', '2': 'Débito', '3': 'Crédito', 'pix': 'PIX', 'debito': 'Débito', 'débito': 'Débito', 'credito': 'Crédito', 'crédito': 'Crédito' };
-      const metodo = opcoes[textoLimpo];
-
-      if (!metodo) {
-        await enviarWhatsApp(numero, '❓ Escolha:\n1️⃣ PIX\n2️⃣ Débito\n3️⃣ Crédito');
-        return;
-      }
-
-      if (metodo === 'Crédito') {
-        if (sessao.cartoes.length === 0) {
-          await enviarWhatsApp(numero, '⚠️ Nenhum cartão ativo cadastrado. Escolha PIX ou Débito.\n1️⃣ PIX\n2️⃣ Débito');
-          return;
-        }
-        const listaCartoes = sessao.cartoes.map((c, i) => `${i + 1}️⃣ ${c.nome}`).join('\n');
+      const op: any = { '1': 'PIX', '2': 'Debito', '3': 'Credito', 'pix': 'PIX', 'debito': 'Debito', 'credito': 'Credito', 'debito': 'Debito' };
+      const metodo = op[tl];
+      if (!metodo) { await enviarWhatsApp(numero, 'Escolha:\n1 PIX\n2 Debito\n3 Credito'); return; }
+      if (metodo === 'Credito') {
+        if (!sessao.cartoes.length) { await enviarWhatsApp(numero, 'Nenhum cartao ativo.\n1 PIX\n2 Debito'); return; }
         await setSessao(numero, { ...sessao, etapa: 'aguardando_cartao', metodo });
-        await enviarWhatsApp(numero, `💳 Qual cartão?\n${listaCartoes}`);
+        await enviarWhatsApp(numero, `Qual cartao?\n${sessao.cartoes.map((c: any, i: number) => `${i + 1} ${c.nome}`).join('\n')}`);
       } else {
-        if (sessao.contas.length === 0) {
-          await enviarWhatsApp(numero, '⚠️ Nenhuma conta ativa cadastrada.');
-          return;
-        }
-        const listaContas = sessao.contas.map((c, i) => `${i + 1}️⃣ ${c}`).join('\n');
+        if (!sessao.contas.length) { await enviarWhatsApp(numero, 'Nenhuma conta ativa.'); return; }
         await setSessao(numero, { ...sessao, etapa: 'aguardando_conta', metodo });
-        await enviarWhatsApp(numero, `🏦 Qual conta?\n${listaContas}`);
+        await enviarWhatsApp(numero, `Qual conta?\n${sessao.contas.map((c: any, i: number) => `${i + 1} ${c}`).join('\n')}`);
       }
       break;
     }
-
-    // ── Conta (PIX/Débito) ─────────────────────────────────────────────────────
     case 'aguardando_conta': {
-      let conta: string | undefined;
-
-      const num = parseInt(textoLimpo);
-      if (!isNaN(num) && num >= 1 && num <= sessao.contas.length) {
-        conta = sessao.contas[num - 1];
-      } else {
-        conta = sessao.contas.find(c => c.toLowerCase().includes(textoLimpo));
-      }
-
-      if (!conta) {
-        const listaContas = sessao.contas.map((c, i) => `${i + 1}️⃣ ${c}`).join('\n');
-        await enviarWhatsApp(numero, `❓ Conta não encontrada. Escolha:\n${listaContas}`);
-        return;
-      }
-
-      const novoEstado: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', conta };
-      await setSessao(numero, novoEstado);
-      await enviarWhatsApp(numero, montaResumo(novoEstado));
+      const num = parseInt(tl);
+      const conta = !isNaN(num) && num >= 1 && num <= sessao.contas.length ? sessao.contas[num - 1] : sessao.contas.find(c => c.toLowerCase().includes(tl));
+      if (!conta) { await enviarWhatsApp(numero, `Conta nao encontrada:\n${sessao.contas.map((c, i) => `${i + 1} ${c}`).join('\n')}`); return; }
+      const ns: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', conta };
+      await setSessao(numero, ns);
+      await enviarWhatsApp(numero, montaResumo(ns));
       break;
     }
-
-    // ── Cartão (Crédito) ───────────────────────────────────────────────────────
     case 'aguardando_cartao': {
-      let cartao: { id: number; nome: string } | undefined;
-
-      const num = parseInt(textoLimpo);
-      if (!isNaN(num) && num >= 1 && num <= sessao.cartoes.length) {
-        cartao = sessao.cartoes[num - 1];
-      } else {
-        cartao = sessao.cartoes.find(c => c.nome.toLowerCase().includes(textoLimpo));
-      }
-
-      if (!cartao) {
-        const listaCartoes = sessao.cartoes.map((c, i) => `${i + 1}️⃣ ${c.nome}`).join('\n');
-        await enviarWhatsApp(numero, `❓ Cartão não encontrado. Escolha:\n${listaCartoes}`);
-        return;
-      }
-
-      const novoEstado: Sessao = { ...sessao, etapa: 'aguardando_parcelamento', cartao_id: cartao.id, cartao_nome: cartao.nome };
-      await setSessao(numero, novoEstado);
-      await enviarWhatsApp(numero,
-        `💳 Cartão: *${cartao.nome}*\n\n` +
-        `À vista ou parcelado?\n` +
-        `1️⃣ À vista\n2️⃣ Parcelado`
-      );
+      const num = parseInt(tl);
+      const cartao: any = !isNaN(num) && num >= 1 && num <= sessao.cartoes.length ? sessao.cartoes[num - 1] : sessao.cartoes.find((c: any) => c.nome.toLowerCase().includes(tl));
+      if (!cartao) { await enviarWhatsApp(numero, `Cartao nao encontrado:\n${sessao.cartoes.map((c: any, i: number) => `${i + 1} ${c.nome}`).join('\n')}`); return; }
+      await setSessao(numero, { ...sessao, etapa: 'aguardando_parcelamento', cartao_id: cartao.id, cartao_nome: cartao.nome });
+      await enviarWhatsApp(numero, `Cartao: ${cartao.nome}\n\nA vista ou parcelado?\n1 A vista\n2 Parcelado`);
       break;
     }
-
-    // ── Parcelamento ───────────────────────────────────────────────────────────
     case 'aguardando_parcelamento': {
-      const opcoes: Record<string, boolean> = { '1': false, 'a vista': false, 'à vista': false, '2': true, 'parcelado': true };
-      const isParcelado = opcoes[textoLimpo];
-
-      if (isParcelado === undefined) {
-        await enviarWhatsApp(numero, '❓ Escolha:\n1️⃣ À vista\n2️⃣ Parcelado');
-        return;
-      }
-
-      if (isParcelado) {
+      const op: any = { '1': false, 'a vista': false, '2': true, 'parcelado': true };
+      const isParc = op[tl];
+      if (isParc === undefined) { await enviarWhatsApp(numero, 'Escolha:\n1 A vista\n2 Parcelado'); return; }
+      if (isParc) {
         await setSessao(numero, { ...sessao, etapa: 'aguardando_parcelas' });
-        await enviarWhatsApp(numero, '🔢 Quantas parcelas?');
+        await enviarWhatsApp(numero, 'Quantas parcelas? (maximo 5)');
       } else {
-        const novoEstado: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', parcelas: 1 };
-        await setSessao(numero, novoEstado);
-        await enviarWhatsApp(numero, montaResumo(novoEstado));
+        const ns: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', parcelas: 1 };
+        await setSessao(numero, ns);
+        await enviarWhatsApp(numero, montaResumo(ns));
       }
       break;
     }
-
-    // ── Quantidade de parcelas ─────────────────────────────────────────────────
     case 'aguardando_parcelas': {
-      const qtd = parseInt(textoLimpo);
-      if (isNaN(qtd) || qtd < 2 || qtd > 48) {
-        await enviarWhatsApp(numero, '❓ Informe um número de parcelas válido (entre 2 e 48).');
-        return;
-      }
-
-      const novoEstado: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', parcelas: qtd };
-      await setSessao(numero, novoEstado);
-      await enviarWhatsApp(numero, montaResumo(novoEstado));
+      const qtd = parseInt(tl);
+      if (isNaN(qtd) || qtd < 2 || qtd > 5) { await enviarWhatsApp(numero, 'Informe um numero entre 2 e 5.'); return; }
+      const ns: Sessao = { ...sessao, etapa: 'aguardando_confirmacao', parcelas: qtd };
+      await setSessao(numero, ns);
+      await enviarWhatsApp(numero, montaResumo(ns));
       break;
     }
-
-    // ── Confirmação final ──────────────────────────────────────────────────────
     case 'aguardando_confirmacao': {
-      if (['sim', 's', 'yes', '👍'].includes(textoLimpo)) {
+      if (['sim', 's', 'yes'].includes(tl)) {
         const ok = await salvarDespesa(sessao.household_id, sessao);
         await deleteSessao(numero);
-
         if (ok) {
-          const parcelas = sessao.parcelas || 1;
-          const emoji = sessao.metodo === 'Crédito' ? '💳' : sessao.metodo === 'PIX' ? '⚡' : '🏦';
+          const p = sessao.parcelas || 1;
           await enviarWhatsApp(numero,
-            `✅ *Rascunho salvo!*\n\n` +
-            `📦 ${sessao.descricao} — *${formatMoney(sessao.valor)}*\n` +
-            `🏷️ ${sessao.categoria_nome}\n` +
-            `${emoji} ${sessao.metodo}${sessao.cartao_nome ? ` — ${sessao.cartao_nome}` : sessao.conta ? ` — ${sessao.conta}` : ''}\n` +
-            `${parcelas > 1 ? `📊 ${parcelas}x ${formatMoney(sessao.valor / parcelas)}\n` : ''}` +
-            `📅 ${hojeFormatado()}\n\n` +
-            `⏳ _Aguardando confirmação no app my-finance-hub_ 🚀`
+            `Rascunho salvo!\n\n${sessao.descricao} — ${formatMoney(sessao.valor)}\nCategoria: ${sessao.categoria_nome}\n${sessao.metodo}${sessao.cartao_nome ? ` — ${sessao.cartao_nome}` : sessao.conta ? ` — ${sessao.conta}` : ''}\n${p > 1 ? `${p}x ${formatMoney(sessao.valor / p)}\n` : ''}Data: ${hojeFormatado()}\n\nAguardando confirmacao no app.`
           );
-        } else {
-          await enviarWhatsApp(numero, '❌ Erro ao salvar. Tente novamente.');
-        }
-      } else if (['não', 'nao', 'n', 'no'].includes(textoLimpo)) {
+        } else { await enviarWhatsApp(numero, 'Erro ao salvar. Tente novamente.'); }
+      } else if (['nao', 'n', 'no', 'não'].includes(tl)) {
         await deleteSessao(numero);
-        await enviarWhatsApp(numero, '❌ Cancelado! Quando quiser lançar, é só me contar.');
+        await enviarWhatsApp(numero, 'Cancelado! Quando quiser lancar, e so me contar.');
       } else {
-        await enviarWhatsApp(numero, '❓ Digite *sim* para confirmar ou *não* para cancelar.');
+        await enviarWhatsApp(numero, 'Digite sim para confirmar ou nao para cancelar.');
       }
       break;
     }
   }
 }
 
-// ─── Handler principal ────────────────────────────────────────────────────────
-
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS });
-  }
-
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: CORS });
   try {
     const rawText = await req.text();
-    console.log('Raw body:', rawText.substring(0, 800));
-    
-    if (!rawText || rawText.trim() === '') {
-      return new Response('ok', { status: 200 });
-    }
-    
+    if (!rawText?.trim()) return new Response('ok', { status: 200 });
     const body = JSON.parse(rawText);
-    console.log('Webhook recebido:', JSON.stringify(body).substring(0, 500));
-
-    // Evolution API v2
-    const evento = body?.event || body?.type || '';
-    const isUpsert = evento === 'messages.upsert' || evento === 'MESSAGES_UPSERT' || evento === 'message';
-    
-    if (!isUpsert) {
-      console.log('Evento ignorado:', evento);
-      return new Response('ok', { status: 200 });
-    }
-
-    const mensagem = body?.data || body?.message || body;
-    const msg = mensagem?.message || mensagem?.messages?.[0]?.message;
-    const key = mensagem?.key || mensagem?.messages?.[0]?.key;
-
+    const evento = body?.event || '';
+    if (evento !== 'messages.upsert' && evento !== 'MESSAGES_UPSERT') return new Response('ok', { status: 200 });
+    const msg = body?.data?.message;
+    const key = body?.data?.key;
+    if (key?.fromMe) return new Response('ok', { status: 200 });
     const numero = (key?.remoteJid || '').replace('@s.whatsapp.net', '').replace(/\D/g, '');
-    const texto = (msg?.conversation || msg?.extendedTextMessage?.text || mensagem?.text || '').trim();
-
-    console.log('Numero:', numero, '| Texto:', texto);
-
-    if (!numero || !texto) {
-      return new Response('ok', { status: 200 });
-    }
-
-    const textoLower = texto.toLowerCase();
-
-    // Só processa se começar com !gasto OU se já tiver sessão ativa
+    const texto = (msg?.conversation || msg?.extendedTextMessage?.text || '').trim();
+    if (!numero || !texto) return new Response('ok', { status: 200 });
+    const tl = texto.toLowerCase();
+    const COMANDOS = ['!gasto', 'gastei', 'gasto', 'comprei', 'compra'];
+    const cmd = COMANDOS.find(c => tl.startsWith(c));
     const sessaoAtiva = await getSessao(numero);
-    const temComando = textoLower.startsWith('!gasto');
-
-    if (!temComando && !sessaoAtiva) {
-      console.log('Sem comando !gasto e sem sessão ativa, ignorando');
-      return new Response('ok', { status: 200 });
-    }
-
-    // Se tem comando !gasto, extrai o texto após o comando
+    if (!cmd && !sessaoAtiva) return new Response('ok', { status: 200 });
     let textoFinal = texto;
-    if (temComando) {
-      textoFinal = texto.substring(6).trim(); // remove "!gasto"
+    if (cmd) {
+      textoFinal = texto.substring(cmd.length).trim();
       if (!textoFinal) {
-        await enviarWhatsApp(numero,
-          '💰 *my-finance-hub Bot*
-
-' +
-          'Como usar:
-' +
-          '_!gasto [valor] [descrição]_
-
-' +
-          'Exemplos:
-' +
-          '• !gasto 45,90 Giassi
-' +
-          '• !gasto 120 farmácia
-' +
-          '• !gasto 38,50 padaria
-
-' +
-          '_Digite cancelar a qualquer momento para desistir._'
-        );
+        await enviarWhatsApp(numero, 'Como usar:\ngastei [valor] [descricao]\n\nExemplos:\ngastei 45,90 no Giassi\ncomprei 38 na farmacia\ngasto 120,50 conta de luz');
         return new Response('ok', { status: 200 });
       }
     }
-
-    // Processa em background
-    processarMensagem(numero, textoFinal).catch(e => console.error('Erro ao processar:', e));
-
-    return new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    processarMensagem(numero, textoFinal, body).catch(e => console.error('Erro:', e));
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
   } catch (e) {
     console.error('Erro geral:', e);
-    return new Response(JSON.stringify({ error: String(e) }), {
-      status: 500,
-      headers: { ...CORS, 'Content-Type': 'application/json' },
-    });
+    return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: { ...CORS, 'Content-Type': 'application/json' } });
   }
 });
