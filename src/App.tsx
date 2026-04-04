@@ -54,7 +54,7 @@ interface ThemeTokens {
 const DARK: ThemeTokens = {
   sidebarBg: "#0d1526",
   sidebarBorder: "#1e2d45",
-  sidebarGroupLabel: "#334155",
+  sidebarGroupLabel: "#94a3b8",
   sidebarItemHover: "#1e2d45",
   sidebarText: "#94a3b8",
   sidebarSubtext: "#475569",
