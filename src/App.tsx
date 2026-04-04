@@ -16,12 +16,13 @@ import Dashboard from "./components/Dashboard";
 import Alertas from "./components/Alertas";
 import NotificacoesConfig from "./components/NotificacoesConfig";
 import ConsultorIA from "./components/ConsultorIA";
+import ConferenciaWhatsApp from "./components/ConferenciaWhatsApp";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Sparkles,
+  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Sparkles, MessageSquare,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -105,7 +106,7 @@ const useTheme = () => useContext(ThemeCtx)
 type Pagina =
   | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes" | "consultor"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes" | "consultor" | "conferencia"
 
 const grupos: {
   label: string
@@ -122,9 +123,10 @@ const grupos: {
   {
     label: "Lançamentos",
     items: [
-      { label: "Lançar",            key: "lancamento", icon: PlusCircle  },
-      { label: "Confirmar Débitos", key: "confirmar",  icon: CheckCircle },
-      { label: "Movimentações",     key: "movimentacoes", icon: List     },
+      { label: "Lançar",            key: "lancamento",  icon: PlusCircle  },
+      { label: "Confirmar Débitos", key: "confirmar",   icon: CheckCircle },
+      { label: "Movimentações",     key: "movimentacoes", icon: List      },
+      { label: "Conf. WhatsApp",    key: "conferencia", icon: MessageSquare, accent: "#22c55e" },
     ],
   },
   {
@@ -479,6 +481,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "upload":        return <UploadPlanilha />
       case "notificacoes":  return <NotificacoesConfig />
       case "consultor":     return <ConsultorIA />
+      case "conferencia":    return <ConferenciaWhatsApp />
       default:              return null
     }
   }
