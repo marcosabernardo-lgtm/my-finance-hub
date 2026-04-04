@@ -48,36 +48,24 @@ async function getSaldos(householdId: string) {
 
   if (!contas || contas.length === 0) return [];
 
+  // Mesma lógica do Dashboard: só movimentações Pagas, por conta_origem_destino = conta.nome
+  const { data: todasMovs } = await supabase
+    .from('movimentacoes')
+    .select('conta_origem_destino, tipo, valor')
+    .eq('household_id', householdId)
+    .eq('situacao', 'Pago');
+
+  const movs = todasMovs || [];
   const result = [];
 
   for (const conta of contas) {
-    // Soma movimentações que afetam o saldo
-    const { data: movs } = await supabase
-      .from('movimentacoes')
-      .select('tipo, valor, metodo_pagamento, conta_origem_destino, situacao')
-      .eq('household_id', householdId)
-      .gte('data_movimentacao', conta.data_inicial)
-      .or(`conta_origem_destino.eq.${conta.id},and(metodo_pagamento.neq.Crédito,cartao_id.is.null)`);
+    let saldo = Number(conta.saldo_inicial) || 0;
 
-    let saldo = conta.saldo_inicial ?? 0;
-
-    if (movs) {
-      for (const mov of movs) {
-        if (mov.situacao === 'Cancelado') continue;
-
-        const isTransferencia = mov.metodo_pagamento === 'Transferência entre Contas';
-
-        if (isTransferencia) {
-          if (mov.conta_origem_destino === conta.id) {
-            // Conta destino: soma
-            saldo += mov.valor;
-          }
-          // Conta origem já é deduzida pelo tipo Despesa abaixo
-        } else {
-          if (mov.tipo === 'Receita') saldo += mov.valor;
-          if (mov.tipo === 'Despesa') saldo -= mov.valor;
-        }
-      }
+    for (const m of movs) {
+      if (m.conta_origem_destino !== conta.nome) continue;
+      if (m.tipo === 'Receita') saldo += Number(m.valor);
+      else if (m.tipo === 'Despesa') saldo -= Number(m.valor);
+      else if (m.tipo === 'Transferência') saldo -= Number(m.valor);
     }
 
     result.push({ nome: conta.nome, saldo, tipo: conta.tipo });
@@ -93,28 +81,38 @@ async function getAlertas(householdId: string) {
   const hojeISO = toISO(hoje);
   const em5Dias = toISO(addDays(hoje, 5));
 
+  // Busca cartões para lookup nome + vencimento
+  const { data: cartoes } = await supabase
+    .from('cartoes')
+    .select('id, nome, data_vencimento')
+    .eq('household_id', householdId);
+  const mapaCartoes: Record<number, { nome: string; vencimento: number }> = {};
+  for (const c of cartoes || []) {
+    mapaCartoes[c.id] = { nome: c.nome, vencimento: c.data_vencimento };
+  }
+
   // Vencidos (Pendente + data_pagamento < hoje)
   const { data: vencidos } = await supabase
     .from('movimentacoes')
-    .select('descricao, valor, data_pagamento, metodo_pagamento')
+    .select('descricao, valor, data_pagamento, metodo_pagamento, cartao_id')
     .eq('household_id', householdId)
     .eq('situacao', 'Pendente')
     .eq('tipo', 'Despesa')
     .lt('data_pagamento', hojeISO)
     .order('data_pagamento', { ascending: true })
-    .limit(5);
+    .limit(20);
 
   // Próximos 5 dias
   const { data: proximos } = await supabase
     .from('movimentacoes')
-    .select('descricao, valor, data_pagamento, metodo_pagamento')
+    .select('descricao, valor, data_pagamento, metodo_pagamento, cartao_id')
     .eq('household_id', householdId)
     .eq('situacao', 'Pendente')
     .eq('tipo', 'Despesa')
     .gte('data_pagamento', hojeISO)
     .lte('data_pagamento', em5Dias)
     .order('data_pagamento', { ascending: true })
-    .limit(5);
+    .limit(20);
 
   // Limites estourados
   const mesAtual = hojeISO.substring(0, 7); // YYYY-MM
@@ -145,7 +143,7 @@ async function getAlertas(householdId: string) {
     }
   }
 
-  return { vencidos: vencidos ?? [], proximos: proximos ?? [], limitesEstourados };
+  return { vencidos: vencidos ?? [], proximos: proximos ?? [], limitesEstourados, mapaCartoes };
 }
 
 // ─── Monta mensagem WhatsApp ─────────────────────────────────────────────────
@@ -156,7 +154,7 @@ function montaMensagem(saldos: any[], alertas: any): string {
   linhas.push(`📊 *Resumo Financeiro - ${today()}*`);
   linhas.push('');
 
-  // Saldos
+  // ── Saldos ──
   linhas.push('💰 *Saldos das Contas*');
   if (saldos.length === 0) {
     linhas.push('Nenhuma conta cadastrada.');
@@ -166,37 +164,97 @@ function montaMensagem(saldos: any[], alertas: any): string {
 
     if (correntes.length > 0) {
       linhas.push('_Contas Correntes:_');
+      let totalCorrente = 0;
       for (const c of correntes) {
         const emoji = c.saldo >= 0 ? '🟢' : '🔴';
         linhas.push(`${emoji} ${c.nome}: *${formatMoney(c.saldo)}*`);
+        totalCorrente += c.saldo;
       }
+      linhas.push(`*Subtotal: ${formatMoney(totalCorrente)}*`);
     }
+
     if (investimentos.length > 0) {
+      linhas.push('');
       linhas.push('_Investimentos:_');
+      let totalInvest = 0;
       for (const c of investimentos) {
-        linhas.push(`📈 ${c.nome}: *${formatMoney(c.saldo)}*`);
+        const emoji = c.saldo >= 0 ? '📈' : '🔴';
+        linhas.push(`${emoji} ${c.nome}: *${formatMoney(c.saldo)}*`);
+        totalInvest += c.saldo;
       }
+      linhas.push(`*Subtotal: ${formatMoney(totalInvest)}*`);
     }
+
+    const totalGeral = saldos.reduce((s, c) => s + c.saldo, 0);
+    linhas.push('');
+    linhas.push(`💼 *Total Geral: ${formatMoney(totalGeral)}*`);
   }
 
   linhas.push('');
 
+  // ── Helpers de alertas ──
+  const { mapaCartoes } = alertas;
+
+  const agruparCartoes = (lista: any[]) => {
+    const grupos: Record<string, { nome: string; vencimento: number; total: number; data_pagamento: string }> = {};
+    for (const i of lista) {
+      if (!i.cartao_id) continue;
+      const info = mapaCartoes[i.cartao_id] || { nome: 'Cartão', vencimento: 0 };
+      const key = String(i.cartao_id);
+      if (!grupos[key]) grupos[key] = { nome: info.nome, vencimento: info.vencimento, total: 0, data_pagamento: i.data_pagamento };
+      grupos[key].total += Number(i.valor);
+    }
+    return Object.values(grupos);
+  };
+
   // Vencidos
   if (alertas.vencidos.length > 0) {
+    const pixDebito = alertas.vencidos.filter((i: any) => !i.cartao_id);
+    const cartoesAgrup = agruparCartoes(alertas.vencidos);
     linhas.push(`🔴 *Vencidos (${alertas.vencidos.length})*`);
-    for (const v of alertas.vencidos) {
-      const data = new Date(v.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
-      linhas.push(`• ${v.descricao} — ${formatMoney(v.valor)} (${data})`);
+    if (pixDebito.length > 0) {
+      linhas.push('_PIX / Débito:_');
+      for (const v of pixDebito) {
+        const data = new Date(v.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
+        linhas.push(`• ${data} - ${v.descricao} - ${formatMoney(v.valor)}`);
+      }
+    }
+    if (cartoesAgrup.length > 0) {
+      linhas.push('_Cartões:_');
+      for (const c of cartoesAgrup) {
+        const data = new Date(c.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
+        linhas.push(`• ${data} - ${c.nome} - ${formatMoney(c.total)}`);
+      }
+      if (cartoesAgrup.length > 1) {
+        const totalCartoes = cartoesAgrup.reduce((s, c) => s + c.total, 0);
+        linhas.push(`*Total Cartões: ${formatMoney(totalCartoes)}*`);
+      }
     }
     linhas.push('');
   }
 
   // Próximos 5 dias
   if (alertas.proximos.length > 0) {
+    const pixDebito = alertas.proximos.filter((i: any) => !i.cartao_id);
+    const cartoesAgrup = agruparCartoes(alertas.proximos);
     linhas.push(`⚠️ *Vencem nos próximos 5 dias (${alertas.proximos.length})*`);
-    for (const p of alertas.proximos) {
-      const data = new Date(p.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
-      linhas.push(`• ${p.descricao} — ${formatMoney(p.valor)} (${data})`);
+    if (pixDebito.length > 0) {
+      linhas.push('_PIX / Débito:_');
+      for (const p of pixDebito) {
+        const data = new Date(p.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
+        linhas.push(`• ${data} - ${p.descricao} - ${formatMoney(p.valor)}`);
+      }
+    }
+    if (cartoesAgrup.length > 0) {
+      linhas.push('_Cartões:_');
+      for (const c of cartoesAgrup) {
+        const data = new Date(c.data_pagamento + 'T12:00:00').toLocaleDateString('pt-BR');
+        linhas.push(`• ${data} - ${c.nome} - ${formatMoney(c.total)}`);
+      }
+      if (cartoesAgrup.length > 1) {
+        const totalCartoes = cartoesAgrup.reduce((s, c) => s + c.total, 0);
+        linhas.push(`*Total Cartões: ${formatMoney(totalCartoes)}*`);
+      }
     }
     linhas.push('');
   }
@@ -234,7 +292,7 @@ async function enviarWhatsApp(numero: string, mensagem: string): Promise<boolean
       },
       body: JSON.stringify({
         number: numero,
-        textMessage: { text: mensagem },
+        text: mensagem,
       }),
     });
 
@@ -252,7 +310,16 @@ async function enviarWhatsApp(numero: string, mensagem: string): Promise<boolean
 
 // ─── Handler principal ───────────────────────────────────────────────────────
 
-Deno.serve(async (_req) => {
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: CORS });
+  }
   try {
     // Busca todos os households com notificação ativa
     const { data: configs, error } = await supabase
@@ -262,7 +329,7 @@ Deno.serve(async (_req) => {
 
     if (error) throw error;
     if (!configs || configs.length === 0) {
-      return new Response(JSON.stringify({ message: 'Nenhuma notificação configurada.' }), { status: 200 });
+      return new Response(JSON.stringify({ message: 'Nenhuma notificação configurada.' }), { status: 200, headers: { ...CORS, 'Content-Type': 'application/json' } });
     }
 
     const resultados = [];
@@ -290,10 +357,13 @@ Deno.serve(async (_req) => {
 
     return new Response(JSON.stringify({ ok: true, resultados }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...CORS, 'Content-Type': 'application/json' },
     });
   } catch (e) {
     console.error('Erro geral:', e);
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { ...CORS, 'Content-Type': 'application/json' },
+    });
   }
 });

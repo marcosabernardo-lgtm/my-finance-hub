@@ -20,7 +20,7 @@ import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, LayoutDashboard, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Sun, Moon,
+  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Building2,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -113,9 +113,9 @@ const grupos: {
   {
     label: "Configuração",
     items: [
-      { label: "Cadastros",      key: "cadastros",     icon: Database },
-      { label: "Importar",       key: "upload",        icon: Upload   },
-      { label: "Notificações",   key: "notificacoes",  icon: Bell     },
+      { label: "Cadastros",    key: "cadastros",    icon: Database },
+      { label: "Importar",     key: "upload",       icon: Upload   },
+      { label: "Notificações", key: "notificacoes", icon: Bell     },
     ],
   },
   {
@@ -123,20 +123,24 @@ const grupos: {
     items: [
       { label: "Lançar",            key: "lancamento", icon: PlusCircle  },
       { label: "Confirmar Débitos", key: "confirmar",  icon: CheckCircle },
-      { label: "Fatura Cartão",     key: "fatura",     icon: CreditCard  },
+      { label: "Movimentações",     key: "movimentacoes", icon: List     },
     ],
   },
   {
     label: "Análises",
     items: [
-      { label: "Dashboard",     key: "dashboard",     icon: LayoutDashboard },
-      { label: "Alertas",       key: "alertas",       icon: Bell, accent: "#ef4444" },
-      { label: "Resumo",        key: "resumo",        icon: BarChart3       },
-      { label: "Movimentações", key: "movimentacoes", icon: List            },
-      { label: "Semanal",       key: "semanal",       icon: Calendar        },
-      { label: "Extrato Conta", key: "extrato",       icon: BookOpen        },
-      { label: "Cartões",       key: "cartoes",       icon: Wallet          },
-      { label: "DRE",           key: "dre",           icon: FileText        },
+      { label: "Alertas", key: "alertas", icon: Bell,     accent: "#ef4444" },
+      { label: "Resumo",  key: "resumo",  icon: BarChart3                   },
+      { label: "Semanal", key: "semanal", icon: Calendar                    },
+      { label: "DRE",     key: "dre",     icon: FileText                    },
+    ],
+  },
+  {
+    label: "Bancos",
+    items: [
+      { label: "Fatura Cartão", key: "fatura",  icon: CreditCard },
+      { label: "Extrato Conta", key: "extrato", icon: BookOpen   },
+      { label: "Cartões",       key: "cartoes", icon: Wallet     },
     ],
   },
 ]
@@ -144,21 +148,21 @@ const grupos: {
 const cardConfig: {
   key: Pagina; label: string; desc: string; icon: React.ElementType
   accent: string; iconBg: string; iconColor: string
-  group: "configuracao" | "lancamentos" | "analises"
+  group: "configuracao" | "lancamentos" | "analises" | "bancos"
 }[] = [
   { key: "cadastros",     label: "Cadastros",         group: "configuracao", desc: "Categorias, cartões e contas",                  icon: Database,        accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8" },
   { key: "upload",        label: "Importar Planilha", group: "configuracao", desc: "Importe dados históricos via Excel (.xlsx)",     icon: Upload,          accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
+  { key: "notificacoes",  label: "Notificações",      group: "configuracao", desc: "Configure alertas diários via WhatsApp",         icon: Bell,            accent: "#7c3aed", iconBg: "#2e1065", iconColor: "#a78bfa" },
   { key: "lancamento",    label: "Lançar",            group: "lancamentos",  desc: "Registre despesas, receitas e transferências",   icon: PlusCircle,      accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
   { key: "confirmar",     label: "Confirmar Débitos", group: "lancamentos",  desc: "Confirme lançamentos previstos em aberto",       icon: CheckCircle,     accent: "#22c55e", iconBg: "#14532d", iconColor: "#4ade80" },
-  { key: "fatura",        label: "Fatura Cartão",     group: "lancamentos",  desc: "Gerencie e pague faturas dos cartões",           icon: CreditCard,      accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24" },
-  { key: "dashboard",     label: "Dashboard",         group: "analises",     desc: "Visão geral com saldos, cartões e gráficos",     icon: LayoutDashboard, accent: "#10b981", iconBg: "#052e16", iconColor: "#34d399" },
+  { key: "movimentacoes", label: "Movimentações",     group: "lancamentos",  desc: "Histórico completo com filtros avançados",       icon: List,            accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf" },
   { key: "alertas",       label: "Alertas",           group: "analises",     desc: "Vencidos, limites estourados e riscos do mês",   icon: Bell,            accent: "#ef4444", iconBg: "#450a0a", iconColor: "#fca5a5" },
   { key: "resumo",        label: "Resumo",            group: "analises",     desc: "Visão geral de receitas, despesas e saldo",      icon: BarChart3,       accent: "#8b5cf6", iconBg: "#2e1065", iconColor: "#a78bfa" },
   { key: "semanal",       label: "Controle Semanal",  group: "analises",     desc: "Despesas por semana e categoria",                icon: Calendar,        accent: "#06b6d4", iconBg: "#083344", iconColor: "#22d3ee" },
   { key: "dre",           label: "DRE",               group: "analises",     desc: "Demonstrativo anual com projeções",              icon: FileText,        accent: "#ec4899", iconBg: "#500724", iconColor: "#f472b6" },
-  { key: "cartoes",       label: "Cartões",           group: "analises",     desc: "Visão anual e comprometimento de limite",        icon: Wallet,          accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
-  { key: "extrato",       label: "Extrato Conta",     group: "analises",     desc: "Entradas, saídas e saldo por conta bancária",    icon: BookOpen,        accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
-  { key: "movimentacoes", label: "Movimentações",     group: "analises",     desc: "Histórico completo com filtros avançados",       icon: List,            accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf" },
+  { key: "fatura",        label: "Fatura Cartão",     group: "bancos",       desc: "Gerencie e pague faturas dos cartões",           icon: CreditCard,      accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24" },
+  { key: "extrato",       label: "Extrato Conta",     group: "bancos",       desc: "Entradas, saídas e saldo por conta bancária",    icon: BookOpen,        accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
+  { key: "cartoes",       label: "Cartões",           group: "bancos",       desc: "Visão anual e comprometimento de limite",        icon: Wallet,          accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
 ]
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
@@ -176,6 +180,7 @@ function Home({ onNavigate, onSignOut, email }: {
   const configuracao = cardConfig.filter(c => c.group === "configuracao")
   const lancamentos  = cardConfig.filter(c => c.group === "lancamentos")
   const analises     = cardConfig.filter(c => c.group === "analises")
+  const bancos       = cardConfig.filter(c => c.group === "bancos")
 
   return (
     <div style={{ background: tokens.homeBg, minHeight: "100vh", color: tokens.homeCardText }}>
@@ -215,8 +220,12 @@ function Home({ onNavigate, onSignOut, email }: {
           {lancamentos.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
         </div>
         <GroupLabel>Análises</GroupLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
           {analises.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
+        </div>
+        <GroupLabel>Bancos</GroupLabel>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+          {bancos.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
         </div>
       </div>
     </div>
@@ -300,22 +309,8 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
         <SidebarItem icon={HomeIcon} label="Início" ativa={pagina === "home"} recolhida={recolhida} onClick={() => setPagina("home")} />
       </div>
 
-      {/* Grupos */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: recolhida ? "8px 0" : "8px 8px" }}>
-        {grupos.map(grupo => (
-          <div key={grupo.label} style={{ marginBottom: 4 }}>
-            {!recolhida && (
-              <div style={{ fontSize: 10, fontWeight: 700, color: tokens.sidebarGroupLabel, textTransform: "uppercase", letterSpacing: "1px", padding: "8px 8px 4px", whiteSpace: "nowrap" }}>
-                {grupo.label}
-              </div>
-            )}
-            {recolhida && <div style={{ height: 8 }} />}
-            {grupo.items.map(item => (
-              <SidebarItem key={item.key} icon={item.icon} label={item.label} ativa={pagina === item.key} recolhida={recolhida} onClick={() => setPagina(item.key)} accent={item.accent} />
-            ))}
-          </div>
-        ))}
-      </div>
+      {/* Grupos colapsáveis */}
+      <SidebarGrupos pagina={pagina} setPagina={setPagina} recolhida={recolhida} />
 
       {/* Rodapé: tema + email + sair */}
       <div style={{ borderTop: `1px solid ${tokens.sidebarBorder}`, padding: recolhida ? "10px 0" : "10px 8px", flexShrink: 0 }}>
@@ -361,6 +356,67 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
         )}
         <SidebarItem icon={LogOut} label="Sair" ativa={false} recolhida={recolhida} onClick={signOut} accent="#ef4444" />
       </div>
+    </div>
+  )
+}
+
+function SidebarGrupos({ pagina, setPagina, recolhida }: {
+  pagina: Pagina; setPagina: (p: Pagina) => void; recolhida: boolean
+}) {
+  const { tokens } = useTheme()
+  const [abertos, setAbertos] = useState<Record<string, boolean>>({
+    "Configuração": false, "Lançamentos": true, "Análises": true, "Bancos": false
+  })
+
+  const toggle = (label: string) => {
+    setAbertos(prev => ({ ...prev, [label]: !prev[label] }))
+  }
+
+  // Se tem item ativo no grupo, abre automaticamente
+  const grupoDoItem = grupos.find(g => g.items.some(i => i.key === pagina))?.label
+
+  return (
+    <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: recolhida ? "8px 0" : "8px 8px" }}>
+      {grupos.map(grupo => {
+        const aberto = abertos[grupo.label] || grupo.label === grupoDoItem
+        return (
+          <div key={grupo.label} style={{ marginBottom: 2 }}>
+            {!recolhida && (
+              <div
+                onClick={() => toggle(grupo.label)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  padding: "7px 8px", borderRadius: 7, cursor: "pointer",
+                  color: tokens.sidebarGroupLabel,
+                  background: "transparent",
+                  transition: "background 0.15s",
+                  userSelect: "none",
+                }}
+              >
+                <span style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", whiteSpace: "nowrap" }}>
+                  {grupo.label}
+                </span>
+                <ChevronDown
+                  size={12}
+                  style={{ transition: "transform 0.2s", transform: aberto ? "rotate(0deg)" : "rotate(-90deg)", flexShrink: 0 }}
+                />
+              </div>
+            )}
+            {recolhida && <div style={{ height: 8 }} />}
+            {(aberto || recolhida) && grupo.items.map(item => (
+              <SidebarItem
+                key={item.key}
+                icon={item.icon}
+                label={item.label}
+                ativa={pagina === item.key}
+                recolhida={recolhida}
+                onClick={() => setPagina(item.key)}
+                accent={item.accent}
+              />
+            ))}
+          </div>
+        )
+      })}
     </div>
   )
 }
