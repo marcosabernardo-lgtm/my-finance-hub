@@ -130,26 +130,6 @@ const grupos: {
   },
 ]
 
-const cardConfig: {
-  key: Pagina; label: string; desc: string; icon: React.ElementType
-  accent: string; iconBg: string; iconColor: string
-  group: "configuracao" | "lancamentos" | "analises" | "bancos"
-}[] = [
-  { key: "cadastros",     label: "Cadastros",         group: "configuracao", desc: "Categorias, cartões e contas",                  icon: Database,        accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8" },
-  { key: "upload",        label: "Importar Planilha", group: "configuracao", desc: "Importe dados históricos via Excel (.xlsx)",     icon: Upload,          accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
-  { key: "notificacoes",  label: "Notificações",      group: "configuracao", desc: "Configure alertas diários via WhatsApp",         icon: Bell,            accent: "#7c3aed", iconBg: "#2e1065", iconColor: "#a78bfa" },
-  { key: "lancamento",    label: "Lançar",            group: "lancamentos",  desc: "Registre despesas, receitas e transferências",   icon: PlusCircle,      accent: "#0d7280", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
-  { key: "confirmar",     label: "Confirmar Débitos", group: "lancamentos",  desc: "Confirme lançamentos previstos em aberto",       icon: CheckCircle,     accent: "#22c55e", iconBg: "#14532d", iconColor: "#4ade80" },
-  { key: "movimentacoes", label: "Movimentações",     group: "lancamentos",  desc: "Histórico completo com filtros avançados",       icon: List,            accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf" },
-  { key: "consultor",     label: "Consultor IA",      group: "analises",     desc: "Análise personalizada com IA baseada nos seus dados",    icon: Sparkles,        accent: "#667eea", iconBg: "#1e1b4b", iconColor: "#a5b4fc" },
-  { key: "alertas",       label: "Alertas",           group: "analises",     desc: "Vencidos, limites estourados e riscos do mês",   icon: Bell,            accent: "#ef4444", iconBg: "#450a0a", iconColor: "#fca5a5" },
-  { key: "resumo",        label: "Resumo",            group: "analises",     desc: "Visão geral de receitas, despesas e saldo",      icon: BarChart3,       accent: "#8b5cf6", iconBg: "#2e1065", iconColor: "#a78bfa" },
-  { key: "semanal",       label: "Controle Semanal",  group: "analises",     desc: "Despesas por semana e categoria",                icon: Calendar,        accent: "#06b6d4", iconBg: "#083344", iconColor: "#22d3ee" },
-  { key: "dre",           label: "DRE",               group: "analises",     desc: "Demonstrativo anual com projeções",              icon: FileText,        accent: "#ec4899", iconBg: "#500724", iconColor: "#f472b6" },
-  { key: "fatura",        label: "Fatura Cartão",     group: "bancos",       desc: "Gerencie e pague faturas dos cartões",           icon: CreditCard,      accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24" },
-  { key: "extrato",       label: "Extrato Conta",     group: "bancos",       desc: "Entradas, saídas e saldo por conta bancária",    icon: BookOpen,        accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
-  { key: "cartoes",       label: "Cartões",           group: "bancos",       desc: "Visão anual e comprometimento de limite",        icon: Wallet,          accent: "#0d7280", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
-]
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
 const mesFormatado = mes.charAt(0).toUpperCase() + mes.slice(1)
