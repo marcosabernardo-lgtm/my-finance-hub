@@ -113,11 +113,12 @@ const grupos: {
   {
     label: "Análises",
     items: [
-      { label: "Consultor IA", key: "consultor", icon: Sparkles, accent: "#667eea" },
-      { label: "Alertas",      key: "alertas",   icon: Bell,     accent: "#ef4444" },
-      { label: "Resumo",       key: "resumo",    icon: BarChart3                   },
-      { label: "Semanal",      key: "semanal",   icon: Calendar                    },
-      { label: "DRE",          key: "dre",       icon: FileText                    },
+      { label: "Dashboard",    key: "dashboard",  icon: LayoutDashboard             },
+      { label: "Consultor IA", key: "consultor",  icon: Sparkles, accent: "#667eea" },
+      { label: "Alertas",      key: "alertas",    icon: Bell,     accent: "#ef4444" },
+      { label: "Resumo",       key: "resumo",     icon: BarChart3                   },
+      { label: "Semanal",      key: "semanal",    icon: Calendar                    },
+      { label: "DRE",          key: "dre",        icon: FileText                    },
     ],
   },
   {
