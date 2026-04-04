@@ -22,12 +22,12 @@ import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Sparkles, MessageSquare,
+  LogOut, Home as HomeIcon, ChevronDown, Sparkles, MessageSquare,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
 
-type Theme = "dark" | "light"
+type Theme = "dark"
 
 interface ThemeTokens {
   // Sidebar
@@ -54,12 +54,12 @@ interface ThemeTokens {
 }
 
 const DARK: ThemeTokens = {
-  sidebarBg: "#0d1526",
-  sidebarBorder: "#1e2d45",
-  sidebarGroupLabel: "#94a3b8",
-  sidebarItemHover: "#1e2d45",
-  sidebarText: "#94a3b8",
-  sidebarSubtext: "#475569",
+  sidebarBg: "#0d7280",
+  sidebarBorder: "#0a5f6b",
+  sidebarGroupLabel: "#a8d8de",
+  sidebarItemHover: "#0a5f6b",
+  sidebarText: "#e2f4f6",
+  sidebarSubtext: "#a8d8de",
   contentBg: "#f8fafc",
   homeBg: "#0b1120",
   homeCardBg: "#0d1526",
@@ -74,29 +74,10 @@ const DARK: ThemeTokens = {
   homeGroupLabel: "#475569",
 }
 
-const LIGHT: ThemeTokens = {
-  sidebarBg: "#1e3a5f",
-  sidebarBorder: "#2a4f7c",
-  sidebarGroupLabel: "#7bafd4",
-  sidebarItemHover: "#2a4f7c",
-  sidebarText: "#bfd7ed",
-  sidebarSubtext: "#7bafd4",
-  contentBg: "#f0f4f8",
-  homeBg: "#f0f4f8",
-  homeCardBg: "#ffffff",
-  homeCardBorder: "#e2e8f0",
-  homeCardText: "#1e293b",
-  homeCardDesc: "#64748b",
-  homeTopbarBg: "#ffffff",
-  homeHeroBorder: "#e2e8f0",
-  homeTagBg: "#e2e8f0",
-  homeTagBorder: "#cbd5e1",
-  homeTagText: "#475569",
-  homeGroupLabel: "#94a3b8",
-}
+
 
 const ThemeCtx = createContext<{ theme: Theme; tokens: ThemeTokens; toggle: () => void }>({
-  theme: "dark", tokens: DARK, toggle: () => {}
+  theme: "dark", tokens: DARK
 })
 
 const useTheme = () => useContext(ThemeCtx)
@@ -157,7 +138,7 @@ const cardConfig: {
   { key: "cadastros",     label: "Cadastros",         group: "configuracao", desc: "Categorias, cartões e contas",                  icon: Database,        accent: "#64748b", iconBg: "#1e293b", iconColor: "#94a3b8" },
   { key: "upload",        label: "Importar Planilha", group: "configuracao", desc: "Importe dados históricos via Excel (.xlsx)",     icon: Upload,          accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
   { key: "notificacoes",  label: "Notificações",      group: "configuracao", desc: "Configure alertas diários via WhatsApp",         icon: Bell,            accent: "#7c3aed", iconBg: "#2e1065", iconColor: "#a78bfa" },
-  { key: "lancamento",    label: "Lançar",            group: "lancamentos",  desc: "Registre despesas, receitas e transferências",   icon: PlusCircle,      accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
+  { key: "lancamento",    label: "Lançar",            group: "lancamentos",  desc: "Registre despesas, receitas e transferências",   icon: PlusCircle,      accent: "#0d7280", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
   { key: "confirmar",     label: "Confirmar Débitos", group: "lancamentos",  desc: "Confirme lançamentos previstos em aberto",       icon: CheckCircle,     accent: "#22c55e", iconBg: "#14532d", iconColor: "#4ade80" },
   { key: "movimentacoes", label: "Movimentações",     group: "lancamentos",  desc: "Histórico completo com filtros avançados",       icon: List,            accent: "#14b8a6", iconBg: "#042f2e", iconColor: "#2dd4bf" },
   { key: "consultor",     label: "Consultor IA",      group: "analises",     desc: "Análise personalizada com IA baseada nos seus dados",    icon: Sparkles,        accent: "#667eea", iconBg: "#1e1b4b", iconColor: "#a5b4fc" },
@@ -167,7 +148,7 @@ const cardConfig: {
   { key: "dre",           label: "DRE",               group: "analises",     desc: "Demonstrativo anual com projeções",              icon: FileText,        accent: "#ec4899", iconBg: "#500724", iconColor: "#f472b6" },
   { key: "fatura",        label: "Fatura Cartão",     group: "bancos",       desc: "Gerencie e pague faturas dos cartões",           icon: CreditCard,      accent: "#f59e0b", iconBg: "#451a03", iconColor: "#fbbf24" },
   { key: "extrato",       label: "Extrato Conta",     group: "bancos",       desc: "Entradas, saídas e saldo por conta bancária",    icon: BookOpen,        accent: "#0891b2", iconBg: "#083344", iconColor: "#22d3ee" },
-  { key: "cartoes",       label: "Cartões",           group: "bancos",       desc: "Visão anual e comprometimento de limite",        icon: Wallet,          accent: "#2563eb", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
+  { key: "cartoes",       label: "Cartões",           group: "bancos",       desc: "Visão anual e comprometimento de limite",        icon: Wallet,          accent: "#0d7280", iconBg: "#1e3a6e", iconColor: "#60a5fa" },
 ]
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
@@ -191,7 +172,7 @@ function Home({ onNavigate, onSignOut, email }: {
     <div style={{ background: tokens.homeBg, minHeight: "100vh", color: tokens.homeCardText }}>
       <div style={{ background: tokens.homeTopbarBg, borderBottom: `1px solid ${tokens.homeHeroBorder}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, background: "#2563eb", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ width: 32, height: 32, background: "#0d7280", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <Layers size={17} color="white" />
           </div>
           <div>
@@ -206,7 +187,7 @@ function Home({ onNavigate, onSignOut, email }: {
       </div>
 
       <div style={{ padding: "36px 32px 24px", borderBottom: `1px solid ${tokens.homeHeroBorder}` }}>
-        <div style={{ fontSize: 11, color: "#2563eb", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Painel Principal</div>
+        <div style={{ fontSize: 11, color: "#0d7280", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Painel Principal</div>
         <div style={{ fontSize: 26, fontWeight: 700, color: tokens.homeCardText }}>Bem-vindo de volta 👋</div>
         <div style={{ fontSize: 13, color: tokens.homeCardDesc, marginTop: 4 }}>Selecione um módulo para começar</div>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: tokens.homeTagBg, border: `1px solid ${tokens.homeTagBorder}`, padding: "4px 12px", borderRadius: 6, fontSize: 11, color: tokens.homeTagText, marginTop: 12 }}>
@@ -290,7 +271,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
       <div style={{ display: "flex", alignItems: "center", justifyContent: recolhida ? "center" : "space-between", padding: recolhida ? "14px 0" : "14px 14px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
         {!recolhida && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPagina("home")}>
-            <div style={{ width: 28, height: 28, background: "#2563eb", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 28, height: 28, background: "#0d7280", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Layers size={14} color="white" />
             </div>
             <div>
@@ -300,7 +281,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
           </div>
         )}
         {recolhida && (
-          <div style={{ width: 28, height: 28, background: "#2563eb", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("home")}>
+          <div style={{ width: 28, height: 28, background: "#0d7280", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("home")}>
             <Layers size={14} color="white" />
           </div>
         )}
@@ -319,40 +300,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
 
       {/* Rodapé: tema + email + sair */}
       <div style={{ borderTop: `1px solid ${tokens.sidebarBorder}`, padding: recolhida ? "10px 0" : "10px 8px", flexShrink: 0 }}>
-        {/* Toggle dark/light */}
-        <div
-          onClick={toggle}
-          title={theme === "dark" ? "Mudar para modo claro" : "Mudar para modo escuro"}
-          style={{
-            display: "flex", alignItems: "center", justifyContent: recolhida ? "center" : "space-between",
-            padding: recolhida ? "8px 0" : "8px 10px",
-            borderRadius: 7, cursor: "pointer", marginBottom: 4,
-            background: tokens.sidebarItemHover,
-            transition: "background 0.15s",
-          }}
-        >
-          {!recolhida && (
-            <span style={{ fontSize: 12, color: tokens.sidebarText, whiteSpace: "nowrap" }}>
-              {theme === "dark" ? "Modo Escuro" : "Modo Claro"}
-            </span>
-          )}
-          <div style={{
-            width: recolhida ? 28 : 44, height: 22, borderRadius: 99,
-            background: theme === "dark" ? "#1e3a6e" : "#fbbf24",
-            display: "flex", alignItems: "center",
-            padding: "0 3px",
-            justifyContent: theme === "dark" ? "flex-start" : "flex-end",
-            transition: "background 0.2s, justify-content 0.2s",
-            flexShrink: 0,
-          }}>
-            <div style={{ width: 16, height: 16, borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
-              {theme === "dark"
-                ? <Moon size={9} color="#2563eb" />
-                : <Sun size={9} color="#f59e0b" />
-              }
-            </div>
-          </div>
-        </div>
+
 
         {!recolhida && (
           <div style={{ fontSize: 11, color: tokens.sidebarSubtext, padding: "4px 8px 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -432,7 +380,7 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
 }) {
   const [hovered, setHovered] = useState(false)
   const { tokens } = useTheme()
-  const cor = accent || "#2563eb"
+  const cor = accent || "#67c4cf"
 
   return (
     <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
@@ -504,16 +452,10 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
-  const [theme, setTheme] = useState<Theme>(() => {
-    try { return (localStorage.getItem("fh_theme") as Theme) || "dark" } catch { return "dark" }
-  })
+  const [theme] = useState<Theme>("dark")
 
-  useEffect(() => {
-    try { localStorage.setItem("fh_theme", theme) } catch {}
-  }, [theme])
-
-  const toggle = () => setTheme(t => t === "dark" ? "light" : "dark")
-  const tokens = theme === "dark" ? DARK : LIGHT
+  const toggle = () => {}
+  const tokens = DARK
 
   if (loading) return (
     <div style={{ color: "white", backgroundColor: "#0b1120", width: "100vw", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18 }}>
