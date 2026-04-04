@@ -416,7 +416,7 @@ export default function ConsultorIA() {
     setCarregandoDados(false)
   }
 
-  const gerarCards = async (d: DadosFinanceiros, prompt: string) => {
+  const gerarCards = async (_d: DadosFinanceiros, prompt: string) => {
     setCarregandoCards(true)
     setCards([null, null, null])
 
