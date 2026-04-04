@@ -30,10 +30,16 @@ const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 const fmtData = (d: string) => new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')
 
 export default function ConferenciaWhatsApp() {
-  const darkMode = localStorage.getItem('fh_theme') === 'dark'
+  const [darkMode, setDarkMode] = useState(localStorage.getItem('fh_theme') === 'dark')
+
+  useEffect(() => {
+    const check = () => setDarkMode(localStorage.getItem('fh_theme') === 'dark')
+    window.addEventListener('storage', check)
+    return () => window.removeEventListener('storage', check)
+  }, [])
 
   const cor = {
-    bg: darkMode ? '#0b1120' : '#f0f4f8',
+    bg: darkMode ? '#0b1120' : '#f8fafc',
     card: darkMode ? '#16213e' : '#ffffff',
     texto: darkMode ? '#e2e8f0' : '#1a202c',
     sub: darkMode ? '#94a3b8' : '#64748b',
@@ -54,7 +60,7 @@ export default function ConferenciaWhatsApp() {
     setLoading(true)
     const [{ data: r }, { data: cats }, { data: conts }, { data: carts }] = await Promise.all([
       supabase.from('cupons_pendentes').select('*').eq('household_id', HOUSEHOLD_ID).eq('origem', 'whatsapp').eq('situacao', 'pendente').order('created_at', { ascending: false }),
-      supabase.from('categorias').select('id, nome').eq('household_id', HOUSEHOLD_ID).order('nome'),
+      supabase.from('categorias').select('id, nome').eq('household_id', HOUSEHOLD_ID).eq('tipo', 'Despesa').order('nome'),
       supabase.from('contas').select('nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).eq('tipo', 'corrente').order('nome'),
       supabase.from('cartoes').select('id, nome').eq('household_id', HOUSEHOLD_ID).eq('ativo', true).order('nome'),
     ])
@@ -88,7 +94,7 @@ export default function ConferenciaWhatsApp() {
 
     const parcelas = Number(edicao.parcelas ?? r.parcelas ?? 1)
     const data = r.data_compra
-    const isCredito = metodo === 'Crédito'
+    const isCredito = metodo === 'Crédito' || metodo === 'Credito'
 
     // Gerar lançamentos
     if (isCredito && parcelas > 1) {
@@ -182,7 +188,7 @@ export default function ConferenciaWhatsApp() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {rascunhos.map(r => {
             const metodoAtual = getEdicao(r.id, 'metodo_pagamento', r.metodo_pagamento) as string
-            const isCredito = metodoAtual === 'Crédito'
+            const isCredito = metodoAtual === 'Crédito' || metodoAtual === 'Credito'
             const parcelasAtual = Number(getEdicao(r.id, 'parcelas', r.parcelas) ?? 1)
             const valorAtual = Number(getEdicao(r.id, 'valor_total', r.valor_total))
             const categoriaAtual = getEdicao(r.id, 'categoria_id', r.categoria_id)
@@ -260,8 +266,8 @@ export default function ConferenciaWhatsApp() {
                       style={{ display: 'block', width: '100%', marginTop: 4, padding: '8px 12px', background: cor.input, border: `1px solid ${cor.borda}`, borderRadius: 8, color: cor.texto, fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                     >
                       <option value="PIX">PIX</option>
-                      <option value="Débito">Débito</option>
-                      <option value="Crédito">Crédito</option>
+                      <option value="Debito">Débito</option>
+                      <option value="Credito">Crédito</option>
                     </select>
                   </div>
 
