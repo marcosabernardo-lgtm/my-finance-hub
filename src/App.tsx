@@ -159,60 +159,79 @@ const SIDEBAR_COLLAPSED = 56
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 
-function Home({ onNavigate, onSignOut, email }: {
+function Home({ onSignOut, email }: {
   onNavigate: (p: Pagina) => void; onSignOut: () => void; email: string
 }) {
-  const { tokens } = useTheme()
-  const configuracao = cardConfig.filter(c => c.group === "configuracao")
-  const lancamentos  = cardConfig.filter(c => c.group === "lancamentos")
-  const analises     = cardConfig.filter(c => c.group === "analises")
-  const bancos       = cardConfig.filter(c => c.group === "bancos")
+  const features = [
+    { emoji: "💬", titulo: "Bot WhatsApp", desc: "Lance despesas direto pelo WhatsApp. O sistema interpreta sua mensagem e aguarda confirmação." },
+    { emoji: "🔔", titulo: "Alertas Diários", desc: "Receba todo dia às 8h um resumo com saldos das contas e contas a vencer." },
+    { emoji: "📊", titulo: "Dashboard Completo", desc: "Visualize saldos, faturas, comprometimento de cartões e comparativo com o mês anterior." },
+    { emoji: "🤖", titulo: "Consultor IA", desc: "Análise financeira personalizada com plano anti-dívida e metas de sobra mensal." },
+    { emoji: "💳", titulo: "Gestão de Cartões", desc: "Controle faturas, limites e vencimentos de todos os seus cartões de crédito." },
+    { emoji: "📈", titulo: "DRE e Resumo", desc: "Demonstrativo anual de receitas e despesas com projeções e controle semanal." },
+  ]
 
   return (
-    <div style={{ background: tokens.homeBg, minHeight: "100vh", color: tokens.homeCardText }}>
-      <div style={{ background: tokens.homeTopbarBg, borderBottom: `1px solid ${tokens.homeHeroBorder}`, padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+    <div style={{ background: "#0d7280", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Topbar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 40px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, background: "#0d7280", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Layers size={17} color="white" />
+          <div style={{ width: 34, height: 34, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Layers size={18} color="white" />
           </div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: tokens.homeCardText }}>Finance Hub</div>
-            <div style={{ fontSize: 11, color: tokens.homeCardDesc }}>Controle Financeiro Pessoal</div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Finance Hub</div>
+            <div style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>Controle Financeiro Pessoal</div>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ background: tokens.homeTagBg, border: `1px solid ${tokens.homeTagBorder}`, padding: "5px 14px", borderRadius: 20, fontSize: 12, color: tokens.homeTagText }}>{email}</div>
-          <button onClick={onSignOut} style={{ background: "#7f1d1d", border: "none", color: "#fca5a5", padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Sair</button>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", background: "rgba(255,255,255,0.1)", padding: "5px 14px", borderRadius: 20 }}>{email}</div>
+          <button onClick={onSignOut} style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "6px 16px", borderRadius: 6, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Sair</button>
         </div>
       </div>
 
-      <div style={{ padding: "36px 32px 24px", borderBottom: `1px solid ${tokens.homeHeroBorder}` }}>
-        <div style={{ fontSize: 11, color: "#0d7280", fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Painel Principal</div>
-        <div style={{ fontSize: 26, fontWeight: 700, color: tokens.homeCardText }}>Bem-vindo de volta 👋</div>
-        <div style={{ fontSize: 13, color: tokens.homeCardDesc, marginTop: 4 }}>Selecione um módulo para começar</div>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: tokens.homeTagBg, border: `1px solid ${tokens.homeTagBorder}`, padding: "4px 12px", borderRadius: 6, fontSize: 11, color: tokens.homeTagText, marginTop: 12 }}>
+      {/* Hero */}
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 40px 40px", textAlign: "center" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 16px", borderRadius: 20, fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 28, letterSpacing: "0.5px" }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
           {mesFormatado} · Sistema online
         </div>
+
+        <h1 style={{ margin: "0 0 16px", fontSize: 42, fontWeight: 800, color: "white", lineHeight: 1.15, letterSpacing: "-0.5px", maxWidth: 640 }}>
+          Controle Financeiro<br />
+          <span style={{ color: "#a7e8ed" }}>Inteligente</span>
+        </h1>
+
+        <p style={{ margin: "0 0 12px", fontSize: 16, color: "rgba(255,255,255,0.75)", maxWidth: 520, lineHeight: 1.7 }}>
+          Gerencie suas finanças pessoais com inteligência artificial, alertas automáticos via WhatsApp e uma visão completa do seu patrimônio.
+        </p>
+
+        <p style={{ margin: "0 0 40px", fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+          Use o menu lateral para navegar entre os módulos →
+        </p>
+
+        {/* Feature cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 860, width: "100%" }}>
+          {features.map((f, i) => (
+            <div key={i} style={{
+              background: "rgba(255,255,255,0.08)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 14,
+              padding: "22px 20px",
+              textAlign: "left",
+              backdropFilter: "blur(4px)",
+            }}>
+              <div style={{ fontSize: 28, marginBottom: 10 }}>{f.emoji}</div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 6 }}>{f.titulo}</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>{f.desc}</div>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div style={{ padding: "24px 32px" }}>
-        <GroupLabel>Configuração</GroupLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
-          {configuracao.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
-        </div>
-        <GroupLabel>Lançamentos</GroupLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
-          {lancamentos.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
-        </div>
-        <GroupLabel>Análises</GroupLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 28 }}>
-          {analises.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
-        </div>
-        <GroupLabel>Bancos</GroupLabel>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-          {bancos.map(c => <CardBtn key={c.key} card={c} onClick={() => onNavigate(c.key)} />)}
-        </div>
+      {/* Footer */}
+      <div style={{ textAlign: "center", padding: "20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
+        my-finance-hub © {new Date().getFullYear()} · Desenvolvido com 💙
       </div>
     </div>
   )
