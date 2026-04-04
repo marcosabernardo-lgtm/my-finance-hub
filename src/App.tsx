@@ -19,8 +19,8 @@ import NotificacoesConfig from "./components/NotificacoesConfig";
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
-  BookOpen, Upload, LayoutDashboard, Bell, ChevronLeft, ChevronRight,
-  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown, Building2,
+  BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
+  LogOut, Home as HomeIcon, Sun, Moon, ChevronDown,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
