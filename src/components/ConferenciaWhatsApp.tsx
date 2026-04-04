@@ -119,7 +119,7 @@ export default function ConferenciaWhatsApp() {
           valor: i === parcelas - 1 ? Number((valor - valorParcela * (parcelas - 1)).toFixed(2)) : valorParcela,
           data_movimentacao: data, data_pagamento: dataBase.toISOString().split('T')[0],
           categoria_id: categoriaId || null, cartao_id: cartaoId || null,
-          metodo_pagamento: metodoFinal, situacao: 'Previsto',
+          metodo_pagamento: metodoFinal, situacao: 'Pendente',
           numero_parcela: `${i + 1}/${parcelas}`, forma_pagamento: 'Parcelado', classificacao: 'Variável',
         })
       }
