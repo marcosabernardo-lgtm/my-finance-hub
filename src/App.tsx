@@ -237,36 +237,9 @@ function Home({ onSignOut, email }: {
   )
 }
 
-function GroupLabel({ children }: { children: React.ReactNode }) {
-  const { tokens } = useTheme()
-  return <div style={{ fontSize: 11, fontWeight: 600, color: tokens.homeGroupLabel, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 14 }}>{children}</div>
-}
 
-function CardBtn({ card, onClick }: { card: typeof cardConfig[0]; onClick: () => void }) {
-  const [hovered, setHovered] = useState(false)
-  const { tokens } = useTheme()
-  const Icon = card.icon
-  return (
-    <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered ? tokens.sidebarItemHover : tokens.homeCardBg,
-        border: `1px solid ${hovered ? card.accent : tokens.homeCardBorder}`,
-        borderRadius: 12, padding: "18px 20px", cursor: "pointer",
-        position: "relative", overflow: "hidden",
-        transition: "border-color .2s, background .2s",
-      }}>
-      <div style={{ position: "absolute", top: 0, left: 0, width: 3, height: "100%", background: card.accent, borderRadius: "12px 0 0 12px" }} />
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: card.iconBg, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon size={20} color={card.iconColor} />
-        </div>
-        <span style={{ color: card.accent, fontSize: 18, opacity: hovered ? 1 : 0, transition: "opacity .2s" }}>→</span>
-      </div>
-      <div style={{ fontSize: 15, fontWeight: 600, color: tokens.homeCardText }}>{card.label}</div>
-      <div style={{ fontSize: 11, color: tokens.homeCardDesc, marginTop: 6, lineHeight: 1.5 }}>{card.desc}</div>
-    </div>
-  )
-}
+
+
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
