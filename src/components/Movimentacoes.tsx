@@ -144,13 +144,13 @@ export default function Movimentacoes() {
   // ── Filtros dinâmicos ────────────────────────────────────────────────────────
   const aplicarFiltros = (
     lista: Movimentacao[],
-    opts: { tipo?: string; situacao?: string; categoria?: string; metodo?: string; busca?: string }
+    opts: { tipo?: string; situacao?: string; categoria?: string; metodo?: string; conta?: string; busca?: string }
   ) => lista.filter(m => {
     if (opts.tipo && m.tipo !== opts.tipo) return false
     if (opts.situacao && m.situacao !== opts.situacao) return false
     if (opts.categoria && String(m.categoria_id) !== opts.categoria) return false
     if (opts.metodo && m.metodo_pagamento !== opts.metodo) return false
-    if ((opts as any).conta && m.conta_origem_destino !== (opts as any).conta) return false
+    if (opts.conta && m.conta_origem_destino !== opts.conta) return false
     if (opts.busca && !m.descricao.toLowerCase().includes(opts.busca.toLowerCase())) return false
     return true
   })
