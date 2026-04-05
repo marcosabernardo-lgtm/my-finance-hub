@@ -281,7 +281,7 @@ export default function Dashboard() {
     // Movimentações do ano todo (para gráficos mês a mês)
     const { data: ano } = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,categoria_id,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id')
+      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
       .eq('household_id', householdId)
       .gte('data_movimentacao', `${filtroAno}-01-01`)
       .lte('data_movimentacao', `${filtroAno}-12-31`)
