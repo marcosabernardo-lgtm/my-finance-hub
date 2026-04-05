@@ -148,7 +148,10 @@ function GraficoBarrasMensal({
       <div style={{ overflowX: 'auto' }}>
         <div style={{ position: 'relative', minWidth: larguraTotal + 40 }}>
 
-          {/* Linha de meta */}
+          {/* Barras + linha de meta no mesmo container */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${gap}px`, height: alturaGrafico + 28, paddingBottom: '28px', position: 'relative' }}>
+
+          {/* Linha de meta — dentro do flex, posicionada em relação a ele */}
           {meta > 0 && (
             <div style={{
               position: 'absolute',
@@ -156,6 +159,7 @@ function GraficoBarrasMensal({
               bottom: 28 + (meta / maxValor) * alturaGrafico,
               borderTop: `2px dashed ${corMeta}`,
               zIndex: 2,
+              pointerEvents: 'none',
             }}>
               <span style={{
                 position: 'absolute', right: 0, top: -18,
@@ -166,9 +170,6 @@ function GraficoBarrasMensal({
               </span>
             </div>
           )}
-
-          {/* Barras */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${gap}px`, height: alturaGrafico + 28, paddingBottom: '28px', position: 'relative', zIndex: 1 }}>
             {dados.map((d, i) => {
               const alturaBarra = maxValor > 0 ? (d.valor / maxValor) * alturaGrafico : 0
               const acimaMeta = meta > 0 && d.valor > meta
@@ -197,7 +198,7 @@ function GraficoBarrasMensal({
                 </div>
               )
             })}
-          </div>
+          </div>{/* fim flex barras */}
         </div>
       </div>
 
@@ -350,7 +351,7 @@ export default function Dashboard() {
   const porCategoria = useMemo(() => {
     const map: Record<number, number> = {}
     for (const m of movsmes) {
-      if (m.tipo !== 'Despesa' || m.situacao === 'Previsto' || !m.categoria_id) continue
+      if (m.tipo !== 'Despesa' || m.situacao !== 'Pago' || !m.categoria_id) continue
       map[m.categoria_id] = (map[m.categoria_id] || 0) + Number(m.valor)
     }
     return Object.entries(map)
@@ -372,7 +373,6 @@ export default function Dashboard() {
         .filter(m => {
           const mMov = Number(m.data_movimentacao?.split('-')[1])
           return m.tipo === 'Receita' && ['Pago', 'Pendente'].includes(m.situacao) && mMov === mes
-            && m.metodo_pagamento !== 'Transferência entre Contas'
         })
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
