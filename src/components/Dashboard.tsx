@@ -129,17 +129,18 @@ function SecaoExpansivel({
 // ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
 
 function GraficoBarrasMensal({
-  dados, meta, corMeta, titulo
+  dados, meta, corMeta, titulo, altura = 160
 }: {
   dados: { mes: number; ano: number; valor: number; label: string }[]
   meta: number
   corMeta: string
   titulo: string
+  altura?: number
 }) {
   const maxValor = Math.max(...dados.map(d => d.valor), meta, 1)
-  const alturaGrafico = 160
-  const larguraBarra = 28
-  const gap = 12
+  const alturaGrafico = altura
+  const larguraBarra = 36
+  const gap = 16
   const larguraTotal = dados.length * (larguraBarra + gap)
 
   return (
@@ -241,6 +242,7 @@ export default function Dashboard() {
   const [saldosContas, setSaldosContas] = useState<Record<number, number>>({})
   const [comprometidoCartoes, setComprometidoCartoes] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
+  const [cartaoSelecionado, setCartaoSelecionado] = useState<number | null>(null)
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
@@ -403,6 +405,24 @@ export default function Dashboard() {
       .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos)
       .reduce((s, c) => s + (c.limite_gastos || 0), 0),
     [categorias])
+
+  // ── Gráfico cartão de crédito mês a mês ────────────────────────────────────
+  const dadosCartaoMensal = useMemo(() => {
+    const cartaoId = cartaoSelecionado ?? (cartoes[0]?.id ?? null)
+    return Array.from({ length: 12 }, (_, i) => {
+      const mes = i + 1
+      const valor = movsAno
+        .filter(m => {
+          const mMov = m.data_movimentacao ? parseInt(m.data_movimentacao.substring(5, 7), 10) : 0
+          return m.tipo === 'Despesa' && m.cartao_id === cartaoId && mMov === mes
+            && ['Faturado', 'Pendente'].includes(m.situacao)
+        })
+        .reduce((s, m) => s + Number(m.valor), 0)
+      return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
+    })
+  }, [movsAno, filtroAno, cartaoSelecionado, cartoes])
+
+  const cartaoAtivo = cartoes.find(c => c.id === (cartaoSelecionado ?? cartoes[0]?.id))
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -613,7 +633,7 @@ export default function Dashboard() {
           </div>
 
           {/* ── Linha 4: Gráficos mês a mês ───────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
 
             <div style={cardStyle}>
               <GraficoBarrasMensal
@@ -621,6 +641,7 @@ export default function Dashboard() {
                 dados={dadosReceitasMensal}
                 meta={metaReceitas}
                 corMeta="#10b981"
+                altura={200}
               />
             </div>
 
@@ -630,8 +651,44 @@ export default function Dashboard() {
                 dados={dadosDespesasMensal}
                 meta={metaDespesas}
                 corMeta="#f59e0b"
+                altura={200}
               />
             </div>
+
+            {/* Gráfico Cartão de Crédito */}
+            {cartoes.length > 0 && (
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>💳 Cartão de Crédito Mês a Mês — {filtroAno}</div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    {cartoes.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setCartaoSelecionado(c.id)}
+                        style={{
+                          padding: '4px 12px', borderRadius: '99px', fontSize: '12px', fontWeight: 600,
+                          cursor: 'pointer', border: 'none',
+                          background: (cartaoSelecionado ?? cartoes[0]?.id) === c.id ? '#7c3aed' : '#f3f4f6',
+                          color: (cartaoSelecionado ?? cartoes[0]?.id) === c.id ? '#fff' : '#374151',
+                        }}
+                      >{c.nome}</button>
+                    ))}
+                  </div>
+                  {cartaoAtivo && (
+                    <span style={{ fontSize: '11px', color: '#9ca3af', marginLeft: 'auto' }}>
+                      Limite: {fmt(cartaoAtivo.limite_total)} · Vence dia {cartaoAtivo.data_vencimento}
+                    </span>
+                  )}
+                </div>
+                <GraficoBarrasMensal
+                  titulo=""
+                  dados={dadosCartaoMensal}
+                  meta={cartaoAtivo?.limite_total ?? 0}
+                  corMeta="#7c3aed"
+                  altura={200}
+                />
+              </div>
+            )}
 
           </div>
 
