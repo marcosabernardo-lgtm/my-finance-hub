@@ -76,6 +76,7 @@ export default function Movimentacoes() {
   const hoje = new Date()
   const [filtroMes, setFiltroMes] = useState(hoje.getMonth() + 1)
   const [filtroAno, setFiltroAno] = useState(hoje.getFullYear())
+  const [filtroData, setFiltroData] = useState<'movimentacao' | 'pagamento'>('movimentacao')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [filtroSituacao, setFiltroSituacao] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
@@ -126,18 +127,20 @@ export default function Movimentacoes() {
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
+    const campoData = filtroData === 'pagamento' ? 'data_pagamento' : 'data_movimentacao'
+
     const { data, error } = await supabase
       .from('movimentacoes')
       .select('*')
       .eq('household_id', householdId)
-      .gte('data_movimentacao', dataInicio)   // ✅ era data_pagamento
-      .lte('data_movimentacao', dataFim)       // ✅ era data_pagamento
+      .gte(campoData, dataInicio)
+      .lte(campoData, dataFim)
       .order('data_movimentacao', { ascending: false })
       .order('id', { ascending: false })
 
     if (!error) setTodasMovimentacoes(data || [])
     setLoading(false)
-  }, [householdId, filtroMes, filtroAno])
+  }, [householdId, filtroMes, filtroAno, filtroData])
 
   useEffect(() => { fetchMovimentacoes() }, [fetchMovimentacoes])
 
@@ -427,6 +430,30 @@ export default function Movimentacoes() {
         padding: '16px 20px', marginBottom: '20px',
         display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
       }}>
+
+        {/* Filtrar por */}
+        <div>
+          <label style={labelStyle}>Filtrar por</label>
+          <div style={{ display: 'flex', border: '1px solid #d1d5db', borderRadius: '8px', overflow: 'hidden', height: '38px' }}>
+            <button
+              onClick={() => setFiltroData('movimentacao')}
+              style={{
+                padding: '0 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
+                background: filtroData === 'movimentacao' ? '#0d7280' : '#fff',
+                color: filtroData === 'movimentacao' ? '#fff' : '#374151',
+              }}
+            >Dt. Movimento</button>
+            <button
+              onClick={() => setFiltroData('pagamento')}
+              style={{
+                padding: '0 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
+                borderLeft: '1px solid #d1d5db',
+                background: filtroData === 'pagamento' ? '#0d7280' : '#fff',
+                color: filtroData === 'pagamento' ? '#fff' : '#374151',
+              }}
+            >Dt. Pagamento</button>
+          </div>
+        </div>
 
         {/* Mês */}
         <div>
