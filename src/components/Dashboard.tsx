@@ -371,8 +371,8 @@ export default function Dashboard() {
       const mes = i + 1
       const valor = movsAno
         .filter(m => {
-          const mMov = Number(m.data_movimentacao?.split('-')[1])
-          return m.tipo === 'Receita' && ['Pago', 'Pendente'].includes(m.situacao) && mMov === mes
+          const mMov = m.data_movimentacao ? parseInt(m.data_movimentacao.substring(5, 7), 10) : 0
+          return m.tipo === 'Receita' && m.situacao === 'Pago' && mMov === mes
         })
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
@@ -383,7 +383,7 @@ export default function Dashboard() {
       const mes = i + 1
       const valor = movsAno
         .filter(m => {
-          const mMov = Number(m.data_movimentacao?.split('-')[1])
+          const mMov = m.data_movimentacao ? parseInt(m.data_movimentacao.substring(5, 7), 10) : 0
           return m.tipo === 'Despesa' && mMov === mes &&
             (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1'))
         })
@@ -555,30 +555,7 @@ export default function Dashboard() {
 
           </div>
 
-          {/* ── Linha 3: Gráficos mês a mês ───────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-
-            <div style={cardStyle}>
-              <GraficoBarrasMensal
-                titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
-                dados={dadosReceitasMensal}
-                meta={metaReceitas}
-                corMeta="#10b981"
-              />
-            </div>
-
-            <div style={cardStyle}>
-              <GraficoBarrasMensal
-                titulo={`📉 Despesas Mês a Mês — ${filtroAno}`}
-                dados={dadosDespesasMensal}
-                meta={metaDespesas}
-                corMeta="#f59e0b"
-              />
-            </div>
-
-          </div>
-
-          {/* ── Linha 4: Top Categorias ────────────────────────────────────── */}
+          {/* ── Linha 3: Top Categorias ────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
 
             <div style={cardStyle}>
@@ -631,6 +608,29 @@ export default function Dashboard() {
                     })}
                 </div>
               )}
+            </div>
+
+          </div>
+
+          {/* ── Linha 4: Gráficos mês a mês ───────────────────────────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '14px' }}>
+
+            <div style={cardStyle}>
+              <GraficoBarrasMensal
+                titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
+                dados={dadosReceitasMensal}
+                meta={metaReceitas}
+                corMeta="#10b981"
+              />
+            </div>
+
+            <div style={cardStyle}>
+              <GraficoBarrasMensal
+                titulo={`📉 Despesas Mês a Mês — ${filtroAno}`}
+                dados={dadosDespesasMensal}
+                meta={metaDespesas}
+                corMeta="#f59e0b"
+              />
             </div>
 
           </div>
