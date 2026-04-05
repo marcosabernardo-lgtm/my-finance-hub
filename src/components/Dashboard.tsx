@@ -38,7 +38,7 @@ interface Categoria {
   id: number
   nome: string
   classificacao: string
-  limite_mensal: number | null
+  limite_gastos: number | null
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -129,11 +129,10 @@ function SecaoExpansivel({
 // ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
 
 function GraficoBarrasMensal({
-  dados, meta, corBarra, corMeta, titulo
+  dados, meta, corMeta, titulo
 }: {
   dados: { mes: number; ano: number; valor: number; label: string }[]
   meta: number
-  corBarra: string
   corMeta: string
   titulo: string
 }) {
@@ -173,11 +172,14 @@ function GraficoBarrasMensal({
             {dados.map((d, i) => {
               const alturaBarra = maxValor > 0 ? (d.valor / maxValor) * alturaGrafico : 0
               const acimaMeta = meta > 0 && d.valor > meta
+              const corBarra = meta === 0
+                ? '#2563eb'
+                : acimaMeta ? '#ef4444' : '#16a34a'
               return (
                 <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                   {/* Valor em cima */}
                   {d.valor > 0 && (
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: acimaMeta ? '#ef4444' : '#374151', whiteSpace: 'nowrap', marginBottom: '2px' }}>
+                    <div style={{ fontSize: '9px', fontWeight: 700, color: acimaMeta ? '#ef4444' : '#16a34a', whiteSpace: 'nowrap', marginBottom: '2px' }}>
                       {(d.valor / 1000).toFixed(1)}k
                     </div>
                   )}
@@ -185,7 +187,7 @@ function GraficoBarrasMensal({
                   <div style={{
                     width: larguraBarra,
                     height: Math.max(alturaBarra, d.valor > 0 ? 4 : 0),
-                    background: acimaMeta ? '#ef4444' : corBarra,
+                    background: corBarra,
                     borderRadius: '4px 4px 0 0',
                     transition: 'height 0.4s ease',
                     alignSelf: 'flex-end',
@@ -202,8 +204,12 @@ function GraficoBarrasMensal({
       {/* Legenda */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
-          <div style={{ width: '12px', height: '12px', background: corBarra, borderRadius: '2px' }} />
-          <span>Valor mensal</span>
+          <div style={{ width: '12px', height: '12px', background: '#16a34a', borderRadius: '2px' }} />
+          <span>Abaixo da meta</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+          <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '2px' }} />
+          <span>Acima da meta</span>
         </div>
         {meta > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
@@ -211,10 +217,6 @@ function GraficoBarrasMensal({
             <span>Meta ({fmt(meta)}/mês)</span>
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
-          <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '2px' }} />
-          <span>Acima da meta</span>
-        </div>
       </div>
     </div>
   )
@@ -255,7 +257,7 @@ export default function Dashboard() {
       .then(({ data }) => setContas(data || []))
     supabase.from('cartoes').select('id,nome,limite_total,data_vencimento').eq('household_id', householdId).eq('ativo', true).order('nome')
       .then(({ data }) => setCartoes(data || []))
-    supabase.from('categorias').select('id,nome,classificacao,limite_mensal').eq('household_id', householdId).order('nome')
+    supabase.from('categorias').select('id,nome,classificacao,limite_gastos').eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
@@ -369,7 +371,7 @@ export default function Dashboard() {
       const valor = movsAno
         .filter(m => {
           const mMov = Number(m.data_movimentacao?.split('-')[1])
-          return m.tipo === 'Receita' && m.situacao === 'Pago' && mMov === mes
+          return m.tipo === 'Receita' && ['Pago', 'Pendente'].includes(m.situacao) && mMov === mes
             && m.metodo_pagamento !== 'Transferência entre Contas'
         })
         .reduce((s, m) => s + Number(m.valor), 0)
@@ -389,17 +391,17 @@ export default function Dashboard() {
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
     }), [movsAno, filtroAno])
 
-  // Meta: soma dos limite_mensal de categorias de receita / despesa
+  // Meta: soma dos limite_gastos de categorias de receita / despesa
   const metaReceitas = useMemo(() =>
     categorias
-      .filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_mensal)
-      .reduce((s, c) => s + (c.limite_mensal || 0), 0),
+      .filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos)
+      .reduce((s, c) => s + (c.limite_gastos || 0), 0),
     [categorias])
 
   const metaDespesas = useMemo(() =>
     categorias
-      .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_mensal)
-      .reduce((s, c) => s + (c.limite_mensal || 0), 0),
+      .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos)
+      .reduce((s, c) => s + (c.limite_gastos || 0), 0),
     [categorias])
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -561,7 +563,6 @@ export default function Dashboard() {
                 titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
                 dados={dadosReceitasMensal}
                 meta={metaReceitas}
-                corBarra="#2563eb"
                 corMeta="#10b981"
               />
             </div>
@@ -571,7 +572,6 @@ export default function Dashboard() {
                 titulo={`📉 Despesas Mês a Mês — ${filtroAno}`}
                 dados={dadosDespesasMensal}
                 meta={metaDespesas}
-                corBarra="#ef4444"
                 corMeta="#f59e0b"
               />
             </div>
@@ -601,7 +601,7 @@ export default function Dashboard() {
               <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>🏷️ Limites por Categoria — {MESES[filtroMes - 1]}</div>
               {porCategoria.filter(c => {
                 const cat = categorias.find(x => x.id === c.id)
-                return cat?.limite_mensal && cat.limite_mensal > 0
+                return cat?.limite_gastos && cat.limite_gastos > 0
               }).length === 0 ? (
                 <Vazio />
               ) : (
@@ -609,11 +609,11 @@ export default function Dashboard() {
                   {porCategoria
                     .filter(c => {
                       const cat = categorias.find(x => x.id === c.id)
-                      return cat?.limite_mensal && cat.limite_mensal > 0
+                      return cat?.limite_gastos && cat.limite_gastos > 0
                     })
                     .slice(0, 8)
                     .map((cat) => {
-                      const limite = categorias.find(x => x.id === cat.id)?.limite_mensal || 0
+                      const limite = categorias.find(x => x.id === cat.id)?.limite_gastos || 0
                       const pct = limite > 0 ? (cat.valor / limite) * 100 : 0
                       const cor = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#10b981'
                       return (
