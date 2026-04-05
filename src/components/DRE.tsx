@@ -170,8 +170,8 @@ export default function DRE() {
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
       .eq('household_id', householdId)
       .in('tipo', ['Despesa', 'Receita'])
-      .gte('data_movimentacao', dataInicio)
-      .lte('data_movimentacao', dataFim)
+      .gte('data_pagamento', dataInicio)
+      .lte('data_pagamento', dataFim)
 
     setMovimentacoes(movs || [])
 
