@@ -157,7 +157,7 @@ function GraficoBarrasMensal({
             <div style={{
               position: 'absolute',
               left: 0, right: 0,
-              bottom: 28 + (meta / maxValor) * alturaGrafico,
+              bottom: 28 + Math.min((meta / maxValor) * alturaGrafico, alturaGrafico - 2),
               borderTop: `2px dashed ${corMeta}`,
               zIndex: 2,
               pointerEvents: 'none',
@@ -239,6 +239,7 @@ export default function Dashboard() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
   const [movsAno, setMovsAno] = useState<Movimentacao[]>([])
+  const [movsCartaoAno, setMovsCartaoAno] = useState<Movimentacao[]>([])
   const [saldosContas, setSaldosContas] = useState<Record<number, number>>({})
   const [comprometidoCartoes, setComprometidoCartoes] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
@@ -328,6 +329,17 @@ export default function Dashboard() {
     }
     setComprometidoCartoes(comp)
 
+    // Movimentações de cartão do ano por data_pagamento (para gráfico de crédito)
+    const { data: cartaoAno } = await supabase
+      .from('movimentacoes')
+      .select('id,tipo,situacao,categoria_id,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino,descricao')
+      .eq('household_id', householdId)
+      .eq('tipo', 'Despesa')
+      .not('cartao_id', 'is', null)
+      .gte('data_pagamento', `${filtroAno}-01-01`)
+      .lte('data_pagamento', `${filtroAno}-12-31`)
+    setMovsCartaoAno(cartaoAno || [])
+
     setLoading(false)
   }, [householdId, filtroMes, filtroAno, contas])
 
@@ -411,16 +423,19 @@ export default function Dashboard() {
     const cartaoId = cartaoSelecionado ?? (cartoes[0]?.id ?? null)
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1
-      const valor = movsAno
+      const valor = movsCartaoAno
         .filter(m => {
-          const mMov = m.data_movimentacao ? parseInt(m.data_movimentacao.substring(5, 7), 10) : 0
-          return m.tipo === 'Despesa' && m.cartao_id === cartaoId && mMov === mes
+          // cartão: usar data_pagamento para identificar o mês da fatura
+          if (!m.data_pagamento) return false
+          const anoFatura = parseInt(m.data_pagamento.substring(0, 4), 10)
+          const mesFatura = parseInt(m.data_pagamento.substring(5, 7), 10)
+          return m.cartao_id === cartaoId && mesFatura === mes && anoFatura === filtroAno
             && ['Faturado', 'Pendente'].includes(m.situacao)
         })
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
     })
-  }, [movsAno, filtroAno, cartaoSelecionado, cartoes])
+  }, [movsCartaoAno, filtroAno, cartaoSelecionado, cartoes])
 
   const cartaoAtivo = cartoes.find(c => c.id === (cartaoSelecionado ?? cartoes[0]?.id))
 
