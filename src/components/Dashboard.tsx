@@ -34,11 +34,11 @@ interface Movimentacao {
   conta_origem_destino: string | null
 }
 
-
 interface Categoria {
   id: number
   nome: string
   classificacao: string
+  limite_mensal: number | null
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -47,6 +47,7 @@ const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+const MESES_CURTOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
 const CORES_GRAFICO = [
   '#2563eb','#7c3aed','#db2777','#ea580c','#16a34a',
@@ -54,72 +55,9 @@ const CORES_GRAFICO = [
   '#92400e','#1e40af',
 ]
 
-// ─── Mini gráfico de barras inline ────────────────────────────────────────────
-
-function BarraInline({ valor, max, cor }: { valor: number; max: number; cor: string }) {
-  const pct = max > 0 ? Math.min((valor / max) * 100, 100) : 0
-  return (
-    <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', flex: 1 }}>
-      <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${pct}%`, transition: 'width 0.4s ease' }} />
-    </div>
-  )
-}
-
-// ─── Gráfico Pizza SVG ────────────────────────────────────────────────────────
-
-function GraficoPizza({ fatias }: { fatias: { label: string; valor: number; cor: string }[] }) {
-  const total = fatias.reduce((s, f) => s + f.valor, 0)
-  if (total === 0) return <div style={{ textAlign: 'center', color: '#9ca3af', padding: '40px' }}>Sem dados</div>
-
-  let angulo = -90
-  const raio = 70
-  const cx = 90; const cy = 90
-
-  const arcos = fatias.map(f => {
-    const pct = f.valor / total
-    const graus = pct * 360
-    const rad1 = (angulo * Math.PI) / 180
-    const rad2 = ((angulo + graus) * Math.PI) / 180
-    const x1 = cx + raio * Math.cos(rad1)
-    const y1 = cy + raio * Math.sin(rad1)
-    const x2 = cx + raio * Math.cos(rad2)
-    const y2 = cy + raio * Math.sin(rad2)
-    const largeArc = graus > 180 ? 1 : 0
-    const d = `M ${cx} ${cy} L ${x1} ${y1} A ${raio} ${raio} 0 ${largeArc} 1 ${x2} ${y2} Z`
-    angulo += graus
-    return { ...f, d, pct }
-  })
-
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-      <svg width="180" height="180" viewBox="0 0 180 180">
-        {arcos.map((a, i) => (
-          <path key={i} d={a.d} fill={a.cor} stroke="#fff" strokeWidth="2">
-            <title>{a.label}: {fmt(a.valor)} ({(a.pct * 100).toFixed(1)}%)</title>
-          </path>
-        ))}
-        <circle cx={cx} cy={cy} r="35" fill="#007d8f" />
-        <text x={cx} y={cy - 6} textAnchor="middle" fontSize="9" fill="#6b7280" fontWeight="600">TOTAL</text>
-        <text x={cx} y={cy + 8} textAnchor="middle" fontSize="8" fill="#111827" fontWeight="700">
-          {(total / 1000).toFixed(1)}k
-        </text>
-      </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', flex: 1, minWidth: '140px' }}>
-        {arcos.map((a, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px' }}>
-            <span style={{ width: '10px', height: '10px', borderRadius: '3px', background: a.cor, flexShrink: 0 }} />
-            <span style={{ color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.label}</span>
-            <span style={{ color: '#6b7280', fontWeight: 600, whiteSpace: 'nowrap' }}>{(a.pct * 100).toFixed(0)}%</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 // ─── Logo dos bancos ──────────────────────────────────────────────────────────
 
-function logoBanco(nome: string): { bg: string; color: string; sigla: string; emoji?: string } {
+function logoBanco(nome: string): { bg: string; color: string; sigla: string } {
   const n = nome.toLowerCase()
   if (n.includes('nubank'))       return { bg: '#8A05BE', color: '#fff', sigla: 'NU' }
   if (n.includes('itaú') || n.includes('itau')) return { bg: '#EC7000', color: '#fff', sigla: 'ITÁ' }
@@ -138,9 +76,148 @@ function logoBanco(nome: string): { bg: string; color: string; sigla: string; em
   if (n.includes('pernambucanas') || n.includes('perna')) return { bg: '#E30613', color: '#fff', sigla: 'PER' }
   if (n.includes('havan'))        return { bg: '#003087', color: '#fff', sigla: 'HAV' }
   if (n.includes('cactus'))       return { bg: '#2D7A3A', color: '#fff', sigla: 'CAC' }
-  // genérico
   const sigla = nome.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
   return { bg: '#e5e7eb', color: '#374151', sigla }
+}
+
+// ─── Mini barra inline ────────────────────────────────────────────────────────
+
+function BarraInline({ valor, max, cor }: { valor: number; max: number; cor: string }) {
+  const pct = max > 0 ? Math.min((valor / max) * 100, 100) : 0
+  return (
+    <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', flex: 1 }}>
+      <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${pct}%`, transition: 'width 0.4s ease' }} />
+    </div>
+  )
+}
+
+// ─── Seção expansível ─────────────────────────────────────────────────────────
+
+function SecaoExpansivel({
+  titulo, icone, badge, badgeCor, children, defaultAberto = false
+}: {
+  titulo: string
+  icone: string
+  badge?: string
+  badgeCor?: string
+  children: React.ReactNode
+  defaultAberto?: boolean
+}) {
+  const [aberto, setAberto] = useState(defaultAberto)
+  return (
+    <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
+      <div
+        onClick={() => setAberto(a => !a)}
+        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 20px', cursor: 'pointer', userSelect: 'none', background: aberto ? '#f9fafb' : '#fff', borderBottom: aberto ? '1px solid #e5e7eb' : 'none' }}
+      >
+        <span style={{ fontSize: '18px' }}>{icone}</span>
+        <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', flex: 1 }}>{titulo}</span>
+        {badge && (
+          <span style={{ fontSize: '13px', fontWeight: 700, color: badgeCor || '#374151' }}>{badge}</span>
+        )}
+        <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '4px' }}>{aberto ? '▲' : '▼'}</span>
+      </div>
+      {aberto && (
+        <div style={{ padding: '16px 20px' }}>
+          {children}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
+
+function GraficoBarrasMensal({
+  dados, meta, corBarra, corMeta, titulo
+}: {
+  dados: { mes: number; ano: number; valor: number; label: string }[]
+  meta: number
+  corBarra: string
+  corMeta: string
+  titulo: string
+}) {
+  const maxValor = Math.max(...dados.map(d => d.valor), meta, 1)
+  const alturaGrafico = 160
+  const larguraBarra = 28
+  const gap = 12
+  const larguraTotal = dados.length * (larguraBarra + gap)
+
+  return (
+    <div>
+      <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>{titulo}</div>
+      <div style={{ overflowX: 'auto' }}>
+        <div style={{ position: 'relative', minWidth: larguraTotal + 40 }}>
+
+          {/* Linha de meta */}
+          {meta > 0 && (
+            <div style={{
+              position: 'absolute',
+              left: 0, right: 0,
+              bottom: 28 + (meta / maxValor) * alturaGrafico,
+              borderTop: `2px dashed ${corMeta}`,
+              zIndex: 2,
+            }}>
+              <span style={{
+                position: 'absolute', right: 0, top: -18,
+                fontSize: '10px', fontWeight: 700, color: corMeta,
+                background: '#fff', padding: '1px 4px', borderRadius: '4px'
+              }}>
+                Meta {fmt(meta)}
+              </span>
+            </div>
+          )}
+
+          {/* Barras */}
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${gap}px`, height: alturaGrafico + 28, paddingBottom: '28px', position: 'relative', zIndex: 1 }}>
+            {dados.map((d, i) => {
+              const alturaBarra = maxValor > 0 ? (d.valor / maxValor) * alturaGrafico : 0
+              const acimaMeta = meta > 0 && d.valor > meta
+              return (
+                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                  {/* Valor em cima */}
+                  {d.valor > 0 && (
+                    <div style={{ fontSize: '9px', fontWeight: 700, color: acimaMeta ? '#ef4444' : '#374151', whiteSpace: 'nowrap', marginBottom: '2px' }}>
+                      {(d.valor / 1000).toFixed(1)}k
+                    </div>
+                  )}
+                  {/* Barra */}
+                  <div style={{
+                    width: larguraBarra,
+                    height: Math.max(alturaBarra, d.valor > 0 ? 4 : 0),
+                    background: acimaMeta ? '#ef4444' : corBarra,
+                    borderRadius: '4px 4px 0 0',
+                    transition: 'height 0.4s ease',
+                    alignSelf: 'flex-end',
+                  }} />
+                  {/* Label mês */}
+                  <div style={{ fontSize: '10px', color: '#9ca3af', whiteSpace: 'nowrap', marginTop: '4px' }}>{d.label}</div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Legenda */}
+      <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+          <div style={{ width: '12px', height: '12px', background: corBarra, borderRadius: '2px' }} />
+          <span>Valor mensal</span>
+        </div>
+        {meta > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+            <div style={{ width: '20px', borderTop: `2px dashed ${corMeta}` }} />
+            <span>Meta ({fmt(meta)}/mês)</span>
+          </div>
+        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+          <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '2px' }} />
+          <span>Acima da meta</span>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ─── Component Principal ──────────────────────────────────────────────────────
@@ -157,6 +234,7 @@ export default function Dashboard() {
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
+  const [movsAno, setMovsAno] = useState<Movimentacao[]>([])
   const [saldosContas, setSaldosContas] = useState<Record<number, number>>({})
   const [comprometidoCartoes, setComprometidoCartoes] = useState<Record<number, number>>({})
   const [loading, setLoading] = useState(false)
@@ -177,7 +255,7 @@ export default function Dashboard() {
       .then(({ data }) => setContas(data || []))
     supabase.from('cartoes').select('id,nome,limite_total,data_vencimento').eq('household_id', householdId).eq('ativo', true).order('nome')
       .then(({ data }) => setCartoes(data || []))
-    supabase.from('categorias').select('id,nome,classificacao').eq('household_id', householdId).order('nome')
+    supabase.from('categorias').select('id,nome,classificacao,limite_mensal').eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
@@ -191,7 +269,7 @@ export default function Dashboard() {
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
-    // Movimentações do mês (por data_movimentacao)
+    // Movimentações do mês
     const { data: mes } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
@@ -200,7 +278,16 @@ export default function Dashboard() {
       .lte('data_movimentacao', dataFim)
     setMovsMes(mes || [])
 
-    // Saldo de cada conta: saldo_inicial + entradas - saídas (Pago)
+    // Movimentações do ano todo (para gráficos mês a mês)
+    const { data: ano } = await supabase
+      .from('movimentacoes')
+      .select('id,tipo,situacao,categoria_id,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id')
+      .eq('household_id', householdId)
+      .gte('data_movimentacao', `${filtroAno}-01-01`)
+      .lte('data_movimentacao', `${filtroAno}-12-31`)
+    setMovsAno(ano || [])
+
+    // Saldo de cada conta
     const { data: todasMovsConta } = await supabase
       .from('movimentacoes')
       .select('conta_origem_destino,tipo,valor,situacao')
@@ -220,7 +307,7 @@ export default function Dashboard() {
     }
     setSaldosContas(saldos)
 
-    // Comprometido por cartão: só Pendente a partir de hoje
+    // Comprometido por cartão
     const dataHoje = hoje.toISOString().split('T')[0]
     const { data: pendCartao } = await supabase
       .from('movimentacoes')
@@ -243,77 +330,77 @@ export default function Dashboard() {
 
   // ── Cálculos do mês ─────────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movsmes.filter(m =>
-      m.tipo === 'Receita' &&
-      m.situacao === 'Pago' &&
-      m.metodo_pagamento !== 'Transferência entre Contas'
-    ).reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+    movsmes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago' && m.metodo_pagamento !== 'Transferência entre Contas')
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalDespesas = useMemo(() =>
     movsmes.filter(m => m.tipo === 'Despesa' && (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')))
-      .reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
-  // Total cartão crédito do mês — todas as despesas com cartao_id, independente de parcela/situação (exceto Previsto)
   const totalCartaoCredito = useMemo(() =>
     movsmes.filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && m.cartao_id !== null)
-      .reduce((s, m) => s + Number(m.valor), 0),
-    [movsmes])
+      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
-  const totalSaldoContas     = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
+  const totalSaldoContas = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
   const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
 
-  // Por categoria
+  // ── Por categoria (mês atual) ────────────────────────────────────────────────
   const porCategoria = useMemo(() => {
     const map: Record<number, number> = {}
     for (const m of movsmes) {
-      if (m.tipo !== 'Despesa') continue
-      if (m.situacao === 'Previsto') continue
-      if (!m.categoria_id) continue
+      if (m.tipo !== 'Despesa' || m.situacao === 'Previsto' || !m.categoria_id) continue
       map[m.categoria_id] = (map[m.categoria_id] || 0) + Number(m.valor)
     }
     return Object.entries(map)
       .map(([id, valor]) => ({
         id: Number(id),
         nome: categorias.find(c => c.id === Number(id))?.nome || 'Sem categoria',
-        classificacao: categorias.find(c => c.id === Number(id))?.classificacao || '',
         valor,
       }))
       .sort((a, b) => b.valor - a.valor)
   }, [movsmes, categorias])
 
-  // Por classificação (pizza)
-  const porClassificacao = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const m of movsmes) {
-      if (m.tipo !== 'Despesa' || m.situacao === 'Previsto') continue
-      const cat = categorias.find(c => c.id === m.categoria_id)
-      const classif = cat?.classificacao || 'Outros'
-      if (['Renda Ativa', 'Renda Passiva'].includes(classif)) continue
-      map[classif] = (map[classif] || 0) + Number(m.valor)
-    }
-    const cores: Record<string, string> = {
-      'Despesas Essenciais': '#2563eb',
-      'Despesas Não Essenciais': '#f59e0b',
-      'Metas / Investimentos': '#10b981',
-      'Outros': '#9ca3af',
-    }
-    return Object.entries(map).map(([label, valor]) => ({ label, valor, cor: cores[label] || '#6b7280' }))
-  }, [movsmes, categorias])
-
-  // Por descrição (ranking)
-  const porDescricao = useMemo(() => {
-    const map: Record<string, number> = {}
-    for (const m of movsmes) {
-      if (m.tipo !== 'Despesa' || m.situacao === 'Previsto') continue
-      map[m.descricao] = (map[m.descricao] || 0) + Number(m.valor)
-    }
-    return Object.entries(map).map(([desc, valor]) => ({ desc, valor })).sort((a, b) => b.valor - a.valor).slice(0, 10)
-  }, [movsmes])
-
   const maxCategoria = porCategoria[0]?.valor || 1
-  const maxDescricao = porDescricao[0]?.valor || 1
+
+  // ── Gráficos mês a mês (ano inteiro) ────────────────────────────────────────
+  const dadosReceitasMensal = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => {
+      const mes = i + 1
+      const valor = movsAno
+        .filter(m => {
+          const mMov = Number(m.data_movimentacao?.split('-')[1])
+          return m.tipo === 'Receita' && m.situacao === 'Pago' && mMov === mes
+            && m.metodo_pagamento !== 'Transferência entre Contas'
+        })
+        .reduce((s, m) => s + Number(m.valor), 0)
+      return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
+    }), [movsAno, filtroAno])
+
+  const dadosDespesasMensal = useMemo(() =>
+    Array.from({ length: 12 }, (_, i) => {
+      const mes = i + 1
+      const valor = movsAno
+        .filter(m => {
+          const mMov = Number(m.data_movimentacao?.split('-')[1])
+          return m.tipo === 'Despesa' && mMov === mes &&
+            (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1'))
+        })
+        .reduce((s, m) => s + Number(m.valor), 0)
+      return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
+    }), [movsAno, filtroAno])
+
+  // Meta: soma dos limite_mensal de categorias de receita / despesa
+  const metaReceitas = useMemo(() =>
+    categorias
+      .filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_mensal)
+      .reduce((s, c) => s + (c.limite_mensal || 0), 0),
+    [categorias])
+
+  const metaDespesas = useMemo(() =>
+    categorias
+      .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_mensal)
+      .reduce((s, c) => s + (c.limite_mensal || 0), 0),
+    [categorias])
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -342,21 +429,24 @@ export default function Dashboard() {
 
           {/* ── Linha 1: Cards resumo ─────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
-            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Contas correntes ativas" borda="#6ee7b7" icone="🏦" />
+            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Contas correntes ativas" borda="#6ee7b7" icone="🏦" corValor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'} />
             <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" borda="#93c5fd" icone="📈" />
             <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" borda="#fca5a5" icone="📉" />
             <CardResumo label="Despesas Cartão Crédito" valor={fmt(totalCartaoCredito)} sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
           </div>
 
-          {/* ── Linha 2: Contas + Cartões ─────────────────────────────────── */}
+          {/* ── Linha 2: Seções expansíveis ───────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
 
-            {/* Saldos por conta — correntes + investimentos */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Coluna esquerda: Contas Correntes + Investimentos */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
-              {/* Contas Correntes */}
-              <div style={cardStyle}>
-                <SectionTitle>🏦 Contas Correntes</SectionTitle>
+              <SecaoExpansivel
+                titulo="Contas Correntes"
+                icone="🏦"
+                badge={fmt(totalSaldoContas)}
+                badgeCor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'}
+              >
                 {contas.filter(c => c.tipo === 'corrente').length === 0 ? <Vazio /> : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {contas.filter(c => c.tipo === 'corrente').map(c => {
@@ -364,8 +454,8 @@ export default function Dashboard() {
                       const logo = logoBanco(c.nome)
                       return (
                         <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', border: '1px solid #e5e7eb' }}>
-                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: logo.emoji ? '20px' : '11px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
-                            {logo.emoji || logo.sigla}
+                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
+                            {logo.sigla}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
@@ -381,19 +471,23 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-              </div>
+              </SecaoExpansivel>
 
-              {/* Investimentos */}
-              <div style={cardStyle}>
-                <SectionTitle>📈 Investimentos</SectionTitle>
+              <SecaoExpansivel
+                titulo="Investimentos"
+                icone="📈"
+                badge={fmt(totalSaldoInvestimentos)}
+                badgeCor="#065f46"
+              >
                 {contas.filter(c => c.tipo === 'investimento').length === 0 ? <Vazio /> : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {contas.filter(c => c.tipo === 'investimento').map(c => {
                       const saldo = saldosContas[c.id] ?? 0
+                      const logo = logoBanco(c.nome)
                       return (
                         <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f0fdf4', borderRadius: '10px', padding: '10px 14px', border: '1px solid #bbf7d0' }}>
-                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: '#fff' }}>
-                            {c.nome.replace(/[^A-Z0-9]/gi, '').slice(0, 3).toUpperCase()}
+                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color }}>
+                            {logo.sigla}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
@@ -409,13 +503,17 @@ export default function Dashboard() {
                     </div>
                   </div>
                 )}
-              </div>
+              </SecaoExpansivel>
 
             </div>
 
-            {/* Cartões de crédito */}
-            <div style={cardStyle}>
-              <SectionTitle>💳 Cartões de Crédito</SectionTitle>
+            {/* Coluna direita: Cartões de Crédito */}
+            <SecaoExpansivel
+              titulo="Cartões de Crédito"
+              icone="💳"
+              badge={`${cartoes.length} cartões`}
+              badgeCor="#6b7280"
+            >
               {cartoes.length === 0 ? <Vazio /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {cartoes.map(c => {
@@ -425,19 +523,10 @@ export default function Dashboard() {
                     const corBarra = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981'
                     const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id} style={{
-                        background: '#f9fafb', borderRadius: '10px', padding: '10px 14px',
-                        border: '1px solid #e5e7eb',
-                      }}>
+                      <div key={c.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', border: '1px solid #e5e7eb' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                          <div style={{
-                            width: '34px', height: '34px', borderRadius: '8px',
-                            background: logo.bg, display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', flexShrink: 0,
-                            fontSize: logo.emoji ? '18px' : '10px',
-                            fontWeight: 700, color: logo.color,
-                          }}>
-                            {logo.emoji || logo.sigla}
+                          <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '10px', fontWeight: 700, color: logo.color }}>
+                            {logo.sigla}
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{c.nome}</div>
@@ -445,7 +534,7 @@ export default function Dashboard() {
                           </div>
                           <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '14px', fontWeight: 700, color: disponivel >= 0 ? '#065f46' : '#991b1b' }}>{fmt(disponivel)}</div>
-                            <div style={{ fontSize: '10px', color: '#b2d8de' }}>disponível</div>
+                            <div style={{ fontSize: '10px', color: '#9ca3af' }}>disponível</div>
                           </div>
                         </div>
                         <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '5px' }}>
@@ -453,28 +542,47 @@ export default function Dashboard() {
                         </div>
                         <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
                           Usado: <strong style={{ color: '#374151' }}>{fmt(usado)}</strong>
-                          <span style={{ color: '#6b7280', marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
+                          <span style={{ marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
                         </div>
                       </div>
                     )
                   })}
                 </div>
               )}
-            </div>
+            </SecaoExpansivel>
+
           </div>
 
-          {/* ── Linha 3: Pizza + Top Categorias + Ranking (3 colunas) ──────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '14px' }}>
+          {/* ── Linha 3: Gráficos mês a mês ───────────────────────────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
 
-            {/* Pizza por classificação */}
             <div style={cardStyle}>
-              <SectionTitle>🍕 Por Classificação</SectionTitle>
-              <GraficoPizza fatias={porClassificacao} />
+              <GraficoBarrasMensal
+                titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
+                dados={dadosReceitasMensal}
+                meta={metaReceitas}
+                corBarra="#2563eb"
+                corMeta="#10b981"
+              />
             </div>
 
-            {/* Barras por categoria */}
             <div style={cardStyle}>
-              <SectionTitle>📊 Top Categorias</SectionTitle>
+              <GraficoBarrasMensal
+                titulo={`📉 Despesas Mês a Mês — ${filtroAno}`}
+                dados={dadosDespesasMensal}
+                meta={metaDespesas}
+                corBarra="#ef4444"
+                corMeta="#f59e0b"
+              />
+            </div>
+
+          </div>
+
+          {/* ── Linha 4: Top Categorias ────────────────────────────────────── */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+
+            <div style={cardStyle}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>📊 Top Categorias — {MESES[filtroMes - 1]}</div>
               {porCategoria.length === 0 ? <Vazio /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {porCategoria.slice(0, 8).map((cat, i) => (
@@ -489,21 +597,38 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* Ranking por descrição */}
             <div style={cardStyle}>
-              <SectionTitle>🏷️ Ranking por Descrição</SectionTitle>
-              {porDescricao.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {porDescricao.map((d, i) => (
-                    <div key={d.desc} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '13px', width: '20px', textAlign: 'center', flexShrink: 0 }}>
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span style={{ fontSize: '11px', color: '#9ca3af' }}>{i + 1}</span>}
-                      </span>
-                      <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.desc}</span>
-                      <BarraInline valor={d.valor} max={maxDescricao} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(d.valor)}</span>
-                    </div>
-                  ))}
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>🏷️ Limites por Categoria — {MESES[filtroMes - 1]}</div>
+              {porCategoria.filter(c => {
+                const cat = categorias.find(x => x.id === c.id)
+                return cat?.limite_mensal && cat.limite_mensal > 0
+              }).length === 0 ? (
+                <Vazio />
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {porCategoria
+                    .filter(c => {
+                      const cat = categorias.find(x => x.id === c.id)
+                      return cat?.limite_mensal && cat.limite_mensal > 0
+                    })
+                    .slice(0, 8)
+                    .map((cat) => {
+                      const limite = categorias.find(x => x.id === cat.id)?.limite_mensal || 0
+                      const pct = limite > 0 ? (cat.valor / limite) * 100 : 0
+                      const cor = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#10b981'
+                      return (
+                        <div key={cat.id}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                            <span style={{ color: '#374151', fontWeight: 500 }}>{cat.nome}</span>
+                            <span style={{ color: cor, fontWeight: 700 }}>{fmt(cat.valor)} / {fmt(limite)}</span>
+                          </div>
+                          <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px' }}>
+                            <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
+                          </div>
+                          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>{pct.toFixed(0)}% do limite</div>
+                        </div>
+                      )
+                    })}
                 </div>
               )}
             </div>
@@ -518,23 +643,19 @@ export default function Dashboard() {
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
-function CardResumo({ label, valor, sub, borda, icone }: {
-  label: string; valor: string; sub: string; borda: string; icone: string
+function CardResumo({ label, valor, sub, borda, icone, corValor }: {
+  label: string; valor: string; sub: string; borda: string; icone: string; corValor?: string
 }) {
   return (
-    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', borderLeft: `4px solid ${borda}`, border: `1px solid #0090a4`, borderLeftWidth: '4px', borderLeftColor: borda }}>
+    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', border: `1px solid #e5e7eb`, borderLeft: `4px solid ${borda}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
       </div>
-      <div style={{ fontSize: '22px', fontWeight: 700, color: '#111827', margin: '8px 0 2px' }}>{valor}</div>
+      <div style={{ fontSize: '22px', fontWeight: 700, color: corValor || '#111827', margin: '8px 0 2px' }}>{valor}</div>
       <div style={{ fontSize: '11px', color: '#6b7280', opacity: 0.7 }}>{sub}</div>
     </div>
   )
-}
-
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>{children}</div>
 }
 
 function Vazio() {
