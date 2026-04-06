@@ -27,7 +27,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   const [categoriaId, setCategoriaId] = useState('')
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
-  const [metodoPagamento, setMetodoPagamento] = useState('Debito')
+  const [metodoPagamento, setMetodoPagamento] = useState('Débito')
   const [cartaoId, setCartaoId] = useState('')
   const [contaId, setContaId] = useState('')
   const [formaPagamento, setFormaPagamento] = useState('A Vista')
@@ -53,7 +53,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   }, [categoriaId])
 
   useEffect(() => {
-    if (isPrevisto && metodoPagamento === 'Cartao de Credito' && cartaoId && dataMov) {
+    if (isPrevisto && metodoPagamento === 'Crédito' && cartaoId && dataMov) {
       const cartao = cartoes.find(c => c.id === Number(cartaoId))
       if (cartao) {
         const venc = calcularVencimentoCartao(dataMov, cartao)
@@ -81,9 +81,9 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   async function salvarDespesa() {
     if (!categoriaId || !descricao || !valor || !dataMov)
       return setMensagem('Preencha todos os campos obrigatorios.')
-    if ((metodoPagamento === 'Debito' || metodoPagamento === 'PIX') && !contaId)
+    if ((metodoPagamento === 'Débito' || metodoPagamento === 'PIX') && !contaId)
       return setMensagem('Selecione a conta de origem.')
-    if (metodoPagamento === 'Cartao de Credito' && !cartaoId)
+    if (metodoPagamento === 'Crédito' && !cartaoId)
       return setMensagem('Selecione o cartao.')
     if (isPrevisto && !dataInicio)
       return setMensagem('Informe a data do 1o vencimento.')
@@ -102,7 +102,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       // Modo Previsao Futura — todos como Previsto
       const meses = parseInt(numMeses) || 2
       const dataBase = new Date(dataInicio + 'T12:00:00')
-      const isParcelado = formaPagamento === 'Parcelado' && metodoPagamento === 'Cartao de Credito'
+      const isParcelado = formaPagamento === 'Parcelado' && metodoPagamento === 'Crédito'
       const parcelas = isParcelado ? parseInt(numParcelas) : meses
 
       if (isParcelado) {
@@ -140,7 +140,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       const isParcelado = formaPagamento === 'Parcelado'
       const parcelas = isParcelado ? parseInt(numParcelas) : 1
 
-      if (metodoPagamento === 'Cartao de Credito' && cartao) {
+      if (metodoPagamento === 'Crédito' && cartao) {
         const primeiroVenc = calcularVencimentoCartao(dataMov, cartao)
         if (isParcelado) {
           const valorParcela = Math.floor((valorTotal / parcelas) * 100) / 100
@@ -217,8 +217,8 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     setLoading(false)
   }
 
-  const isCartao = metodoPagamento === 'Cartao de Credito'
-  const isDebitoOuPix = metodoPagamento === 'Debito' || metodoPagamento === 'PIX'
+  const isCartao = metodoPagamento === 'Crédito'
+  const isDebitoOuPix = metodoPagamento === 'Débito' || metodoPagamento === 'PIX'
   const isParcelavel = isCartao || metodoPagamento === 'Boleto'
   const categoriasDespesa = categorias.filter(c =>
     c.classificacao !== 'Renda Ativa' && c.classificacao !== 'Renda Passiva'
@@ -289,10 +289,10 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
 
       <label style={labelStyle}>Metodo de Pagamento *</label>
       <select style={inputStyle} value={metodoPagamento}
-        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('A Vista'); if (e.target.value !== 'Cartao de Credito') setDataInicio('') }}>
-        <option value="Debito">Debito</option>
+        onChange={e => { setMetodoPagamento(e.target.value); setFormaPagamento('A Vista'); if (e.target.value !== 'Crédito') setDataInicio('') }}>
+        <option value="Débito">Débito</option>
         <option value="PIX">PIX</option>
-        <option value="Cartao de Credito">Cartao de Credito</option>
+        <option value="Crédito">Crédito</option>
         <option value="Dinheiro">Dinheiro</option>
         <option value="Boleto">Boleto</option>
       </select>

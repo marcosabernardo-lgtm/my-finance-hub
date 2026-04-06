@@ -147,7 +147,8 @@ function GraficoBarrasMensal({
   const svgHeight = altura + PADDING_TOP + PADDING_BOTTOM
   const areaAltura = altura
 
-  const maxValor = Math.max(...dados.map(d => d.valor), meta > 0 ? meta * 1.1 : 0, 1)
+  const maiorValor = Math.max(...dados.map(d => d.valor), meta, 1)
+  const maxValor = maiorValor * 1.15
 
   const yBarra = (valor: number) => {
     if (valor <= 0) return areaAltura
@@ -388,8 +389,11 @@ export default function Dashboard() {
 
   // ── Cálculos do mês ─────────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movsmes.filter(m => m.tipo === 'Receita' && m.situacao === 'Pago' && m.metodo_pagamento !== 'Transferência entre Contas')
-      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
+    movsmes.filter(m =>
+      m.tipo === 'Receita' &&
+      ['Pago', 'Pendente'].includes(m.situacao) &&
+      m.metodo_pagamento !== 'Transferência entre Contas'
+    ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalDespesas = useMemo(() =>
     movsmes.filter(m =>
@@ -439,6 +443,7 @@ export default function Dashboard() {
         .filter(m => {
           const mMov = m.data_movimentacao ? parseInt(m.data_movimentacao.substring(5, 7), 10) : 0
           return m.tipo === 'Receita' && m.situacao === 'Pago' && mMov === mes
+            && m.metodo_pagamento !== 'Transferência entre Contas'
         })
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }

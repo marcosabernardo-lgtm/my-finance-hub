@@ -19,6 +19,8 @@ const btnPrimary: React.CSSProperties = {
   width: '100%', marginTop: 8, fontSize: 13,
 }
 
+const METODOS_RECEITA = ['PIX', 'Débito', 'Transferência entre Contas', 'Dinheiro', 'Boleto']
+
 type Props = { householdId: string; categorias: Categoria[]; contas: Conta[] }
 
 export default function LancamentoReceita({ householdId, categorias, contas }: Props) {
@@ -27,6 +29,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
   const [descricao, setDescricao] = useState('')
   const [valor, setValor] = useState('')
   const [contaId, setContaId] = useState('')
+  const [metodoPagamento, setMetodoPagamento] = useState('PIX')
   const [isPrevisto, setIsPrevisto] = useState(false)
   const [dataInicio, setDataInicio] = useState('')
   const [numMeses, setNumMeses] = useState('2')
@@ -70,12 +73,20 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
 
     if (!isPrevisto) {
       registros.push({
-        household_id: householdId, data_movimentacao: dataMov, data_pagamento: dataMov,
-        tipo: 'Receita', categoria_id: Number(categoriaId), classificacao, descricao,
-        valor: valorTotal, metodo_pagamento: 'Transferencia',
+        household_id: householdId,
+        data_movimentacao: dataMov,
+        data_pagamento: dataMov,
+        tipo: 'Receita',
+        categoria_id: Number(categoriaId),
+        classificacao,
+        descricao,
+        valor: valorTotal,
+        metodo_pagamento: metodoPagamento,
         conta_origem_destino: conta?.nome ?? '',
-        forma_pagamento: 'A Vista', numero_parcela: 'Parcela 1/1',
-        situacao: 'Pago', grupo_id: grupoId,
+        forma_pagamento: 'A Vista',
+        numero_parcela: 'Parcela 1/1',
+        situacao: 'Pago',
+        grupo_id: grupoId,
       })
     } else {
       const dataBase = new Date(dataInicio + 'T12:00:00')
@@ -83,12 +94,19 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
         const dataFutura = adicionarMeses(dataBase, i)
         registros.push({
           household_id: householdId,
-          data_movimentacao: toISO(dataFutura), data_pagamento: toISO(dataFutura),
-          tipo: 'Receita', categoria_id: Number(categoriaId), classificacao, descricao,
-          valor: valorTotal, metodo_pagamento: 'Transferencia',
+          data_movimentacao: toISO(dataFutura),
+          data_pagamento: toISO(dataFutura),
+          tipo: 'Receita',
+          categoria_id: Number(categoriaId),
+          classificacao,
+          descricao,
+          valor: valorTotal,
+          metodo_pagamento: metodoPagamento,
           conta_origem_destino: conta?.nome ?? '',
-          forma_pagamento: 'A Vista', numero_parcela: `Parcela ${i + 1}/${meses}`,
-          situacao: 'Previsto', grupo_id: grupoId,
+          forma_pagamento: 'A Vista',
+          numero_parcela: `Parcela ${i + 1}/${meses}`,
+          situacao: i === 0 ? 'Pendente' : 'Previsto',
+          grupo_id: grupoId,
         })
       }
     }
@@ -99,7 +117,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
     } else {
       setMensagem(meses > 1 ? `${meses} receitas lancadas com sucesso!` : 'Receita lancada com sucesso!')
       setDescricao(''); setValor(''); setCategoriaId(''); setContaId('')
-      setDataInicio(''); setNumMeses('2'); setIsPrevisto(false)
+      setDataInicio(''); setNumMeses('2'); setIsPrevisto(false); setMetodoPagamento('PIX')
     }
     setLoading(false)
   }
@@ -171,6 +189,11 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
       <input style={inputStyle} type="number" step="0.01" value={valor}
         onChange={e => setValor(e.target.value)} placeholder="0,00" />
 
+      <label style={labelStyle}>Método de Recebimento *</label>
+      <select style={inputStyle} value={metodoPagamento} onChange={e => setMetodoPagamento(e.target.value)}>
+        {METODOS_RECEITA.map(m => <option key={m} value={m}>{m}</option>)}
+      </select>
+
       <label style={labelStyle}>Conta de Destino *</label>
       <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
         <option value="">Selecione...</option>
@@ -189,7 +212,7 @@ export default function LancamentoReceita({ householdId, categorias, contas }: P
 
           {parseInt(numMeses) > 0 && dataInicio && valor && (
             <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: '#166534' }}>
-              {parseInt(numMeses)} lancamentos de {parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} a partir de {new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — todos como <strong>Previsto</strong>
+              {parseInt(numMeses)} lancamentos de {parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} via <strong>{metodoPagamento}</strong> a partir de {new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')} — 1º como <strong>Pendente</strong>, demais como <strong>Previsto</strong>
             </div>
           )}
         </>
