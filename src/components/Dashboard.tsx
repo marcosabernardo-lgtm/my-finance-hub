@@ -129,7 +129,7 @@ function SecaoExpansivel({
 // ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
 
 function GraficoBarrasMensal({
-  dados, meta, corMeta, titulo, altura = 160
+  dados, meta, corMeta, titulo, altura = 200
 }: {
   dados: { mes: number; ano: number; valor: number; label: string }[]
   meta: number
@@ -137,86 +137,120 @@ function GraficoBarrasMensal({
   titulo: string
   altura?: number
 }) {
-  const maxValor = Math.max(...dados.map(d => d.valor), meta, 1)
-  const alturaGrafico = altura
+  const PADDING_TOP = 24
+  const PADDING_BOTTOM = 28
+  const PADDING_LEFT = 8
+  const PADDING_RIGHT = 80
   const larguraBarra = 36
   const gap = 16
-  const larguraTotal = dados.length * (larguraBarra + gap)
+  const svgWidth = dados.length * (larguraBarra + gap) + PADDING_LEFT + PADDING_RIGHT
+  const svgHeight = altura + PADDING_TOP + PADDING_BOTTOM
+  const areaAltura = altura
+
+  const maxValor = Math.max(...dados.map(d => d.valor), meta > 0 ? meta * 1.1 : 0, 1)
+
+  const yBarra = (valor: number) => {
+    if (valor <= 0) return areaAltura
+    return areaAltura - (valor / maxValor) * areaAltura
+  }
+
+  const yMeta = meta > 0 ? areaAltura - (meta / maxValor) * areaAltura : null
 
   return (
     <div>
-      <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>{titulo}</div>
+      {titulo && <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>{titulo}</div>}
       <div style={{ overflowX: 'auto' }}>
-        <div style={{ position: 'relative', minWidth: larguraTotal + 40 }}>
+        <svg
+          width={svgWidth}
+          height={svgHeight}
+          style={{ display: 'block' }}
+        >
+          <g transform={`translate(${PADDING_LEFT}, ${PADDING_TOP})`}>
 
-          {/* Barras + linha de meta no mesmo container */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: `${gap}px`, height: alturaGrafico + 28, paddingBottom: '28px', position: 'relative' }}>
+            {/* Linha de meta */}
+            {yMeta !== null && (
+              <g>
+                <line
+                  x1={0} y1={yMeta}
+                  x2={svgWidth - PADDING_LEFT - PADDING_RIGHT + 60} y2={yMeta}
+                  stroke={corMeta} strokeWidth={2} strokeDasharray="6,4"
+                />
+                <rect x={svgWidth - PADDING_LEFT - PADDING_RIGHT + 2} y={yMeta - 10} width={74} height={16} fill="#fff" rx={3} />
+                <text
+                  x={svgWidth - PADDING_LEFT - PADDING_RIGHT + 4}
+                  y={yMeta + 3}
+                  fontSize={10} fontWeight={700} fill={corMeta}
+                >
+                  {fmt(meta)}
+                </text>
+              </g>
+            )}
 
-          {/* Linha de meta — dentro do flex, posicionada em relação a ele */}
-          {meta > 0 && (
-            <div style={{
-              position: 'absolute',
-              left: 0, right: 0,
-              bottom: 28 + Math.min((meta / maxValor) * alturaGrafico, alturaGrafico - 2),
-              borderTop: `2px dashed ${corMeta}`,
-              zIndex: 2,
-              pointerEvents: 'none',
-            }}>
-              <span style={{
-                position: 'absolute', right: 0, top: -18,
-                fontSize: '10px', fontWeight: 700, color: corMeta,
-                background: '#fff', padding: '1px 4px', borderRadius: '4px'
-              }}>
-                Meta {fmt(meta)}
-              </span>
-            </div>
-          )}
+            {/* Barras */}
             {dados.map((d, i) => {
-              const alturaBarra = maxValor > 0 ? (d.valor / maxValor) * alturaGrafico : 0
+              const x = PADDING_LEFT + i * (larguraBarra + gap)
               const acimaMeta = meta > 0 && d.valor > meta
-              const corBarra = meta === 0
-                ? '#2563eb'
-                : acimaMeta ? '#ef4444' : '#16a34a'
+              const corBarra = meta === 0 ? '#2563eb' : acimaMeta ? '#ef4444' : '#16a34a'
+              const yTopo = yBarra(d.valor)
+              const hBarra = Math.max(areaAltura - yTopo, d.valor > 0 ? 3 : 0)
+
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
-                  {/* Valor em cima */}
-                  {d.valor > 0 && (
-                    <div style={{ fontSize: '9px', fontWeight: 700, color: acimaMeta ? '#ef4444' : '#16a34a', whiteSpace: 'nowrap', marginBottom: '2px' }}>
-                      {(d.valor / 1000).toFixed(1)}k
-                    </div>
-                  )}
+                <g key={i}>
                   {/* Barra */}
-                  <div style={{
-                    width: larguraBarra,
-                    height: Math.max(alturaBarra, d.valor > 0 ? 4 : 0),
-                    background: corBarra,
-                    borderRadius: '4px 4px 0 0',
-                    transition: 'height 0.4s ease',
-                    alignSelf: 'flex-end',
-                  }} />
+                  {d.valor > 0 && (
+                    <rect
+                      x={x} y={yTopo}
+                      width={larguraBarra} height={hBarra}
+                      fill={corBarra} rx={3}
+                    />
+                  )}
+                  {/* Valor */}
+                  {d.valor > 0 && (
+                    <text
+                      x={x + larguraBarra / 2} y={yTopo - 5}
+                      textAnchor="middle" fontSize={9} fontWeight={700}
+                      fill={acimaMeta ? '#ef4444' : '#16a34a'}
+                    >
+                      {(d.valor / 1000).toFixed(1)}k
+                    </text>
+                  )}
                   {/* Label mês */}
-                  <div style={{ fontSize: '10px', color: '#9ca3af', whiteSpace: 'nowrap', marginTop: '4px' }}>{d.label}</div>
-                </div>
+                  <text
+                    x={x + larguraBarra / 2} y={areaAltura + 16}
+                    textAnchor="middle" fontSize={10} fill="#9ca3af"
+                  >
+                    {d.label}
+                  </text>
+                </g>
               )
             })}
-          </div>{/* fim flex barras */}
-        </div>
+
+            {/* Linha base */}
+            <line x1={0} y1={areaAltura} x2={svgWidth - PADDING_LEFT - PADDING_RIGHT + 60} y2={areaAltura} stroke="#e5e7eb" strokeWidth={1} />
+          </g>
+        </svg>
       </div>
 
       {/* Legenda */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
-          <div style={{ width: '12px', height: '12px', background: '#16a34a', borderRadius: '2px' }} />
-          <span>Abaixo da meta</span>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
-          <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '2px' }} />
-          <span>Acima da meta</span>
-        </div>
-        {meta > 0 && (
+        {meta > 0 && <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
-            <div style={{ width: '20px', borderTop: `2px dashed ${corMeta}` }} />
-            <span>Meta ({fmt(meta)}/mês)</span>
+            <div style={{ width: '12px', height: '12px', background: '#16a34a', borderRadius: '2px' }} />
+            <span>Abaixo da meta</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+            <div style={{ width: '12px', height: '12px', background: '#ef4444', borderRadius: '2px' }} />
+            <span>Acima da meta</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+            <svg width="20" height="10"><line x1="0" y1="5" x2="20" y2="5" stroke={corMeta} strokeWidth={2} strokeDasharray="4,3"/></svg>
+            <span>Meta {fmt(meta)}/mês</span>
+          </div>
+        </>}
+        {meta === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
+            <div style={{ width: '12px', height: '12px', background: '#2563eb', borderRadius: '2px' }} />
+            <span>Valor mensal</span>
           </div>
         )}
       </div>
@@ -237,6 +271,7 @@ export default function Dashboard() {
   const [contas, setContas] = useState<Conta[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [categoriasReceita, setCategoriasReceita] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
   const [movsAno, setMovsAno] = useState<Movimentacao[]>([])
   const [movsCartaoAno, setMovsCartaoAno] = useState<Movimentacao[]>([])
@@ -261,8 +296,14 @@ export default function Dashboard() {
       .then(({ data }) => setContas(data || []))
     supabase.from('cartoes').select('id,nome,limite_total,data_vencimento').eq('household_id', householdId).eq('ativo', true).order('nome')
       .then(({ data }) => setCartoes(data || []))
-    supabase.from('categorias').select('id,nome,classificacao,limite_gastos').eq('household_id', householdId).order('nome')
+    supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
+      .eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
+    supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
+      .eq('household_id', householdId)
+      .in('classificacao', ['Renda Ativa', 'Renda Passiva'])
+      .order('nome')
+      .then(({ data }) => setCategoriasReceita(data || []))
   }, [householdId])
 
   // ── Busca dados ─────────────────────────────────────────────────────────────
@@ -418,10 +459,10 @@ export default function Dashboard() {
 
   // Meta: soma dos limite_gastos de categorias de receita / despesa
   const metaReceitas = useMemo(() =>
-    categorias
-      .filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos)
+    categoriasReceita
+      .filter(c => c.limite_gastos && c.limite_gastos > 0)
       .reduce((s, c) => s + (c.limite_gastos || 0), 0),
-    [categorias])
+    [categoriasReceita])
 
   const metaDespesas = useMemo(() =>
     categorias
