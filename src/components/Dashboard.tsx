@@ -137,6 +137,7 @@ function GraficoBarrasMensal({
   titulo: string
   altura?: number
 }) {
+  const [tooltip, setTooltip] = useState<{ x: number; y: number; valor: number; label: string } | null>(null)
   const PADDING_TOP = 28
   const PADDING_BOTTOM = 32
   const PADDING_LEFT = 12
@@ -202,7 +203,13 @@ function GraficoBarrasMensal({
                   return (
                     <g key={i}>
                       {d.valor > 0 && (
-                        <rect x={x} y={yTopo} width={larguraBarra} height={hBarra} fill={corBarra} rx={4} />
+                        <rect
+                          x={x} y={yTopo} width={larguraBarra} height={hBarra}
+                          fill={corBarra} rx={4}
+                          style={{ cursor: 'pointer' }}
+                          onMouseEnter={() => setTooltip({ x: cx, y: yTopo, valor: d.valor, label: d.label })}
+                          onMouseLeave={() => setTooltip(null)}
+                        />
                       )}
                       {d.valor > 0 && (
                         <text x={cx} y={yTopo - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill={corTexto}>
@@ -215,6 +222,32 @@ function GraficoBarrasMensal({
                     </g>
                   )
                 })}
+
+                {/* Tooltip */}
+                {tooltip && (
+                  <g>
+                    <rect
+                      x={Math.min(tooltip.x - 55, 1000 - PADDING_LEFT - PADDING_RIGHT - 110)}
+                      y={Math.max(tooltip.y - 44, 0)}
+                      width={110} height={36}
+                      fill="#111827" rx={6} opacity={0.92}
+                    />
+                    <text
+                      x={Math.min(tooltip.x, 1000 - PADDING_LEFT - PADDING_RIGHT - 55)}
+                      y={Math.max(tooltip.y - 28, 14)}
+                      textAnchor="middle" fontSize={10} fill="#9ca3af"
+                    >
+                      {tooltip.label}
+                    </text>
+                    <text
+                      x={Math.min(tooltip.x, 1000 - PADDING_LEFT - PADDING_RIGHT - 55)}
+                      y={Math.max(tooltip.y - 14, 28)}
+                      textAnchor="middle" fontSize={12} fontWeight={700} fill="#fff"
+                    >
+                      {fmt(tooltip.valor)}
+                    </text>
+                  </g>
+                )}
 
                 {/* Linha base */}
                 <line x1={0} y1={areaAltura} x2={areaWidth + 4} y2={areaAltura} stroke="#e5e7eb" strokeWidth={1} />
