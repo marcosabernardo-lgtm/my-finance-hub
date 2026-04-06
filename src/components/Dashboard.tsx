@@ -351,8 +351,12 @@ export default function Dashboard() {
       .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalDespesas = useMemo(() =>
-    movsmes.filter(m => m.tipo === 'Despesa' && (m.situacao === 'Pago' || (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')))
-      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
+    movsmes.filter(m =>
+      m.tipo === 'Despesa' && (
+        m.situacao === 'Pago' ||
+        (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')
+      )
+    ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalCartaoCredito = useMemo(() =>
     movsmes.filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && m.cartao_id !== null)
@@ -361,11 +365,18 @@ export default function Dashboard() {
   const totalSaldoContas = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
   const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
 
-  // ── Por categoria (mês atual) ────────────────────────────────────────────────
+  // ── Por categoria (mês atual) — mesma regra entraNoReal do Resumo ───────────
+  // entraNoReal = Pago OU (Pendente + Parcela 1/1)
+  const entraNoReal = (m: Movimentacao) =>
+    m.tipo === 'Despesa' && (
+      m.situacao === 'Pago' ||
+      (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')
+    )
+
   const porCategoria = useMemo(() => {
     const map: Record<number, number> = {}
     for (const m of movsmes) {
-      if (m.tipo !== 'Despesa' || m.situacao !== 'Pago' || !m.categoria_id) continue
+      if (!entraNoReal(m) || !m.categoria_id) continue
       map[m.categoria_id] = (map[m.categoria_id] || 0) + Number(m.valor)
     }
     return Object.entries(map)
