@@ -272,7 +272,6 @@ export default function Dashboard() {
   const [contas, setContas] = useState<Conta[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
-  const [categoriasReceita, setCategoriasReceita] = useState<Categoria[]>([])
   const [movsmes, setMovsMes] = useState<Movimentacao[]>([])
   const [movsAno, setMovsAno] = useState<Movimentacao[]>([])
   const [movsCartaoAno, setMovsCartaoAno] = useState<Movimentacao[]>([])
@@ -300,11 +299,7 @@ export default function Dashboard() {
     supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
       .eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
-    supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
-      .eq('household_id', householdId)
-      .in('classificacao', ['Renda Ativa', 'Renda Passiva'])
-      .order('nome')
-      .then(({ data }) => setCategoriasReceita(data || []))
+
   }, [householdId])
 
   // ── Busca dados ─────────────────────────────────────────────────────────────
@@ -461,17 +456,6 @@ export default function Dashboard() {
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
     }), [movsAno, filtroAno])
-
-  // Meta receitas: soma limite_gastos das categorias Renda Ativa/Passiva
-  // Fallback: busca direto de categorias se categoriasReceita estiver vazia
-  const metaReceitas = useMemo(() => {
-    const fonte = categoriasReceita.length > 0
-      ? categoriasReceita
-      : categorias.filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao))
-    return fonte
-      .filter(c => c.limite_gastos && c.limite_gastos > 0)
-      .reduce((s, c) => s + (c.limite_gastos || 0), 0)
-  }, [categoriasReceita, categorias])
 
   // Meta despesas: soma limite_gastos das categorias de despesa
   const metaDespesas = useMemo(() =>
