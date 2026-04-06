@@ -716,7 +716,7 @@ export default function Dashboard() {
               <GraficoBarrasMensal
                 titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
                 dados={dadosReceitasMensal}
-                meta={metaReceitas}
+                meta={0}
                 corMeta="#10b981"
                 altura={200}
               />
@@ -760,7 +760,7 @@ export default function Dashboard() {
                 <GraficoBarrasMensal
                   titulo=""
                   dados={dadosCartaoMensal}
-                  meta={cartaoAtivo?.limite_total ?? 0}
+                  meta={0}
                   corMeta="#7c3aed"
                   altura={200}
                 />
