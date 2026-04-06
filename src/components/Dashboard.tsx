@@ -462,16 +462,21 @@ export default function Dashboard() {
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
     }), [movsAno, filtroAno])
 
-  // Meta: soma dos limite_gastos de categorias de receita / despesa
-  const metaReceitas = useMemo(() =>
-    categoriasReceita
+  // Meta receitas: soma limite_gastos das categorias Renda Ativa/Passiva
+  // Fallback: busca direto de categorias se categoriasReceita estiver vazia
+  const metaReceitas = useMemo(() => {
+    const fonte = categoriasReceita.length > 0
+      ? categoriasReceita
+      : categorias.filter(c => ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao))
+    return fonte
       .filter(c => c.limite_gastos && c.limite_gastos > 0)
-      .reduce((s, c) => s + (c.limite_gastos || 0), 0),
-    [categoriasReceita])
+      .reduce((s, c) => s + (c.limite_gastos || 0), 0)
+  }, [categoriasReceita, categorias])
 
+  // Meta despesas: soma limite_gastos das categorias de despesa
   const metaDespesas = useMemo(() =>
     categorias
-      .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos)
+      .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos && c.limite_gastos > 0)
       .reduce((s, c) => s + (c.limite_gastos || 0), 0),
     [categorias])
 
@@ -487,7 +492,7 @@ export default function Dashboard() {
           const anoFatura = parseInt(m.data_pagamento.substring(0, 4), 10)
           const mesFatura = parseInt(m.data_pagamento.substring(5, 7), 10)
           return m.cartao_id === cartaoId && mesFatura === mes && anoFatura === filtroAno
-            && ['Faturado', 'Pendente'].includes(m.situacao)
+            && ['Faturado', 'Pendente', 'Previsto'].includes(m.situacao)
         })
         .reduce((s, m) => s + Number(m.valor), 0)
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
