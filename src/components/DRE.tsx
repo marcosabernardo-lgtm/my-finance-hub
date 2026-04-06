@@ -170,8 +170,8 @@ export default function DRE() {
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
       .eq('household_id', householdId)
       .in('tipo', ['Despesa', 'Receita'])
-      .gte('data_pagamento', dataInicio)
-      .lte('data_pagamento', dataFim)
+      .gte('data_movimentacao', dataInicio)
+      .lte('data_movimentacao', dataFim)
 
     setMovimentacoes(movs || [])
 
@@ -230,6 +230,8 @@ export default function DRE() {
       if (!situacoesIncluidas.includes(m.situacao)) continue
 
       if (m.tipo === 'Receita') {
+        // Excluir transferências entre contas — não são receita real
+        if (m.metodo_pagamento === 'Transferência entre Contas') continue
         const mr = getMesRef(m); if (!mr) continue
         adicionar(m.categoria_id, 'Receita', mr, Number(m.valor)); continue
       }

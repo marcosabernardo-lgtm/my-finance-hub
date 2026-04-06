@@ -79,7 +79,8 @@ export default function LancamentoTransferencia({ householdId, categorias, conta
       grupo_id: grupoId,
     }
 
-    // Lança entrada na conta destino (Receita / Transferência)
+    // Lança entrada na conta destino (Receita com método Transferência entre Contas)
+    // Assim soma no saldo da conta destino mas é excluída dos relatórios de receita real
     const entrada = {
       household_id: householdId,
       data_movimentacao: dataMov,
