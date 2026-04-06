@@ -129,7 +129,7 @@ function SecaoExpansivel({
 // ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
 
 function GraficoBarrasMensal({
-  dados, meta, corMeta, titulo, altura = 200
+  dados, meta, corMeta, titulo, altura = 240
 }: {
   dados: { mes: number; ano: number; valor: number; label: string }[]
   meta: number
@@ -137,14 +137,10 @@ function GraficoBarrasMensal({
   titulo: string
   altura?: number
 }) {
-  const PADDING_TOP = 24
-  const PADDING_BOTTOM = 28
-  const PADDING_LEFT = 8
-  const PADDING_RIGHT = 80
-  const larguraBarra = 36
-  const gap = 16
-  const svgWidth = dados.length * (larguraBarra + gap) + PADDING_LEFT + PADDING_RIGHT
-  const svgHeight = altura + PADDING_TOP + PADDING_BOTTOM
+  const PADDING_TOP = 28
+  const PADDING_BOTTOM = 32
+  const PADDING_LEFT = 12
+  const PADDING_RIGHT = meta > 0 ? 90 : 12
   const areaAltura = altura
 
   const maiorValor = Math.max(...dados.map(d => d.valor), meta, 1)
@@ -156,81 +152,77 @@ function GraficoBarrasMensal({
   }
 
   const yMeta = meta > 0 ? areaAltura - (meta / maxValor) * areaAltura : null
+  const svgHeight = altura + PADDING_TOP + PADDING_BOTTOM
 
   return (
     <div>
       {titulo && <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '12px' }}>{titulo}</div>}
-      <div style={{ overflowX: 'auto' }}>
-        <svg
-          width={svgWidth}
-          height={svgHeight}
-          style={{ display: 'block' }}
-        >
-          <g transform={`translate(${PADDING_LEFT}, ${PADDING_TOP})`}>
+      <svg
+        width="100%"
+        height={svgHeight}
+        viewBox={`0 0 1000 ${svgHeight}`}
+        preserveAspectRatio="none"
+        style={{ display: 'block' }}
+      >
+        <g transform={`translate(${PADDING_LEFT}, ${PADDING_TOP})`}>
+          {/* Área útil = 1000 - PADDING_LEFT - PADDING_RIGHT */}
+          {(() => {
+            const areaWidth = 1000 - PADDING_LEFT - PADDING_RIGHT
+            const slotWidth = areaWidth / dados.length
+            const larguraBarra = Math.min(slotWidth * 0.6, 80)
+            const offsetX = (slotWidth - larguraBarra) / 2
 
-            {/* Linha de meta */}
-            {yMeta !== null && (
-              <g>
-                <line
-                  x1={0} y1={yMeta}
-                  x2={svgWidth - PADDING_LEFT - PADDING_RIGHT + 60} y2={yMeta}
-                  stroke={corMeta} strokeWidth={2} strokeDasharray="6,4"
-                />
-                <rect x={svgWidth - PADDING_LEFT - PADDING_RIGHT + 2} y={yMeta - 10} width={74} height={16} fill="#fff" rx={3} />
-                <text
-                  x={svgWidth - PADDING_LEFT - PADDING_RIGHT + 4}
-                  y={yMeta + 3}
-                  fontSize={10} fontWeight={700} fill={corMeta}
-                >
-                  {fmt(meta)}
-                </text>
-              </g>
-            )}
-
-            {/* Barras */}
-            {dados.map((d, i) => {
-              const x = PADDING_LEFT + i * (larguraBarra + gap)
-              const acimaMeta = meta > 0 && d.valor > meta
-              const corBarra = meta === 0 ? '#2563eb' : acimaMeta ? '#ef4444' : '#16a34a'
-              const yTopo = yBarra(d.valor)
-              const hBarra = Math.max(areaAltura - yTopo, d.valor > 0 ? 3 : 0)
-
-              return (
-                <g key={i}>
-                  {/* Barra */}
-                  {d.valor > 0 && (
-                    <rect
-                      x={x} y={yTopo}
-                      width={larguraBarra} height={hBarra}
-                      fill={corBarra} rx={3}
+            return (
+              <>
+                {/* Linha de meta */}
+                {yMeta !== null && (
+                  <g>
+                    <line
+                      x1={0} y1={yMeta}
+                      x2={areaWidth + 4} y2={yMeta}
+                      stroke={corMeta} strokeWidth={2} strokeDasharray="8,5"
                     />
-                  )}
-                  {/* Valor */}
-                  {d.valor > 0 && (
-                    <text
-                      x={x + larguraBarra / 2} y={yTopo - 5}
-                      textAnchor="middle" fontSize={9} fontWeight={700}
-                      fill={acimaMeta ? '#ef4444' : '#16a34a'}
-                    >
-                      {(d.valor / 1000).toFixed(1)}k
+                    <rect x={areaWidth + 6} y={yMeta - 11} width={86} height={18} fill="#fff" rx={3} />
+                    <text x={areaWidth + 8} y={yMeta + 4} fontSize={11} fontWeight={700} fill={corMeta}>
+                      {fmt(meta)}
                     </text>
-                  )}
-                  {/* Label mês */}
-                  <text
-                    x={x + larguraBarra / 2} y={areaAltura + 16}
-                    textAnchor="middle" fontSize={10} fill="#9ca3af"
-                  >
-                    {d.label}
-                  </text>
-                </g>
-              )
-            })}
+                  </g>
+                )}
 
-            {/* Linha base */}
-            <line x1={0} y1={areaAltura} x2={svgWidth - PADDING_LEFT - PADDING_RIGHT + 60} y2={areaAltura} stroke="#e5e7eb" strokeWidth={1} />
-          </g>
-        </svg>
-      </div>
+                {/* Barras */}
+                {dados.map((d, i) => {
+                  const x = i * slotWidth + offsetX
+                  const cx = i * slotWidth + slotWidth / 2
+                  const acimaMeta = meta > 0 && d.valor > meta
+                  const corBarra = meta === 0 ? '#2563eb' : acimaMeta ? '#ef4444' : '#16a34a'
+                  const corTexto = meta === 0 ? '#2563eb' : acimaMeta ? '#ef4444' : '#16a34a'
+                  const yTopo = yBarra(d.valor)
+                  const hBarra = Math.max(areaAltura - yTopo, d.valor > 0 ? 4 : 0)
+
+                  return (
+                    <g key={i}>
+                      {d.valor > 0 && (
+                        <rect x={x} y={yTopo} width={larguraBarra} height={hBarra} fill={corBarra} rx={4} />
+                      )}
+                      {d.valor > 0 && (
+                        <text x={cx} y={yTopo - 6} textAnchor="middle" fontSize={11} fontWeight={700} fill={corTexto}>
+                          {(d.valor / 1000).toFixed(1)}k
+                        </text>
+                      )}
+                      <text x={cx} y={areaAltura + 20} textAnchor="middle" fontSize={11} fill="#9ca3af">
+                        {d.label}
+                      </text>
+                    </g>
+                  )
+                })}
+
+                {/* Linha base */}
+                <line x1={0} y1={areaAltura} x2={areaWidth + 4} y2={areaAltura} stroke="#e5e7eb" strokeWidth={1} />
+              </>
+            )
+          })()}
+        </g>
+      </svg>
 
       {/* Legenda */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
