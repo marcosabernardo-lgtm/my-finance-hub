@@ -68,7 +68,7 @@ const CORES = {
   parcelamento:    '#9b59b6',
   previsto:        '#f59e0b',
   quitado:         '#52c878',
-  fundo:           '#f8fafc',
+  fundo:           '#f5f0e8',
   sidebar:         '#0d7280',
   texto:           '#1a2332',
   textoSecundario: '#6b7a8d',
@@ -151,6 +151,7 @@ function CardParcela({
       padding: '12px',
       transition: 'all 0.2s',
     }}>
+      {/* Badge situação clicável */}
       <div style={{ marginBottom: '8px' }}>
         <select
           value={situacaoLocal}
@@ -203,7 +204,7 @@ function DrillParcelas({
 }) {
   const ordenadas = [...parcelas].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
   return (
-    <div style={{ backgroundColor: '#f8fafc', borderBottom: `1px solid ${CORES.borda}`, padding: '16px 20px 20px' }}>
+    <div style={{ backgroundColor: '#ede8df', borderBottom: `1px solid ${CORES.borda}`, padding: '16px 20px 20px' }}>
       <div style={{ fontSize: '13px', fontWeight: 700, color: CORES.texto, marginBottom: '4px' }}>
         Parcelas ({parcelas.length} no total)
       </div>
@@ -324,7 +325,7 @@ function TabelaCredito({
             {/* Cabeçalho cartão */}
             <div
               onClick={() => { setCartaoAberto(aberto ? null : cg.cartao_nome); setDividaAberta(null); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : '#f8fafc', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : '#f5f0e8', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: CORES.credito, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💳</div>
@@ -420,9 +421,8 @@ export default function Endividamento() {
         supabase.from('cartoes').select('id, nome').eq('ativo', true),
         supabase.from('contas').select('id, nome').eq('ativo', true).eq('tipo', 'corrente'),
       ]);
-      // ✅ FIX: inclui parcela 1/1 (removido filtro total > 1)
       if (movRes.data) {
-        setMovimentacoes(movRes.data.filter((m) => parseP(m.numero_parcela).total >= 1));
+        setMovimentacoes(movRes.data.filter((m) => parseP(m.numero_parcela).total > 1));
       }
       if (cartRes.data) setCartoes(cartRes.data);
       if (contRes.data) setContas(contRes.data);
@@ -453,7 +453,8 @@ export default function Endividamento() {
       const cartaoNome = (p0 as any).cartoes?.nome || null;
       const pendentes  = parcelas.filter((p) => entraNaContagem(p, filtroSit));
       const pagas      = parcelas.filter((p) => foiQuitada(p, isCredito)).length;
-      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas };
+      const { total }  = parseP(p0.numero_parcela);
+      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total };
     }).filter((g) => g.pendentes.length > 0);
 
     const porDesc: Record<string, typeof grupos> = {};
@@ -467,15 +468,11 @@ export default function Endividamento() {
 
     return Object.entries(porDesc).map(([chave, gs]) => {
       const todasParcelas = gs.flatMap((g) => g.parcelas);
-      const totalParcelas = todasParcelas.length;
-      const totalPagas    = todasParcelas.filter((p) => foiQuitada(p, gs[0].isCredito)).length;
+      const totalParcelas = gs.reduce((s, g) => s + g.total, 0);
+      const totalPagas    = gs.reduce((s, g) => s + g.pagas, 0);
       const totalPend     = gs.reduce((s, g) => s + g.pendentes.length, 0);
       const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0            = gs[0].p0;
-
-      const valorTotal    = todasParcelas.reduce((s, p) => s + p.valor, 0);
-      const valorRestante = pendOrd.reduce((s, p) => s + p.valor, 0);
-
       return {
         chave,
         descricao:          p0.descricao,
@@ -489,8 +486,8 @@ export default function Endividamento() {
         parcelas_pagas:     totalPagas,
         parcelas_pendentes: totalPend,
         valor_parcela:      p0.valor,
-        valor_total:        valorTotal,
-        valor_restante:     valorRestante,
+        valor_total:        p0.valor * totalParcelas,
+        valor_restante:     p0.valor * totalPend,
         proxima_parcela:    pendOrd[0]?.data_pagamento || '',
         ultima_parcela:     pendOrd[pendOrd.length - 1]?.data_pagamento || '',
         parcelas:           todasParcelas,
@@ -713,7 +710,7 @@ export default function Endividamento() {
                   </thead>
                   <tbody>
                     {evolucaoMensal.map((e,i) => (
-                      <tr key={e.mes} style={{ backgroundColor: i%2===0 ? CORES.card : '#f8fafc', borderBottom:`1px solid ${CORES.borda}` }}>
+                      <tr key={e.mes} style={{ backgroundColor: i%2===0 ? CORES.card : '#ede8df', borderBottom:`1px solid ${CORES.borda}` }}>
                         <td style={{ padding:'10px 16px', fontWeight:600, color: CORES.texto }}>{e.mes}</td>
                         <td style={{ padding:'10px 16px', textAlign:'right' as const, color: CORES.quitado, fontWeight:600 }}>{fmt(e.pago)}</td>
                         <td style={{ padding:'10px 16px', textAlign:'right' as const, color: CORES.credito, fontWeight:600 }}>{fmt(e.restante)}</td>

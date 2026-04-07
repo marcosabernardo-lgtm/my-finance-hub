@@ -59,7 +59,7 @@ const DARK: ThemeTokens = {
   sidebarItemHover: "#0a5f6b",
   sidebarText: "#e2f4f6",
   sidebarSubtext: "#a8d8de",
-  contentBg: "#f8fafc",
+  contentBg: "#f5f0e8",
   homeBg: "#0b1120",
   homeCardBg: "#0d1526",
   homeCardBorder: "#1e2d45",
