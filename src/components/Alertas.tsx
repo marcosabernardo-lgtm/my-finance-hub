@@ -370,7 +370,7 @@ export default function Alertas() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '900px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '900px', margin: '0 auto', background: '#f9fafb', minHeight: '100vh' }}>
 
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>
