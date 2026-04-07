@@ -417,15 +417,17 @@ export default function Dashboard() {
 
   const totalDespesas = useMemo(() =>
     movsmes.filter(m =>
-      m.tipo === 'Despesa' && (
-        m.situacao === 'Pago' ||
-        (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1')
-      )
+      m.tipo === 'Despesa' &&
+      ['Pago', 'Pendente'].includes(m.situacao) &&
+      !m.cartao_id
     ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalCartaoCredito = useMemo(() =>
-    movsmes.filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && m.cartao_id !== null)
-      .reduce((s, m) => s + Number(m.valor), 0), [movsmes])
+    movsmes.filter(m =>
+      m.tipo === 'Despesa' &&
+      ['Pago', 'Pendente'].includes(m.situacao) &&
+      m.cartao_id !== null
+    ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalSaldoContas = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
   const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
