@@ -8,6 +8,9 @@ const supabase = createClient(
 
 const HOUSEHOLD_ID = 'fdfc5a94-c5e4-42d1-b1c2-015dfa492556';
 
+type FiltroSit = 'pendente' | 'previsto' | 'pendente+previsto';
+type SituacaoOpcao = 'Pendente' | 'Previsto' | 'Pago' | 'Faturado';
+
 interface Movimentacao {
   id: string;
   descricao: string;
@@ -26,9 +29,8 @@ interface Movimentacao {
   cartoes?: { nome: string };
 }
 
-// Dívida agrupada por descrição (Débito/PIX/Parcelamento)
 interface DividaDesc {
-  chave: string;           // descricao normalizada
+  chave: string;
   descricao: string;
   metodo_pagamento: string;
   cartao_nome: string | null;
@@ -44,15 +46,14 @@ interface DividaDesc {
   valor_restante: number;
   proxima_parcela: string;
   ultima_parcela: string;
-  parcelas: Movimentacao[];  // todas as parcelas (todos os grupos_id)
+  parcelas: Movimentacao[];
 }
 
-// Cartão agrupado (Crédito)
 interface CartaoGrupo {
   cartao_nome: string;
   valor_restante: number;
   total_dividas: number;
-  dividas: DividaDesc[];   // agrupadas por descrição dentro do cartão
+  dividas: DividaDesc[];
 }
 
 interface CartaoOpcao { id: string; nome: string; }
@@ -65,6 +66,7 @@ const CORES = {
   credito:         '#e05252',
   debito:          '#4a9eff',
   parcelamento:    '#9b59b6',
+  previsto:        '#f59e0b',
   quitado:         '#52c878',
   fundo:           '#f8fafc',
   sidebar:         '#0d7280',
@@ -78,8 +80,17 @@ const COR_ABA: Record<AbaLista, string> = {
   credito: CORES.credito, debito: CORES.debito, parcelamento: CORES.parcelamento,
 };
 
-const fmt  = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const fmtD = (d: string) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
+const SITUACOES_OPCOES: SituacaoOpcao[] = ['Pendente', 'Previsto', 'Pago', 'Faturado'];
+
+const COR_SITUACAO: Record<string, { bg: string; color: string; border: string }> = {
+  'Pago':     { bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
+  'Faturado': { bg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
+  'Pendente': { bg: '#fef3c7', color: '#d97706', border: '#fcd34d' },
+  'Previsto': { bg: '#f3e8ff', color: '#7c3aed', border: '#c4b5fd' },
+};
+
+const fmt   = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+const fmtD  = (d: string) => d ? new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') : '-';
 const mesAno = (d: string) => {
   const dt = new Date(d + 'T00:00:00');
   return `${String(dt.getMonth()+1).padStart(2,'0')}/${dt.getFullYear()}`;
@@ -88,42 +99,134 @@ const parseP = (s: string) => {
   const m = s?.match(/Parcela (\d+)\/(\d+)/i);
   return m ? { atual: +m[1], total: +m[2] } : { atual: 0, total: 0 };
 };
-const foiQuitada  = (p: Movimentacao, isCredito: boolean) =>
+const foiQuitada = (p: Movimentacao, isCredito: boolean) =>
   isCredito ? (p.situacao === 'Faturado' || p.situacao === 'Pago') : p.situacao === 'Pago';
-// Previsto = pode cancelar a qualquer momento → não entra como endividamento
-const isPendente  = (p: Movimentacao, inclPrevistos = false) =>
-  p.situacao === 'Pendente' || (inclPrevistos && p.situacao === 'Previsto');
 
-// ─── Parcelas drill-down (lista de cards) ─────────────────────────────────────
-function DrillParcelas({ parcelas, isCredito }: { parcelas: Movimentacao[]; isCredito: boolean }) {
+const entraNaContagem = (p: Movimentacao, filtro: FiltroSit) => {
+  if (filtro === 'pendente')           return p.situacao === 'Pendente';
+  if (filtro === 'previsto')           return p.situacao === 'Previsto';
+  if (filtro === 'pendente+previsto')  return p.situacao === 'Pendente' || p.situacao === 'Previsto';
+  return false;
+};
+
+// ─── Card de parcela com edição de situação ───────────────────────────────────
+function CardParcela({
+  p, isCredito, onUpdate,
+}: {
+  p: Movimentacao;
+  isCredito: boolean;
+  onUpdate: (id: string, novaSituacao: string) => void;
+}) {
+  const [salvando, setSalvando] = useState(false);
+  const [situacaoLocal, setSituacaoLocal] = useState(p.situacao);
+  const { atual, total } = parseP(p.numero_parcela);
+  const cores = COR_SITUACAO[situacaoLocal] || COR_SITUACAO['Pendente'];
+  const pago  = foiQuitada({ ...p, situacao: situacaoLocal }, isCredito);
+
+  async function alterarSituacao(nova: string) {
+    if (nova === situacaoLocal) return;
+    setSalvando(true);
+    try {
+      const { error } = await supabase
+        .from('movimentacoes')
+        .update({ situacao: nova })
+        .eq('id', p.id);
+      if (!error) {
+        setSituacaoLocal(nova);
+        onUpdate(p.id, nova);
+      } else {
+        alert('Erro ao salvar: ' + error.message);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setSalvando(false);
+  }
+
+  return (
+    <div style={{
+      backgroundColor: pago ? '#f0fdf4' : situacaoLocal === 'Previsto' ? '#fdf4ff' : '#fff',
+      border: `1.5px solid ${cores.border}`,
+      borderRadius: '10px',
+      padding: '12px',
+      transition: 'all 0.2s',
+    }}>
+      {/* Badge situação clicável */}
+      <div style={{ marginBottom: '8px' }}>
+        <select
+          value={situacaoLocal}
+          disabled={salvando}
+          onChange={(e) => alterarSituacao(e.target.value)}
+          style={{
+            padding: '3px 8px',
+            borderRadius: '12px',
+            fontSize: '11px',
+            fontWeight: 700,
+            border: `1px solid ${cores.border}`,
+            backgroundColor: cores.bg,
+            color: cores.color,
+            cursor: salvando ? 'wait' : 'pointer',
+            outline: 'none',
+            appearance: 'none' as const,
+            WebkitAppearance: 'none' as const,
+            paddingRight: '20px',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23${cores.color.replace('#','')}'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 6px center',
+          }}
+        >
+          {SITUACOES_OPCOES.map((s) => (
+            <option key={s} value={s}>{salvando && s === situacaoLocal ? 'Salvando...' : s}</option>
+          ))}
+        </select>
+      </div>
+      <div style={{ fontSize: '12px', fontWeight: 700, color: CORES.texto }}>Parcela {atual}/{total}</div>
+      <div style={{ fontSize: '14px', fontWeight: 800, color: CORES.texto, marginTop: '2px' }}>{fmt(p.valor)}</div>
+      <div style={{ fontSize: '11px', color: CORES.textoSecundario, marginTop: '4px' }}>
+        Venc: {fmtD(p.data_pagamento)}
+      </div>
+      {salvando && (
+        <div style={{ fontSize: '10px', color: CORES.sidebar, marginTop: '4px', fontWeight: 600 }}>
+          Salvando...
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Drill de parcelas com edição ─────────────────────────────────────────────
+function DrillParcelas({
+  parcelas, isCredito, onUpdate,
+}: {
+  parcelas: Movimentacao[];
+  isCredito: boolean;
+  onUpdate: (id: string, nova: string) => void;
+}) {
   const ordenadas = [...parcelas].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
   return (
     <div style={{ backgroundColor: '#f8fafc', borderBottom: `1px solid ${CORES.borda}`, padding: '16px 20px 20px' }}>
-      <div style={{ fontSize: '13px', fontWeight: 700, color: CORES.texto, marginBottom: '12px' }}>
+      <div style={{ fontSize: '13px', fontWeight: 700, color: CORES.texto, marginBottom: '4px' }}>
         Parcelas ({parcelas.length} no total)
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '8px' }}>
-        {ordenadas.map((p) => {
-          const { atual, total } = parseP(p.numero_parcela);
-          const pago = foiQuitada(p, isCredito);
-          return (
-            <div key={p.id} style={{ backgroundColor: pago ? '#f0fdf4' : '#fff', border: `1px solid ${pago ? '#86efac' : CORES.borda}`, borderRadius: '8px', padding: '10px 12px' }}>
-              <div style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, backgroundColor: pago ? '#dcfce7' : '#fef3c7', color: pago ? '#16a34a' : '#d97706', marginBottom: '4px' }}>
-                {p.situacao}
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: CORES.texto }}>Parcela {atual}/{total}</div>
-              <div style={{ fontSize: '13px', fontWeight: 800, color: CORES.texto, marginTop: '2px' }}>{fmt(p.valor)}</div>
-              <div style={{ fontSize: '11px', color: CORES.textoSecundario, marginTop: '2px' }}>Venc: {fmtD(p.data_pagamento)}</div>
-            </div>
-          );
-        })}
+      <div style={{ fontSize: '11px', color: CORES.textoSecundario, marginBottom: '12px' }}>
+        Clique na situação para alterar diretamente
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: '8px' }}>
+        {ordenadas.map((p) => (
+          <CardParcela key={p.id} p={p} isCredito={isCredito} onUpdate={onUpdate} />
+        ))}
       </div>
     </div>
   );
 }
 
-// ─── Linha de dívida (Débito / Parcelamento) ──────────────────────────────────
-function LinhaDivida({ d, corBarra, isCredito }: { d: DividaDesc; corBarra: string; isCredito: boolean }) {
+// ─── Linha de dívida Débito/Parcelamento ──────────────────────────────────────
+function LinhaDivida({
+  d, corBarra, isCredito, onUpdate,
+}: {
+  d: DividaDesc; corBarra: string; isCredito: boolean;
+  onUpdate: (id: string, nova: string) => void;
+}) {
   const [hov, setHov]   = useState(false);
   const [open, setOpen] = useState(false);
   const pct = d.total_parcelas > 0 ? (d.parcelas_pagas / d.total_parcelas) * 100 : 0;
@@ -148,7 +251,7 @@ function LinhaDivida({ d, corBarra, isCredito }: { d: DividaDesc; corBarra: stri
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: CORES.texto }}>{d.parcelas_pagas}/{d.total_parcelas}</div>
           <div style={{ width: '100%', height: '6px', backgroundColor: '#e9ecef', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
-            <div style={{ width: `${Math.min(100, pct)}%`, height: '100%', backgroundColor: corBarra, borderRadius: '3px' }} />
+            <div style={{ width: `${Math.min(100,pct)}%`, height: '100%', backgroundColor: corBarra, borderRadius: '3px' }} />
           </div>
           <div style={{ fontSize: '10px', color: CORES.textoSecundario, marginTop: '2px' }}>{pct.toFixed(0)}% pago</div>
         </div>
@@ -166,13 +269,18 @@ function LinhaDivida({ d, corBarra, isCredito }: { d: DividaDesc; corBarra: stri
           </span>
         </div>
       </div>
-      {open && <DrillParcelas parcelas={d.parcelas} isCredito={isCredito} />}
+      {open && <DrillParcelas parcelas={d.parcelas} isCredito={isCredito} onUpdate={onUpdate} />}
     </>
   );
 }
 
-// ─── Tabela Débito / Parcelamento ─────────────────────────────────────────────
-function TabelaDebito({ dividas, corBarra, isCredito }: { dividas: DividaDesc[]; corBarra: string; isCredito: boolean }) {
+// ─── Tabela Débito/Parcelamento ───────────────────────────────────────────────
+function TabelaDebito({
+  dividas, corBarra, isCredito, onUpdate,
+}: {
+  dividas: DividaDesc[]; corBarra: string; isCredito: boolean;
+  onUpdate: (id: string, nova: string) => void;
+}) {
   if (dividas.length === 0) return (
     <div style={{ textAlign: 'center' as const, padding: '60px 20px', color: CORES.textoSecundario, fontSize: '15px' }}>
       🎉 Nenhuma dívida ativa nesta categoria.
@@ -185,13 +293,20 @@ function TabelaDebito({ dividas, corBarra, isCredito }: { dividas: DividaDesc[];
           <div key={h} style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.5px', color: CORES.textoSecundario }}>{h}</div>
         ))}
       </div>
-      {dividas.map((d) => <LinhaDivida key={d.chave} d={d} corBarra={corBarra} isCredito={isCredito} />)}
+      {dividas.map((d) => (
+        <LinhaDivida key={d.chave} d={d} corBarra={corBarra} isCredito={isCredito} onUpdate={onUpdate} />
+      ))}
     </div>
   );
 }
 
-// ─── Aba Crédito: agrupado por cartão ────────────────────────────────────────
-function TabelaCredito({ cartoes }: { cartoes: CartaoGrupo[] }) {
+// ─── Tabela Crédito agrupado por cartão ──────────────────────────────────────
+function TabelaCredito({
+  cartoes, onUpdate,
+}: {
+  cartoes: CartaoGrupo[];
+  onUpdate: (id: string, nova: string) => void;
+}) {
   const [cartaoAberto, setCartaoAberto] = useState<string | null>(cartoes[0]?.cartao_nome ?? null);
   const [dividaAberta, setDividaAberta] = useState<string | null>(null);
 
@@ -207,13 +322,13 @@ function TabelaCredito({ cartoes }: { cartoes: CartaoGrupo[] }) {
         const aberto = cartaoAberto === cg.cartao_nome;
         return (
           <div key={cg.cartao_nome} style={{ backgroundColor: CORES.card, border: `1px solid ${CORES.borda}`, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-            {/* Cabeçalho do cartão */}
+            {/* Cabeçalho cartão */}
             <div
               onClick={() => { setCartaoAberto(aberto ? null : cg.cartao_nome); setDividaAberta(null); }}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : '#f8fafc', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: CORES.credito, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '18px' }}>💳</div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: CORES.credito, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💳</div>
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: 700, color: CORES.texto }}>{cg.cartao_nome}</div>
                   <div style={{ fontSize: '12px', color: CORES.textoSecundario }}>{cg.total_dividas} compra(s) parcelada(s)</div>
@@ -230,10 +345,8 @@ function TabelaCredito({ cartoes }: { cartoes: CartaoGrupo[] }) {
               </div>
             </div>
 
-            {/* Lista de descrições dentro do cartão */}
             {aberto && (
               <>
-                {/* Header colunas */}
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 70px', padding: '10px 20px', backgroundColor: '#fafafa', borderBottom: `1px solid ${CORES.borda}` }}>
                   {['Descrição / Categoria', 'Parcelas', 'Vlr. Parcela', 'Restante', ''].map((h) => (
                     <div key={h} style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.5px', color: CORES.textoSecundario }}>{h}</div>
@@ -267,7 +380,7 @@ function TabelaCredito({ cartoes }: { cartoes: CartaoGrupo[] }) {
                           </span>
                         </div>
                       </div>
-                      {open && <DrillParcelas parcelas={d.parcelas} isCredito={true} />}
+                      {open && <DrillParcelas parcelas={d.parcelas} isCredito={true} onUpdate={onUpdate} />}
                     </div>
                   );
                 })}
@@ -288,8 +401,8 @@ export default function Endividamento() {
   const [loading,       setLoading]       = useState(true);
   const [filtroCartao,  setFiltroCartao]  = useState('');
   const [filtroConta,   setFiltroConta]   = useState('');
+  const [filtroSit,     setFiltroSit]     = useState<FiltroSit>('pendente');
   const [abaAtiva,      setAbaAtiva]      = useState<AbaView>('credito');
-  const [filtroSit,     setFiltroSit]     = useState<'pendente' | 'pendente+previsto'>('pendente');
 
   useEffect(() => { carregarDados(); }, []);
 
@@ -317,18 +430,20 @@ export default function Endividamento() {
     setLoading(false);
   }
 
-  // Agrupa por descrição (normalizado) — acumula todos os grupos_id com mesmo nome
-  const inclPrevistos = filtroSit === 'pendente+previsto';
+  // Atualiza situação localmente sem recarregar tudo
+  function handleUpdate(id: string, novaSituacao: string) {
+    setMovimentacoes((prev) =>
+      prev.map((m) => m.id === id ? { ...m, situacao: novaSituacao } : m)
+    );
+  }
 
   const dividasAgrupadas = useMemo<DividaDesc[]>(() => {
-    // Primeiro: agrupar por grupo_id (parcelamento único)
     const porGrupo: Record<string, Movimentacao[]> = {};
     for (const m of movimentacoes) {
       if (!porGrupo[m.grupo_id]) porGrupo[m.grupo_id] = [];
       porGrupo[m.grupo_id].push(m);
     }
 
-    // Segundo: para cada grupo_id, calcular metadados
     const grupos = Object.entries(porGrupo).map(([, parcelas]) => {
       parcelas.sort((a, b) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual);
       const p0         = parcelas[0];
@@ -336,13 +451,12 @@ export default function Endividamento() {
       const catNome    = (p0 as any).categorias?.nome || null;
       const isParc     = !isCredito && (catNome || '').toLowerCase() === 'parcelamento';
       const cartaoNome = (p0 as any).cartoes?.nome || null;
-      const pendentes  = parcelas.filter((p) => isPendente(p, inclPrevistos));
-      const pagas      = parcelas.filter((p) =>  foiQuitada(p, isCredito)).length;
+      const pendentes  = parcelas.filter((p) => entraNaContagem(p, filtroSit));
+      const pagas      = parcelas.filter((p) => foiQuitada(p, isCredito)).length;
       const { total }  = parseP(p0.numero_parcela);
       return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total };
-    }).filter((g) => g.pendentes.length > 0); // só ativos
+    }).filter((g) => g.pendentes.length > 0);
 
-    // Terceiro: agrupar por chave = descricao+cartao (crédito) ou descricao (débito)
     const porDesc: Record<string, typeof grupos> = {};
     for (const g of grupos) {
       const chave = g.isCredito
@@ -357,7 +471,7 @@ export default function Endividamento() {
       const totalParcelas = gs.reduce((s, g) => s + g.total, 0);
       const totalPagas    = gs.reduce((s, g) => s + g.pagas, 0);
       const totalPend     = gs.reduce((s, g) => s + g.pendentes.length, 0);
-      const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a,b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
+      const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0            = gs[0].p0;
       return {
         chave,
@@ -379,7 +493,7 @@ export default function Endividamento() {
         parcelas:           todasParcelas,
       } as DividaDesc;
     });
-  }, [movimentacoes, inclPrevistos]);
+  }, [movimentacoes, filtroSit]);
 
   const dividasFiltradas = useMemo(() => dividasAgrupadas.filter((d) => {
     if (filtroCartao && d.cartao_nome !== filtroCartao) return false;
@@ -393,7 +507,6 @@ export default function Endividamento() {
     parcelamento: dividasFiltradas.filter((d) =>  d.is_parcelamento),
   }), [dividasFiltradas]);
 
-  // Agrupa crédito por cartão
   const creditoPorCartao = useMemo<CartaoGrupo[]>(() => {
     const map: Record<string, DividaDesc[]> = {};
     for (const d of porAba.credito) {
@@ -422,9 +535,8 @@ export default function Endividamento() {
       for (const p of d.parcelas) {
         const mes = mesAno(p.data_pagamento);
         if (!meses[mes]) meses[mes] = { restante: 0, pago: 0 };
-        if (foiQuitada(p, d.is_credito)) meses[mes].pago += p.valor;
-        else if (isPendente(p, inclPrevistos)) meses[mes].restante += p.valor;
-        // Previsto ignorado
+        if (foiQuitada(p, d.is_credito))     meses[mes].pago += p.valor;
+        else if (entraNaContagem(p, filtroSit)) meses[mes].restante += p.valor;
       }
     }
     return Object.entries(meses)
@@ -433,7 +545,7 @@ export default function Endividamento() {
         return new Date(+ya,+ma-1).getTime() - new Date(+yb,+mb-1).getTime();
       })
       .map(([mes,v]) => ({ mes, ...v }));
-  }, [dividasFiltradas]);
+  }, [dividasFiltradas, filtroSit]);
 
   const maxEvol = Math.max(...evolucaoMensal.map((e) => e.restante + e.pago), 1);
 
@@ -449,6 +561,12 @@ export default function Endividamento() {
     { key: 'parcelamento', label: 'Parcelamento', emoji: '📋' },
   ];
 
+  const botoesSit: { key: FiltroSit; label: string }[] = [
+    { key: 'pendente',          label: 'Pendentes' },
+    { key: 'previsto',          label: 'Previstos' },
+    { key: 'pendente+previsto', label: 'Pendentes + Previstos' },
+  ];
+
   return (
     <div style={{ padding: '24px', backgroundColor: CORES.fundo, minHeight: '100vh', fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
 
@@ -456,7 +574,7 @@ export default function Endividamento() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: CORES.texto, margin: 0 }}>Endividamento</h1>
-          <p style={{ fontSize: '14px', color: CORES.textoSecundario, margin: '4px 0 0' }}>Apenas parcelas pendentes — parcelamentos ativos</p>
+          <p style={{ fontSize: '14px', color: CORES.textoSecundario, margin: '4px 0 0' }}>Gerencie seus parcelamentos ativos e altere situações diretamente</p>
         </div>
         <button onClick={carregarDados} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${CORES.borda}`, backgroundColor: CORES.card, color: CORES.texto, fontSize: '13px', cursor: 'pointer' }}>
           ↻ Atualizar
@@ -466,10 +584,10 @@ export default function Endividamento() {
       {/* 4 Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
         {[
-          { label: 'Total em Dívidas', valor: totais.total,        cor: CORES.texto,        borda: 'transparent',       sub: `${dividasFiltradas.length} item(s)` },
-          { label: '💳 Crédito',       valor: totais.credito,      cor: CORES.credito,      borda: CORES.credito,       sub: `${creditoPorCartao.length} cartão(ões)` },
-          { label: '🏦 Débito / PIX',  valor: totais.debito,       cor: CORES.debito,       borda: CORES.debito,        sub: `${porAba.debito.length} item(s)` },
-          { label: '📋 Parcelamento',  valor: totais.parcelamento, cor: CORES.parcelamento, borda: CORES.parcelamento,  sub: `${porAba.parcelamento.length} item(s)` },
+          { label: 'Total em Dívidas', valor: totais.total,        cor: CORES.texto,        borda: 'transparent',      sub: `${dividasFiltradas.length} item(s)` },
+          { label: '💳 Crédito',       valor: totais.credito,      cor: CORES.credito,      borda: CORES.credito,      sub: `${creditoPorCartao.length} cartão(ões)` },
+          { label: '🏦 Débito / PIX',  valor: totais.debito,       cor: CORES.debito,       borda: CORES.debito,       sub: `${porAba.debito.length} item(s)` },
+          { label: '📋 Parcelamento',  valor: totais.parcelamento, cor: CORES.parcelamento, borda: CORES.parcelamento, sub: `${porAba.parcelamento.length} item(s)` },
         ].map((c) => (
           <div key={c.label} style={{ backgroundColor: CORES.card, border: `1px solid ${CORES.borda}`, borderLeft: `4px solid ${c.borda}`, borderRadius: '12px', padding: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
             <div style={{ fontSize: '12px', fontWeight: 600, textTransform: 'uppercase' as const, letterSpacing: '0.5px', color: CORES.textoSecundario, marginBottom: '8px' }}>{c.label}</div>
@@ -481,31 +599,45 @@ export default function Endividamento() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-        {/* Botão Pendente / Pendente+Previsto */}
+
+        {/* 3 botões de situação */}
         <div style={{ display: 'flex', borderRadius: '8px', border: `1.5px solid ${CORES.borda}`, overflow: 'hidden' }}>
-          {([['pendente', 'Pendente'], ['pendente+previsto', 'Pendente + Previsto']] as const).map(([val, label]) => {
-            const ativo = filtroSit === val;
+          {botoesSit.map((b, i) => {
+            const ativo = filtroSit === b.key;
             return (
-              <button key={val} onClick={() => setFiltroSit(val)}
-                style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', borderRight: val === 'pendente' ? `1px solid ${CORES.borda}` : 'none', backgroundColor: ativo ? CORES.sidebar : CORES.card, color: ativo ? '#fff' : CORES.texto, transition: 'all 0.15s' }}>
-                {label}
+              <button key={b.key} onClick={() => setFiltroSit(b.key)}
+                style={{
+                  padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                  border: 'none',
+                  borderRight: i < botoesSit.length - 1 ? `1px solid ${CORES.borda}` : 'none',
+                  backgroundColor: ativo ? CORES.sidebar : CORES.card,
+                  color: ativo ? '#fff' : CORES.texto,
+                  transition: 'all 0.15s',
+                  whiteSpace: 'nowrap' as const,
+                }}>
+                {b.label}
               </button>
             );
           })}
         </div>
+
         <select style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${CORES.borda}`, backgroundColor: CORES.card, color: CORES.texto, fontSize: '14px', cursor: 'pointer', outline: 'none', minWidth: '160px' }}
           value={filtroCartao} onChange={(e) => { setFiltroCartao(e.target.value); setFiltroConta(''); }}>
           <option value="">Todos os cartões</option>
           {cartoes.map((c) => <option key={c.id} value={c.nome}>{c.nome}</option>)}
         </select>
+
         <select style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${CORES.borda}`, backgroundColor: CORES.card, color: CORES.texto, fontSize: '14px', cursor: 'pointer', outline: 'none', minWidth: '160px' }}
           value={filtroConta} onChange={(e) => { setFiltroConta(e.target.value); setFiltroCartao(''); }}>
           <option value="">Todas as contas</option>
           {contas.map((c) => <option key={c.id} value={c.nome}>{c.nome}</option>)}
         </select>
+
         {(filtroCartao || filtroConta) && (
           <button style={{ padding: '8px 16px', borderRadius: '8px', border: `1.5px solid ${CORES.credito}`, backgroundColor: CORES.card, color: CORES.credito, fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
-            onClick={() => { setFiltroCartao(''); setFiltroConta(''); }}>✕ Limpar filtros</button>
+            onClick={() => { setFiltroCartao(''); setFiltroConta(''); }}>
+            ✕ Limpar filtros
+          </button>
         )}
       </div>
 
@@ -531,19 +663,15 @@ export default function Endividamento() {
         </button>
       </div>
 
-      {/* Aba Crédito */}
-      {abaAtiva === 'credito' && <TabelaCredito cartoes={creditoPorCartao} />}
-
-      {/* Aba Débito */}
-      {abaAtiva === 'debito' && <TabelaDebito dividas={porAba.debito} corBarra={CORES.debito} isCredito={false} />}
-
-      {/* Aba Parcelamento */}
-      {abaAtiva === 'parcelamento' && <TabelaDebito dividas={porAba.parcelamento} corBarra={CORES.parcelamento} isCredito={false} />}
+      {/* Conteúdo abas */}
+      {abaAtiva === 'credito'      && <TabelaCredito cartoes={creditoPorCartao} onUpdate={handleUpdate} />}
+      {abaAtiva === 'debito'       && <TabelaDebito dividas={porAba.debito}       corBarra={CORES.debito}       isCredito={false} onUpdate={handleUpdate} />}
+      {abaAtiva === 'parcelamento' && <TabelaDebito dividas={porAba.parcelamento} corBarra={CORES.parcelamento} isCredito={false} onUpdate={handleUpdate} />}
 
       {/* Aba Evolução */}
       {abaAtiva === 'evolucao' && (
         <div style={{ backgroundColor: CORES.card, border: `1px solid ${CORES.borda}`, borderRadius: '12px', padding: '24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: CORES.texto, marginBottom: '20px' }}>Comprometimento mensal — parcelas pendentes</div>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: CORES.texto, marginBottom: '20px' }}>Comprometimento mensal</div>
           {evolucaoMensal.length === 0 ? (
             <div style={{ textAlign: 'center' as const, padding: '40px', color: CORES.textoSecundario }}>Sem dados para exibir.</div>
           ) : (
