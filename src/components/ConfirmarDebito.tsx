@@ -246,7 +246,7 @@ export default function ConfirmarDebito() {
       {modo === 'credito' && (
         <div style={{ marginBottom: 24 }}>
           {cartoesComPrevisto.length === 0 ? (
-            <div style={{ background: '#f9fafb', padding: 20, borderRadius: 10, border: '1px solid #e5e7eb', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
+            <div style={{ background: '#ede8df', padding: 20, borderRadius: 10, border: '1px solid #e5e7eb', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
               Nenhum cartão com lançamentos previstos neste mês.
             </div>
           ) : (
@@ -286,7 +286,7 @@ export default function ConfirmarDebito() {
       {modo && (modo === 'debito' || cartaoSelecionado) && (
         <>
           {previstos.length === 0 ? (
-            <div style={{ background: '#f9fafb', padding: 40, borderRadius: 12, textAlign: 'center', border: '1px solid #e5e7eb' }}>
+            <div style={{ background: '#ede8df', padding: 40, borderRadius: 12, textAlign: 'center', border: '1px solid #e5e7eb' }}>
               <p style={{ color: '#9ca3af', fontSize: 15 }}>Nenhum lançamento previsto para este filtro.</p>
             </div>
           ) : (

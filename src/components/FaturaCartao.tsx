@@ -215,7 +215,7 @@ export default function FaturaCartao() {
       </div>
 
       {/* Filtros */}
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end' }}>
+      <div style={{ background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end' }}>
         <div style={{ flex: '1 1 200px' }}>
           <label style={labelStyle}>Cartão</label>
           <select value={cartaoId} onChange={e => setCartaoId(e.target.value)} style={{ ...selectStyle, width: '100%' }}>
@@ -272,7 +272,7 @@ export default function FaturaCartao() {
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
 
         {/* Cabeçalho da tabela */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#ede8df', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
             Lançamentos — {MESES[filtroMes - 1]} {filtroAno}
           </span>
@@ -296,7 +296,7 @@ export default function FaturaCartao() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
                   {/* Coluna do check */}
                   <th style={{ padding: '10px 12px', width: '40px' }}>
                     <span title="Conferir lançamentos" style={{ fontSize: '12px', color: '#9ca3af' }}>✓</span>
@@ -398,7 +398,7 @@ export default function FaturaCartao() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f9fafb', borderTop: '2px solid #e5e7eb' }}>
+                <tr style={{ background: '#ede8df', borderTop: '2px solid #e5e7eb' }}>
                   <td />
                   <td colSpan={4} style={{ padding: '10px 12px', fontWeight: 700, color: '#374151', fontSize: '13px' }}>
                     Total {filtroSituacao ? `(${filtroSituacao})` : '(Todos)'}

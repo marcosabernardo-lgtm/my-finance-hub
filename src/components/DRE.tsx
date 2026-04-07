@@ -621,7 +621,7 @@ export default function DRE() {
       {/* ── Legenda de cores ─────────────────────────────────────────────────── */}
       <div style={{
         display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center',
-        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '8px',
+        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '8px',
         padding: '10px 16px', marginBottom: '12px', fontSize: '12px'
       }}>
         <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
@@ -802,7 +802,7 @@ export default function DRE() {
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+              <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#ede8df', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
               <button onClick={handleSalvarDrill} disabled={salvandoDrill} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                 {salvandoDrill ? 'Salvando...' : 'Salvar'}
               </button>
@@ -821,7 +821,7 @@ export default function DRE() {
               <button onClick={() => salvarEditDrill('esta')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, textAlign: 'left' }}>
                 ✏️ Editar somente esta parcela
               </button>
-              <button onClick={() => salvarEditDrill('proximas')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#f9fafb', color: '#374151', cursor: 'pointer', fontSize: 13, textAlign: 'left' }}>
+              <button onClick={() => salvarEditDrill('proximas')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#ede8df', color: '#374151', cursor: 'pointer', fontSize: 13, textAlign: 'left' }}>
                 ⏩ Editar esta e todas as próximas
               </button>
               <button onClick={() => setModalParcelasDrill(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: 13 }}>Cancelar</button>
@@ -860,7 +860,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           <div style={{ fontWeight: 500 }}>{linha.nome}</div>
           {linha.classificacao && <div style={{ fontSize: '10px', color: '#9ca3af' }}>{linha.classificacao}</div>}
         </td>
-        <td style={{ ...tdNum, background: '#f9fafb', color: '#9ca3af', fontSize: '11px' }}>
+        <td style={{ ...tdNum, background: '#ede8df', color: '#9ca3af', fontSize: '11px' }}>
           {linha.limite > 0 ? fmt(linha.limite) : '—'}
         </td>
 
@@ -914,7 +914,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
         })}
 
         {/* Total */}
-        <td style={{ ...tdNum, background: '#f9fafb', fontWeight: 700, color: cor }}>
+        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: cor }}>
           <div>{fmt(linha.total)}</div>
           {linha.limite > 0 && (
             <div style={{ fontSize: '10px', color: linha.total > linha.limite * 12 ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>

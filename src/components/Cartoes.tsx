@@ -284,7 +284,7 @@ export default function CartoesView() {
       </div>
 
       {/* ── Filtros ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px' }}>
+      <div style={{ background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-end' }}>
 
           <div>
@@ -381,12 +381,12 @@ export default function CartoesView() {
                         </td>
 
                         {/* Limite */}
-                        <td style={{ ...tdNum, background: '#f9fafb', color: '#6b7280' }}>
+                        <td style={{ ...tdNum, background: '#ede8df', color: '#6b7280' }}>
                           {fmt(linha.cartao.limite_total)}
                         </td>
 
                         {/* Vence/Fecha */}
-                        <td style={{ ...tdNum, background: '#f9fafb', fontSize: '11px', color: '#9ca3af' }}>
+                        <td style={{ ...tdNum, background: '#ede8df', fontSize: '11px', color: '#9ca3af' }}>
                           <div>Vence {linha.cartao.data_vencimento}</div>
                           <div>Fecha {linha.cartao.data_fechamento}</div>
                         </td>
@@ -422,12 +422,12 @@ export default function CartoesView() {
                         })}
 
                         {/* Total */}
-                        <td style={{ ...tdNum, background: '#f9fafb', fontWeight: 700, color: '#1e40af' }}>
+                        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: '#1e40af' }}>
                           {fmt(totalLinha)}
                         </td>
 
                         {/* Disponível — só Pendente */}
-                        <td style={{ ...tdNum, background: '#f9fafb', fontWeight: 700, color: linha.limiteDisponivel >= 0 ? '#065f46' : '#991b1b' }}>
+                        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: linha.limiteDisponivel >= 0 ? '#065f46' : '#991b1b' }}>
                           <div>{fmt(linha.limiteDisponivel)}</div>
                           <div style={{ fontSize: '10px', fontWeight: 400, color: '#9ca3af' }}>de {fmt(linha.cartao.limite_total)}</div>
                         </td>

@@ -429,7 +429,7 @@ export default function Movimentacoes() {
 
       {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px',
+        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
         padding: '16px 20px', marginBottom: '20px',
         display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
       }}>
@@ -582,7 +582,7 @@ export default function Movimentacoes() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
                   {['Dt. Movimentação','Dt. Pagamento','Descrição','Tipo','Categoria','Valor','Método','Cartão / Conta','Parcela','Situação','Ações'].map(h => (
                     <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px' }}>{h}</th>
                   ))}

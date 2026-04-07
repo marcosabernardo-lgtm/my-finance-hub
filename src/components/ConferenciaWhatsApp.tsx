@@ -44,7 +44,7 @@ function calcularDataPagamento(dataCompra: string, cartao: Cartao): string {
 }
 
 const cor = {
-  bg: '#f8fafc',
+  bg: '#f5f0e8',
   card: '#ffffff',
   texto: '#1a202c',
   sub: '#64748b',

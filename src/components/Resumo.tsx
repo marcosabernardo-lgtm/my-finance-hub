@@ -206,7 +206,7 @@ export default function Resumo() {
 
       {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px',
+        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
         padding: '14px 20px', marginBottom: '20px',
         display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap'
       }}>

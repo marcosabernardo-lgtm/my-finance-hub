@@ -250,7 +250,7 @@ export default function Cadastros() {
   const itemRow = (nome: string, detalhe: string, id: number, tabela: string, onEdit: () => void) => (
     <div key={id} style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      background: '#f9fafb', padding: '8px 12px', borderRadius: 6,
+      background: '#ede8df', padding: '8px 12px', borderRadius: 6,
       border: '1px solid #f3f4f6',
     }}>
       <div style={{ flex: 1 }}>

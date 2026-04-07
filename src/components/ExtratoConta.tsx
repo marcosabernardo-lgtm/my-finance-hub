@@ -202,7 +202,7 @@ export default function ExtratoConta() {
 
       {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '12px',
+        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
         padding: '16px 20px', marginBottom: '20px',
         display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
       }}>
@@ -306,7 +306,7 @@ export default function ExtratoConta() {
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
 
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#f9fafb', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#ede8df', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
             Lançamentos — {MESES[filtroMes - 1]} {filtroAno}
           </span>
@@ -327,7 +327,7 @@ export default function ExtratoConta() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
                   {['Data','Categoria','Descrição','Tipo','Valor','Situação'].map(h => (
                     <th key={h} style={{
                       padding: '10px 12px', textAlign: h === 'Valor' ? 'right' : 'left',
@@ -375,7 +375,7 @@ export default function ExtratoConta() {
                 ))}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#f9fafb', borderTop: '2px solid #e5e7eb' }}>
+                <tr style={{ background: '#ede8df', borderTop: '2px solid #e5e7eb' }}>
                   <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: '#374151', fontSize: '13px' }}>
                     Total {filtroTipo ? `(${filtroTipo})` : '(Todos)'}
                     <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>

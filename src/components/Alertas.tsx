@@ -156,7 +156,7 @@ function Secao({ titulo, icone, cor, count, children, defaultAberto = true }: {
       {aberto && (
         <div>
           {count === 0
-            ? <div style={{ fontSize: '13px', color: '#9ca3af', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px', textAlign: 'center' }}>✅ Nenhum alerta nesta categoria</div>
+            ? <div style={{ fontSize: '13px', color: '#9ca3af', padding: '12px 16px', background: '#ede8df', borderRadius: '8px', textAlign: 'center' }}>✅ Nenhum alerta nesta categoria</div>
             : children
           }
         </div>
@@ -370,7 +370,7 @@ export default function Alertas() {
 
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '900px', margin: '0 auto', background: '#f9fafb', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '900px', margin: '0 auto', background: '#ede8df', minHeight: '100vh' }}>
 
       {/* Header */}
       <div style={{ marginBottom: '28px' }}>

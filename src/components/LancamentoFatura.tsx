@@ -114,7 +114,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
       </select>
 
       {cartaoId && faturas.length === 0 && (
-        <p style={{ color: '#9ca3af', padding: 16, textAlign: 'center', background: '#f9fafb', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+        <p style={{ color: '#9ca3af', padding: 16, textAlign: 'center', background: '#ede8df', borderRadius: 8, border: '1px solid #e5e7eb' }}>
           Nenhuma fatura em aberto para este cartão.
         </p>
       )}

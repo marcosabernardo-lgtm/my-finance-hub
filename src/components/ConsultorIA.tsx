@@ -250,7 +250,7 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
 
   const bg = darkMode ? '#16213e' : '#ffffff'
   const bgUser = darkMode ? '#1e3a6e' : '#eff6ff'
-  const bgAssistant = darkMode ? '#1a2744' : '#f8fafc'
+  const bgAssistant = darkMode ? '#1a2744' : '#f5f0e8'
   const border = darkMode ? '#1e2d45' : '#e2e8f0'
   const texto = darkMode ? '#e2e8f0' : '#1a202c'
   const subtexto = darkMode ? '#94a3b8' : '#64748b'

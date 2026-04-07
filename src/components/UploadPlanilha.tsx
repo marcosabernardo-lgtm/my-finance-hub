@@ -253,7 +253,7 @@ export default function UploadPlanilha() {
           padding: '48px 32px',
           textAlign: 'center',
           cursor: loading ? 'default' : 'pointer',
-          background: hovered ? '#eff6ff' : '#f8fafc',
+          background: hovered ? '#eff6ff' : '#f5f0e8',
           transition: 'all 0.2s',
         }}
       >

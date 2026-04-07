@@ -483,7 +483,7 @@ export default function Dashboard() {
                     const saldo = saldosContas[c.id] ?? 0
                     const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#ede8df', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                         <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
                           {logo.sigla}
                         </div>
@@ -546,7 +546,7 @@ export default function Dashboard() {
                     const corBarra = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981'
                     const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                      <div key={c.id} style={{ background: '#ede8df', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
                           <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color }}>
                             {logo.sigla}
@@ -600,7 +600,7 @@ export default function Dashboard() {
                       const pct = limite > 0 ? (cat.valor / limite) * 100 : 0
                       const cor = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#10b981'
                       return (
-                        <div key={cat.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                        <div key={cat.id} style={{ background: '#ede8df', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                             <span style={{ fontSize: '13px', color: '#374151', fontWeight: 600 }}>{cat.nome}</span>
                             <span style={{ fontSize: '12px', color: cor, fontWeight: 700, whiteSpace: 'nowrap', marginLeft: '8px' }}>
