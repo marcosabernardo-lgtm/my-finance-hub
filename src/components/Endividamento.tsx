@@ -169,11 +169,15 @@ export default function Endividamento() {
         const proximaParcela = pendentesOrdenadas[0]?.data_pagamento || '';
         const ultimaParcela = pendentesOrdenadas[pendentesOrdenadas.length - 1]?.data_pagamento || '';
 
+        const cartaoNome = (primeiraP as any).cartoes?.nome || null;
+        const isCredito = !!primeiraP.cartao_id || primeiraP.metodo_pagamento === 'Crédito';
+        const metodoLabel = isCredito ? 'Crédito' : primeiraP.metodo_pagamento;
+
         return {
           grupo_id,
           descricao: primeiraP.descricao,
-          metodo_pagamento: primeiraP.metodo_pagamento,
-          cartao_nome: (primeiraP as any).cartoes?.nome || null,
+          metodo_pagamento: metodoLabel,
+          cartao_nome: cartaoNome,
           conta_nome: primeiraP.conta_origem_destino || null,
           categoria_nome: (primeiraP as any).categorias?.nome || null,
           total_parcelas: total,
@@ -193,8 +197,8 @@ export default function Endividamento() {
 
   const dividasFiltradas = useMemo(() => {
     return dividas.filter((d) => {
-      if (filtroTipo === 'credito' && d.metodo_pagamento !== 'Crédito') return false;
-      if (filtroTipo === 'debito' && d.metodo_pagamento === 'Crédito') return false;
+      if (filtroTipo === 'credito' && !d.cartao_nome) return false;
+      if (filtroTipo === 'debito' && !!d.cartao_nome) return false;
       if (filtroCartao && d.cartao_nome !== filtroCartao) return false;
       if (filtroConta && d.conta_nome !== filtroConta) return false;
       return true;
@@ -203,10 +207,10 @@ export default function Endividamento() {
 
   const totalDividas = useMemo(() => {
     const credito = dividasFiltradas
-      .filter((d) => d.metodo_pagamento === 'Crédito')
+      .filter((d) => !!d.cartao_nome)
       .reduce((s, d) => s + d.valor_restante, 0);
     const debito = dividasFiltradas
-      .filter((d) => d.metodo_pagamento !== 'Crédito')
+      .filter((d) => !d.cartao_nome)
       .reduce((s, d) => s + d.valor_restante, 0);
     return { credito, debito, total: credito + debito };
   }, [dividasFiltradas]);
@@ -500,14 +504,14 @@ export default function Endividamento() {
           <div style={estilos.cardLabel}>Crédito Parcelado</div>
           <div style={estilos.cardValor(CORES.credito)}>{formatMoeda(totalDividas.credito)}</div>
           <div style={estilos.cardSub}>
-            {dividasFiltradas.filter((d) => d.metodo_pagamento === 'Crédito').length} dívida(s)
+            {dividasFiltradas.filter((d) => !!d.cartao_nome).length} dívida(s)
           </div>
         </div>
         <div style={{ ...estilos.card, borderLeft: `4px solid ${CORES.debito}` }}>
           <div style={estilos.cardLabel}>Débito / PIX</div>
           <div style={estilos.cardValor(CORES.debito)}>{formatMoeda(totalDividas.debito)}</div>
           <div style={estilos.cardSub}>
-            {dividasFiltradas.filter((d) => d.metodo_pagamento !== 'Crédito').length} dívida(s)
+            {dividasFiltradas.filter((d) => !d.cartao_nome).length} dívida(s)
           </div>
         </div>
       </div>
