@@ -74,40 +74,6 @@ function logoBanco(nome: string): { bg: string; color: string; sigla: string } {
   return { bg: '#e5e7eb', color: '#374151', sigla }
 }
 
-// ─── Seção expansível ─────────────────────────────────────────────────────────
-
-function SecaoExpansivel({
-  titulo, icone, badge, badgeCor, children, defaultAberto = false
-}: {
-  titulo: string
-  icone: string
-  badge?: string
-  badgeCor?: string
-  children: React.ReactNode
-  defaultAberto?: boolean
-}) {
-  const [aberto, setAberto] = useState(defaultAberto)
-  return (
-    <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #e5e7eb', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', overflow: 'hidden' }}>
-      <div
-        onClick={() => setAberto(a => !a)}
-        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '16px 20px', cursor: 'pointer', userSelect: 'none', background: aberto ? '#f9fafb' : '#fff', borderBottom: aberto ? '1px solid #e5e7eb' : 'none' }}
-      >
-        <span style={{ fontSize: '18px' }}>{icone}</span>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: '#111827', flex: 1 }}>{titulo}</span>
-        {badge && (
-          <span style={{ fontSize: '13px', fontWeight: 700, color: badgeCor || '#374151' }}>{badge}</span>
-        )}
-        <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '4px' }}>{aberto ? '▲' : '▼'}</span>
-      </div>
-      {aberto && (
-        <div style={{ padding: '16px 20px' }}>
-          {children}
-        </div>
-      )}
-    </div>
-  )
-}
 
 // ─── Gráfico de barras mensal com linha de meta ───────────────────────────────
 
