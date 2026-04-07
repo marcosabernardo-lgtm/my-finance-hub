@@ -385,7 +385,7 @@ export default function Endividamento() {
           ? CORES.debito
           : '#2d8a55',
     } as React.CSSProperties),
-    progressoBar: (pct: number, cor: string) => ({
+    progressoBar: () => ({
       width: '100%',
       height: '6px',
       backgroundColor: '#e9ecef',
@@ -629,7 +629,7 @@ export default function Endividamento() {
                         <div style={{ fontSize: '13px', color: CORES.texto, fontWeight: 600 }}>
                           {d.parcelas_pagas}/{d.total_parcelas}
                         </div>
-                        <div style={estilos.progressoBar(pct, corBarra)}>
+                        <div style={estilos.progressoBar()}>
                           <div style={estilos.progressoFill(pct, corBarra)} />
                         </div>
                         <div style={{ fontSize: '10px', color: CORES.textoSecundario, marginTop: '2px' }}>
