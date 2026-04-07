@@ -17,12 +17,14 @@ import Alertas from "./components/Alertas";
 import NotificacoesConfig from "./components/NotificacoesConfig";
 import ConsultorIA from "./components/ConsultorIA";
 import ConferenciaWhatsApp from "./components/ConferenciaWhatsApp";
+import Endividamento from "./components/Endividamento"; // ← NOVO
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles, MessageSquare, LayoutDashboard,
+  TrendingDown, // ← NOVO ícone para Endividamento
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -30,16 +32,13 @@ import {
 type Theme = "dark"
 
 interface ThemeTokens {
-  // Sidebar
   sidebarBg: string
   sidebarBorder: string
   sidebarGroupLabel: string
   sidebarItemHover: string
   sidebarText: string
   sidebarSubtext: string
-  // Conteúdo
   contentBg: string
-  // Home
   homeBg: string
   homeCardBg: string
   homeCardBorder: string
@@ -74,8 +73,6 @@ const DARK: ThemeTokens = {
   homeGroupLabel: "#475569",
 }
 
-
-
 const ThemeCtx = createContext<{ theme: Theme; tokens: ThemeTokens; toggle: () => void }>({
   theme: "dark", tokens: DARK, toggle: () => {}
 })
@@ -87,7 +84,9 @@ const useTheme = () => useContext(ThemeCtx)
 type Pagina =
   | "home" | "dashboard" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
-  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload" | "alertas" | "notificacoes" | "consultor" | "conferencia"
+  | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
+  | "alertas" | "notificacoes" | "consultor" | "conferencia"
+  | "endividamento" // ← NOVO
 
 const grupos: {
   label: string
@@ -104,21 +103,22 @@ const grupos: {
   {
     label: "Lançamentos",
     items: [
-      { label: "Lançar",            key: "lancamento",  icon: PlusCircle  },
-      { label: "Confirmar Débitos", key: "confirmar",   icon: CheckCircle },
-      { label: "Movimentações",     key: "movimentacoes", icon: List      },
-      { label: "Conf. WhatsApp",    key: "conferencia", icon: MessageSquare, accent: "#22c55e" },
+      { label: "Lançar",            key: "lancamento",    icon: PlusCircle   },
+      { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle  },
+      { label: "Movimentações",     key: "movimentacoes", icon: List         },
+      { label: "Conf. WhatsApp",    key: "conferencia",   icon: MessageSquare, accent: "#22c55e" },
     ],
   },
   {
     label: "Análises",
     items: [
-      { label: "Dashboard",    key: "dashboard",  icon: LayoutDashboard             },
-      { label: "Consultor IA", key: "consultor",  icon: Sparkles, accent: "#667eea" },
-      { label: "Alertas",      key: "alertas",    icon: Bell,     accent: "#ef4444" },
-      { label: "Resumo",       key: "resumo",     icon: BarChart3                   },
-      { label: "Semanal",      key: "semanal",    icon: Calendar                    },
-      { label: "DRE",          key: "dre",        icon: FileText                    },
+      { label: "Dashboard",      key: "dashboard",      icon: LayoutDashboard                    },
+      { label: "Consultor IA",   key: "consultor",      icon: Sparkles,    accent: "#667eea"     },
+      { label: "Alertas",        key: "alertas",        icon: Bell,        accent: "#ef4444"     },
+      { label: "Resumo",         key: "resumo",         icon: BarChart3                          },
+      { label: "Semanal",        key: "semanal",        icon: Calendar                           },
+      { label: "DRE",            key: "dre",            icon: FileText                           },
+      { label: "Endividamento",  key: "endividamento",  icon: TrendingDown, accent: "#e05252"    }, // ← NOVO
     ],
   },
   {
@@ -130,7 +130,6 @@ const grupos: {
     ],
   },
 ]
-
 
 const mes = new Date().toLocaleString("pt-BR", { month: "long", year: "numeric" })
 const mesFormatado = mes.charAt(0).toUpperCase() + mes.slice(1)
@@ -154,7 +153,6 @@ function Home({ onSignOut, email }: {
 
   return (
     <div style={{ background: "#0d7280", minHeight: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Topbar */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 40px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{ width: 34, height: 34, background: "rgba(255,255,255,0.15)", borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -171,7 +169,6 @@ function Home({ onSignOut, email }: {
         </div>
       </div>
 
-      {/* Hero */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "60px 40px 40px", textAlign: "center" }}>
         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", padding: "6px 16px", borderRadius: 20, fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 28, letterSpacing: "0.5px" }}>
           <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#22c55e" }} />
@@ -191,7 +188,6 @@ function Home({ onSignOut, email }: {
           Use o menu lateral para navegar entre os módulos →
         </p>
 
-        {/* Feature cards */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, maxWidth: 860, width: "100%" }}>
           {features.map((f, i) => (
             <div key={i} style={{
@@ -210,17 +206,12 @@ function Home({ onSignOut, email }: {
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ textAlign: "center", padding: "20px", borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "rgba(255,255,255,0.3)" }}>
         my-finance-hub © {new Date().getFullYear()} · Desenvolvido com 💙
       </div>
     </div>
   )
 }
-
-
-
-
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -240,7 +231,6 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
       zIndex: 1000, overflow: "hidden",
     }}>
 
-      {/* Logo + toggle */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: recolhida ? "center" : "space-between", padding: recolhida ? "14px 0" : "14px 14px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
         {!recolhida && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPagina("home")}>
@@ -263,18 +253,13 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
         </button>
       </div>
 
-      {/* Home button */}
       <div style={{ padding: recolhida ? "8px 0" : "8px 8px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
         <SidebarItem icon={HomeIcon} label="Início" ativa={pagina === "home"} recolhida={recolhida} onClick={() => setPagina("home")} />
       </div>
 
-      {/* Grupos colapsáveis */}
       <SidebarGrupos pagina={pagina} setPagina={setPagina} recolhida={recolhida} />
 
-      {/* Rodapé: tema + email + sair */}
       <div style={{ borderTop: `1px solid ${tokens.sidebarBorder}`, padding: recolhida ? "10px 0" : "10px 8px", flexShrink: 0 }}>
-
-
         {!recolhida && (
           <div style={{ fontSize: 11, color: tokens.sidebarSubtext, padding: "4px 8px 6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {email}
@@ -298,7 +283,6 @@ function SidebarGrupos({ pagina, setPagina, recolhida }: {
     setAbertos(prev => ({ ...prev, [label]: !prev[label] }))
   }
 
-  // Se tem item ativo no grupo, abre automaticamente
   const grupoDoItem = grupos.find(g => g.items.some(i => i.key === pagina))?.label
 
   return (
@@ -387,23 +371,24 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
 
   const renderConteudo = () => {
     switch (pagina) {
-      case "dashboard":     return <Dashboard />
-      case "alertas":       return <Alertas />
-      case "lancamento":    return <Lancamento />
-      case "confirmar":     return <ConfirmarDebito />
-      case "resumo":        return <Resumo />
-      case "movimentacoes": return <Movimentacoes />
-      case "semanal":       return <ControleSemanal />
-      case "fatura":        return <FaturaCartao />
-      case "extrato":       return <ExtratoConta />
-      case "cartoes":       return <Cartoes />
-      case "dre":           return <DRE />
-      case "cadastros":     return <Cadastros />
-      case "upload":        return <UploadPlanilha />
-      case "notificacoes":  return <NotificacoesConfig />
-      case "consultor":     return <ConsultorIA />
+      case "dashboard":      return <Dashboard />
+      case "alertas":        return <Alertas />
+      case "lancamento":     return <Lancamento />
+      case "confirmar":      return <ConfirmarDebito />
+      case "resumo":         return <Resumo />
+      case "movimentacoes":  return <Movimentacoes />
+      case "semanal":        return <ControleSemanal />
+      case "fatura":         return <FaturaCartao />
+      case "extrato":        return <ExtratoConta />
+      case "cartoes":        return <Cartoes />
+      case "dre":            return <DRE />
+      case "cadastros":      return <Cadastros />
+      case "upload":         return <UploadPlanilha />
+      case "notificacoes":   return <NotificacoesConfig />
+      case "consultor":      return <ConsultorIA />
       case "conferencia":    return <ConferenciaWhatsApp />
-      default:              return null
+      case "endividamento":  return <Endividamento /> // ← NOVO
+      default:               return null
     }
   }
 
@@ -433,7 +418,6 @@ export default function App() {
     </div>
   )
 
-  // Se veio do link de recovery, mostra o Login na tela de nova senha
   const isRecovery = typeof window !== 'undefined' &&
     (window.location.hash.includes('type=recovery'))
 
