@@ -151,7 +151,6 @@ function CardParcela({
       padding: '12px',
       transition: 'all 0.2s',
     }}>
-      {/* Badge situação clicável */}
       <div style={{ marginBottom: '8px' }}>
         <select
           value={situacaoLocal}
@@ -421,8 +420,9 @@ export default function Endividamento() {
         supabase.from('cartoes').select('id, nome').eq('ativo', true),
         supabase.from('contas').select('id, nome').eq('ativo', true).eq('tipo', 'corrente'),
       ]);
+      // ✅ FIX: inclui parcela 1/1 (removido filtro total > 1)
       if (movRes.data) {
-        setMovimentacoes(movRes.data.filter((m) => parseP(m.numero_parcela).total > 1));
+        setMovimentacoes(movRes.data.filter((m) => parseP(m.numero_parcela).total >= 1));
       }
       if (cartRes.data) setCartoes(cartRes.data);
       if (contRes.data) setContas(contRes.data);
@@ -466,7 +466,6 @@ export default function Endividamento() {
     }
 
     return Object.entries(porDesc).map(([chave, gs]) => {
-      // ✅ FIX: usar as parcelas reais em vez de somar g.total (que vinha do texto "X/Y")
       const todasParcelas = gs.flatMap((g) => g.parcelas);
       const totalParcelas = todasParcelas.length;
       const totalPagas    = todasParcelas.filter((p) => foiQuitada(p, gs[0].isCredito)).length;
@@ -474,7 +473,6 @@ export default function Endividamento() {
       const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0            = gs[0].p0;
 
-      // valor_total e valor_restante baseados nas parcelas reais
       const valorTotal    = todasParcelas.reduce((s, p) => s + p.valor, 0);
       const valorRestante = pendOrd.reduce((s, p) => s + p.valor, 0);
 
