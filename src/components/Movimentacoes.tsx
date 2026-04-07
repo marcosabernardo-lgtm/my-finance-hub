@@ -241,8 +241,11 @@ export default function Movimentacoes() {
 
   // ── Totais (sobre dados filtrados) ──────────────────────────────────────────
   const totalReceitas = movimentacoesFiltradas
-    .filter(m => m.tipo === 'Receita' && m.situacao !== 'Previsto')
-    .reduce((s, m) => s + Number(m.valor), 0)
+    .filter(m =>
+      m.tipo === 'Receita' &&
+      m.situacao === 'Pago' &&
+      m.metodo_pagamento !== 'Transferência entre Contas'
+    ).reduce((s, m) => s + Number(m.valor), 0)
 
   const totalDespesasDebito = movimentacoesFiltradas
     .filter(m => m.tipo === 'Despesa' && m.situacao !== 'Previsto' && !m.cartao_id)
