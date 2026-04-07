@@ -49,12 +49,6 @@ const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
                'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 const MESES_CURTOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez']
 
-const CORES_GRAFICO = [
-  '#2563eb','#7c3aed','#db2777','#ea580c','#16a34a',
-  '#0891b2','#854d0e','#be123c','#4f46e5','#065f46',
-  '#92400e','#1e40af',
-]
-
 // ─── Logo dos bancos ──────────────────────────────────────────────────────────
 
 function logoBanco(nome: string): { bg: string; color: string; sigla: string } {
@@ -78,17 +72,6 @@ function logoBanco(nome: string): { bg: string; color: string; sigla: string } {
   if (n.includes('cactus'))       return { bg: '#2D7A3A', color: '#fff', sigla: 'CAC' }
   const sigla = nome.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase()
   return { bg: '#e5e7eb', color: '#374151', sigla }
-}
-
-// ─── Mini barra inline ────────────────────────────────────────────────────────
-
-function BarraInline({ valor, max, cor }: { valor: number; max: number; cor: string }) {
-  const pct = max > 0 ? Math.min((valor / max) * 100, 100) : 0
-  return (
-    <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px', flex: 1 }}>
-      <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${pct}%`, transition: 'width 0.4s ease' }} />
-    </div>
-  )
 }
 
 // ─── Seção expansível ─────────────────────────────────────────────────────────
@@ -166,7 +149,6 @@ function GraficoBarrasMensal({
         style={{ display: 'block' }}
       >
         <g transform={`translate(${PADDING_LEFT}, ${PADDING_TOP})`}>
-          {/* Área útil = 1000 - PADDING_LEFT - PADDING_RIGHT */}
           {(() => {
             const areaWidth = 1000 - PADDING_LEFT - PADDING_RIGHT
             const slotWidth = areaWidth / dados.length
@@ -175,14 +157,9 @@ function GraficoBarrasMensal({
 
             return (
               <>
-                {/* Linha de meta */}
                 {yMeta !== null && (
                   <g>
-                    <line
-                      x1={0} y1={yMeta}
-                      x2={areaWidth + 4} y2={yMeta}
-                      stroke={corMeta} strokeWidth={2} strokeDasharray="8,5"
-                    />
+                    <line x1={0} y1={yMeta} x2={areaWidth + 4} y2={yMeta} stroke={corMeta} strokeWidth={2} strokeDasharray="8,5" />
                     <rect x={areaWidth + 6} y={yMeta - 11} width={86} height={18} fill="#fff" rx={3} />
                     <text x={areaWidth + 8} y={yMeta + 4} fontSize={11} fontWeight={700} fill={corMeta}>
                       {fmt(meta)}
@@ -190,7 +167,6 @@ function GraficoBarrasMensal({
                   </g>
                 )}
 
-                {/* Barras */}
                 {dados.map((d, i) => {
                   const x = i * slotWidth + offsetX
                   const cx = i * slotWidth + slotWidth / 2
@@ -223,7 +199,6 @@ function GraficoBarrasMensal({
                   )
                 })}
 
-                {/* Tooltip */}
                 {tooltip && (
                   <g>
                     <rect
@@ -249,7 +224,6 @@ function GraficoBarrasMensal({
                   </g>
                 )}
 
-                {/* Linha base */}
                 <line x1={0} y1={areaAltura} x2={areaWidth + 4} y2={areaAltura} stroke="#e5e7eb" strokeWidth={1} />
               </>
             )
@@ -257,7 +231,6 @@ function GraficoBarrasMensal({
         </g>
       </svg>
 
-      {/* Legenda */}
       <div style={{ display: 'flex', gap: '16px', marginTop: '8px', flexWrap: 'wrap' }}>
         {meta > 0 && <>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: '#6b7280' }}>
@@ -324,7 +297,6 @@ export default function Dashboard() {
     supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
       .eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
-
   }, [householdId])
 
   // ── Busca dados ─────────────────────────────────────────────────────────────
@@ -337,7 +309,6 @@ export default function Dashboard() {
     const ultimoDia = new Date(filtroAno, filtroMes, 0).getDate()
     const dataFim = `${filtroAno}-${mesStr}-${ultimoDia}`
 
-    // Movimentações do mês
     const { data: mes } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
@@ -346,7 +317,6 @@ export default function Dashboard() {
       .lte('data_movimentacao', dataFim)
     setMovsMes(mes || [])
 
-    // Movimentações do ano todo (para gráficos mês a mês)
     const { data: ano } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino')
@@ -355,7 +325,6 @@ export default function Dashboard() {
       .lte('data_movimentacao', `${filtroAno}-12-31`)
     setMovsAno(ano || [])
 
-    // Saldo de cada conta
     const { data: todasMovsConta } = await supabase
       .from('movimentacoes')
       .select('conta_origem_destino,tipo,valor,situacao')
@@ -375,7 +344,6 @@ export default function Dashboard() {
     }
     setSaldosContas(saldos)
 
-    // Comprometido por cartão
     const dataHoje = hoje.toISOString().split('T')[0]
     const { data: pendCartao } = await supabase
       .from('movimentacoes')
@@ -391,7 +359,6 @@ export default function Dashboard() {
     }
     setComprometidoCartoes(comp)
 
-    // Movimentações de cartão do ano por data_pagamento (para gráfico de crédito)
     const { data: cartaoAno } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,conta_origem_destino,descricao')
@@ -432,8 +399,6 @@ export default function Dashboard() {
   const totalSaldoContas = contas.filter(c => c.tipo === 'corrente').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
   const totalSaldoInvestimentos = contas.filter(c => c.tipo === 'investimento').reduce((s, c) => s + (saldosContas[c.id] ?? 0), 0)
 
-  // ── Por categoria (mês atual) — mesma regra entraNoReal do Resumo ───────────
-  // entraNoReal = Pago OU (Pendente + Parcela 1/1)
   const entraNoReal = (m: Movimentacao) =>
     m.tipo === 'Despesa' && (
       m.situacao === 'Pago' ||
@@ -455,9 +420,7 @@ export default function Dashboard() {
       .sort((a, b) => b.valor - a.valor)
   }, [movsmes, categorias])
 
-  const maxCategoria = porCategoria[0]?.valor || 1
-
-  // ── Gráficos mês a mês (ano inteiro) ────────────────────────────────────────
+  // ── Gráficos mês a mês ──────────────────────────────────────────────────────
   const dadosReceitasMensal = useMemo(() =>
     Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1
@@ -484,21 +447,18 @@ export default function Dashboard() {
       return { mes, ano: filtroAno, valor, label: MESES_CURTOS[i] }
     }), [movsAno, filtroAno])
 
-  // Meta despesas: soma limite_gastos das categorias de despesa
   const metaDespesas = useMemo(() =>
     categorias
       .filter(c => !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao) && c.limite_gastos && c.limite_gastos > 0)
       .reduce((s, c) => s + (c.limite_gastos || 0), 0),
     [categorias])
 
-  // ── Gráfico cartão de crédito mês a mês ────────────────────────────────────
   const dadosCartaoMensal = useMemo(() => {
     const cartaoId = cartaoSelecionado ?? (cartoes[0]?.id ?? null)
     return Array.from({ length: 12 }, (_, i) => {
       const mes = i + 1
       const valor = movsCartaoAno
         .filter(m => {
-          // cartão: usar data_pagamento para identificar o mês da fatura
           if (!m.data_pagamento) return false
           const anoFatura = parseInt(m.data_pagamento.substring(0, 4), 10)
           const mesFatura = parseInt(m.data_pagamento.substring(5, 7), 10)
@@ -536,27 +496,19 @@ export default function Dashboard() {
         <div style={{ padding: '80px', textAlign: 'center', color: '#9ca3af' }}>Carregando dashboard...</div>
       ) : (
         <>
-
           {/* ── Linha 1: Cards resumo ─────────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '20px' }}>
-            <CardResumo label="Saldo em Contas" valor={fmt(totalSaldoContas)} sub="Contas correntes ativas" borda="#6ee7b7" icone="🏦" corValor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'} />
-            <CardResumo label="Receitas do Mês" valor={fmt(totalReceitas)} sub="Pagamentos recebidos" borda="#93c5fd" icone="📈" />
-            <CardResumo label="Despesas do Mês" valor={fmt(totalDespesas)} sub="Pago + Pendente à vista" borda="#fca5a5" icone="📉" />
-            <CardResumo label="Despesas Cartão Crédito" valor={fmt(totalCartaoCredito)} sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
+            <CardResumo label="Saldo em Contas"          valor={fmt(totalSaldoContas)}    sub="Contas correntes ativas"    borda="#6ee7b7" icone="🏦" corValor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'} />
+            <CardResumo label="Receitas do Mês"          valor={fmt(totalReceitas)}        sub="Pagamentos recebidos"       borda="#93c5fd" icone="📈" />
+            <CardResumo label="Despesas do Mês"          valor={fmt(totalDespesas)}        sub="Pago + Pendente à vista"    borda="#fca5a5" icone="📉" />
+            <CardResumo label="Despesas Cartão Crédito"  valor={fmt(totalCartaoCredito)}   sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
           </div>
 
-          {/* ── Linha 2: Seções expansíveis ───────────────────────────────── */}
+          {/* ── Linha 2: Contas + Cartões ─────────────────────────────────── */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
 
-            {/* Coluna esquerda: Contas Correntes + Investimentos */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-
-              <SecaoExpansivel
-                titulo="Contas Correntes"
-                icone="🏦"
-                badge={fmt(totalSaldoContas)}
-                badgeCor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'}
-              >
+              <SecaoExpansivel titulo="Contas Correntes" icone="🏦" badge={fmt(totalSaldoContas)} badgeCor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'}>
                 {contas.filter(c => c.tipo === 'corrente').length === 0 ? <Vazio /> : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {contas.filter(c => c.tipo === 'corrente').map(c => {
@@ -583,12 +535,7 @@ export default function Dashboard() {
                 )}
               </SecaoExpansivel>
 
-              <SecaoExpansivel
-                titulo="Investimentos"
-                icone="📈"
-                badge={fmt(totalSaldoInvestimentos)}
-                badgeCor="#065f46"
-              >
+              <SecaoExpansivel titulo="Investimentos" icone="📈" badge={fmt(totalSaldoInvestimentos)} badgeCor="#065f46">
                 {contas.filter(c => c.tipo === 'investimento').length === 0 ? <Vazio /> : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     {contas.filter(c => c.tipo === 'investimento').map(c => {
@@ -614,16 +561,9 @@ export default function Dashboard() {
                   </div>
                 )}
               </SecaoExpansivel>
-
             </div>
 
-            {/* Coluna direita: Cartões de Crédito */}
-            <SecaoExpansivel
-              titulo="Cartões de Crédito"
-              icone="💳"
-              badge={`${cartoes.length} cartões`}
-              badgeCor="#6b7280"
-            >
+            <SecaoExpansivel titulo="Cartões de Crédito" icone="💳" badge={`${cartoes.length} cartões`} badgeCor="#6b7280">
               {cartoes.length === 0 ? <Vazio /> : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {cartoes.map(c => {
@@ -660,69 +600,57 @@ export default function Dashboard() {
                 </div>
               )}
             </SecaoExpansivel>
-
           </div>
 
-          {/* ── Linha 3: Top Categorias ────────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-
+          {/* ── Linha 3: Limites por Categoria (largura total) ────────────── */}
+          <div style={{ marginBottom: '20px' }}>
             <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>📊 Top Categorias — {MESES[filtroMes - 1]}</div>
-              {porCategoria.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {porCategoria.slice(0, 8).map((cat, i) => (
-                    <div key={cat.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '11px', color: '#9ca3af', width: '14px', textAlign: 'right', flexShrink: 0 }}>{i + 1}</span>
-                      <span style={{ fontSize: '12px', color: '#374151', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{cat.nome}</span>
-                      <BarraInline valor={cat.valor} max={maxCategoria} cor={CORES_GRAFICO[i % CORES_GRAFICO.length]} />
-                      <span style={{ fontSize: '12px', fontWeight: 700, color: '#111827', width: '72px', textAlign: 'right', flexShrink: 0 }}>{fmt(cat.valor)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div style={cardStyle}>
-              <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '14px' }}>🏷️ Limites por Categoria — {MESES[filtroMes - 1]}</div>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827', marginBottom: '16px' }}>
+                🏷️ Limites por Categoria — {MESES[filtroMes - 1]}
+              </div>
               {porCategoria.filter(c => {
                 const cat = categorias.find(x => x.id === c.id)
                 return cat?.limite_gastos && cat.limite_gastos > 0
               }).length === 0 ? (
                 <Vazio />
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '14px' }}>
                   {porCategoria
                     .filter(c => {
                       const cat = categorias.find(x => x.id === c.id)
                       return cat?.limite_gastos && cat.limite_gastos > 0
                     })
-                    .slice(0, 8)
                     .map((cat) => {
                       const limite = categorias.find(x => x.id === cat.id)?.limite_gastos || 0
                       const pct = limite > 0 ? (cat.valor / limite) * 100 : 0
                       const cor = pct > 100 ? '#ef4444' : pct > 80 ? '#f59e0b' : '#10b981'
                       return (
-                        <div key={cat.id}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-                            <span style={{ color: '#374151', fontWeight: 500 }}>{cat.nome}</span>
-                            <span style={{ color: cor, fontWeight: 700 }}>{fmt(cat.valor)} / {fmt(limite)}</span>
+                        <div key={cat.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                            <span style={{ fontSize: '13px', color: '#374151', fontWeight: 600 }}>{cat.nome}</span>
+                            <span style={{ fontSize: '12px', color: cor, fontWeight: 700, whiteSpace: 'nowrap', marginLeft: '8px' }}>
+                              {fmt(cat.valor)} / {fmt(limite)}
+                            </span>
                           </div>
-                          <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '6px' }}>
-                            <div style={{ background: cor, borderRadius: '99px', height: '6px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
+                          <div style={{ background: '#e5e7eb', borderRadius: '99px', height: '7px' }}>
+                            <div style={{ background: cor, borderRadius: '99px', height: '7px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
                           </div>
-                          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px', textAlign: 'right' }}>{pct.toFixed(0)}% do limite</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+                            <span style={{ fontSize: '10px', color: cor, fontWeight: 700 }}>{pct.toFixed(0)}% do limite</span>
+                            <span style={{ fontSize: '10px', color: '#9ca3af' }}>
+                              {pct > 100 ? `⚠️ ${fmt(cat.valor - limite)} acima` : `${fmt(limite - cat.valor)} restante`}
+                            </span>
+                          </div>
                         </div>
                       )
                     })}
                 </div>
               )}
             </div>
-
           </div>
 
           {/* ── Linha 4: Gráficos mês a mês ───────────────────────────────── */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginTop: '14px' }}>
-
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={cardStyle}>
               <GraficoBarrasMensal
                 titulo={`📈 Receitas Mês a Mês — ${filtroAno}`}
@@ -743,7 +671,6 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* Gráfico Cartão de Crédito */}
             {cartoes.length > 0 && (
               <div style={cardStyle}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -777,9 +704,7 @@ export default function Dashboard() {
                 />
               </div>
             )}
-
           </div>
-
         </>
       )}
     </div>
@@ -792,7 +717,7 @@ function CardResumo({ label, valor, sub, borda, icone, corValor }: {
   label: string; valor: string; sub: string; borda: string; icone: string; corValor?: string
 }) {
   return (
-    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', border: `1px solid #e5e7eb`, borderLeft: `4px solid ${borda}` }}>
+    <div style={{ background: '#fff', borderRadius: '14px', padding: '16px 18px', border: '1px solid #e5e7eb', borderLeft: `4px solid ${borda}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
         <span style={{ fontSize: '20px' }}>{icone}</span>
