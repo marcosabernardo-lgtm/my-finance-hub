@@ -453,8 +453,7 @@ export default function Endividamento() {
       const cartaoNome = (p0 as any).cartoes?.nome || null;
       const pendentes  = parcelas.filter((p) => entraNaContagem(p, filtroSit));
       const pagas      = parcelas.filter((p) => foiQuitada(p, isCredito)).length;
-      const { total }  = parseP(p0.numero_parcela);
-      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total };
+      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas };
     }).filter((g) => g.pendentes.length > 0);
 
     const porDesc: Record<string, typeof grupos> = {};
@@ -467,12 +466,18 @@ export default function Endividamento() {
     }
 
     return Object.entries(porDesc).map(([chave, gs]) => {
+      // ✅ FIX: usar as parcelas reais em vez de somar g.total (que vinha do texto "X/Y")
       const todasParcelas = gs.flatMap((g) => g.parcelas);
-      const totalParcelas = gs.reduce((s, g) => s + g.total, 0);
-      const totalPagas    = gs.reduce((s, g) => s + g.pagas, 0);
+      const totalParcelas = todasParcelas.length;
+      const totalPagas    = todasParcelas.filter((p) => foiQuitada(p, gs[0].isCredito)).length;
       const totalPend     = gs.reduce((s, g) => s + g.pendentes.length, 0);
       const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0            = gs[0].p0;
+
+      // valor_total e valor_restante baseados nas parcelas reais
+      const valorTotal    = todasParcelas.reduce((s, p) => s + p.valor, 0);
+      const valorRestante = pendOrd.reduce((s, p) => s + p.valor, 0);
+
       return {
         chave,
         descricao:          p0.descricao,
@@ -486,8 +491,8 @@ export default function Endividamento() {
         parcelas_pagas:     totalPagas,
         parcelas_pendentes: totalPend,
         valor_parcela:      p0.valor,
-        valor_total:        p0.valor * totalParcelas,
-        valor_restante:     p0.valor * totalPend,
+        valor_total:        valorTotal,
+        valor_restante:     valorRestante,
         proxima_parcela:    pendOrd[0]?.data_pagamento || '',
         ultima_parcela:     pendOrd[pendOrd.length - 1]?.data_pagamento || '',
         parcelas:           todasParcelas,
