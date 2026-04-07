@@ -120,7 +120,7 @@ export default function ConferenciaWhatsApp() {
           data_movimentacao: data, data_pagamento: dataBase.toISOString().split('T')[0],
           categoria_id: categoriaId || null, cartao_id: cartaoId || null,
           metodo_pagamento: metodoFinal, situacao: 'Pendente',
-          numero_parcela: `${i + 1}/${parcelas}`, forma_pagamento: 'Parcelado', classificacao: 'Variável',
+          numero_parcela: `Parcela ${i + 1}/${parcelas}`, forma_pagamento: 'Parcelado', classificacao: 'Variável',
         })
       }
       const { error } = await supabase.from('movimentacoes').insert(inserts)
@@ -137,7 +137,7 @@ export default function ConferenciaWhatsApp() {
         conta_origem_destino: !isCredito ? (conta || null) : null,
         metodo_pagamento: metodoFinal,
         situacao: isCredito ? 'Pendente' : 'Pago',
-        numero_parcela: '1/1', forma_pagamento: 'À Vista', classificacao: 'Variável',
+        numero_parcela: 'Parcela 1/1', forma_pagamento: 'À Vista', classificacao: 'Variável',
       })
       if (error) { setProcessando(null); return }
     }
