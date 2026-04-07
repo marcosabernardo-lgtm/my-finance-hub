@@ -88,8 +88,11 @@ const parseP = (s: string) => {
   const m = s?.match(/Parcela (\d+)\/(\d+)/i);
   return m ? { atual: +m[1], total: +m[2] } : { atual: 0, total: 0 };
 };
-const foiQuitada = (p: Movimentacao, isCredito: boolean) =>
+const foiQuitada  = (p: Movimentacao, isCredito: boolean) =>
   isCredito ? (p.situacao === 'Faturado' || p.situacao === 'Pago') : p.situacao === 'Pago';
+// Previsto = pode cancelar a qualquer momento → não entra como endividamento
+const isPendente  = (p: Movimentacao, inclPrevistos = false) =>
+  p.situacao === 'Pendente' || (inclPrevistos && p.situacao === 'Previsto');
 
 // ─── Parcelas drill-down (lista de cards) ─────────────────────────────────────
 function DrillParcelas({ parcelas, isCredito }: { parcelas: Movimentacao[]; isCredito: boolean }) {
@@ -286,6 +289,7 @@ export default function Endividamento() {
   const [filtroCartao,  setFiltroCartao]  = useState('');
   const [filtroConta,   setFiltroConta]   = useState('');
   const [abaAtiva,      setAbaAtiva]      = useState<AbaView>('credito');
+  const [filtroSit,     setFiltroSit]     = useState<'pendente' | 'pendente+previsto'>('pendente');
 
   useEffect(() => { carregarDados(); }, []);
 
@@ -314,6 +318,8 @@ export default function Endividamento() {
   }
 
   // Agrupa por descrição (normalizado) — acumula todos os grupos_id com mesmo nome
+  const inclPrevistos = filtroSit === 'pendente+previsto';
+
   const dividasAgrupadas = useMemo<DividaDesc[]>(() => {
     // Primeiro: agrupar por grupo_id (parcelamento único)
     const porGrupo: Record<string, Movimentacao[]> = {};
@@ -330,7 +336,7 @@ export default function Endividamento() {
       const catNome    = (p0 as any).categorias?.nome || null;
       const isParc     = !isCredito && (catNome || '').toLowerCase() === 'parcelamento';
       const cartaoNome = (p0 as any).cartoes?.nome || null;
-      const pendentes  = parcelas.filter((p) => !foiQuitada(p, isCredito));
+      const pendentes  = parcelas.filter((p) => isPendente(p, inclPrevistos));
       const pagas      = parcelas.filter((p) =>  foiQuitada(p, isCredito)).length;
       const { total }  = parseP(p0.numero_parcela);
       return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total };
@@ -373,7 +379,7 @@ export default function Endividamento() {
         parcelas:           todasParcelas,
       } as DividaDesc;
     });
-  }, [movimentacoes]);
+  }, [movimentacoes, inclPrevistos]);
 
   const dividasFiltradas = useMemo(() => dividasAgrupadas.filter((d) => {
     if (filtroCartao && d.cartao_nome !== filtroCartao) return false;
@@ -417,7 +423,8 @@ export default function Endividamento() {
         const mes = mesAno(p.data_pagamento);
         if (!meses[mes]) meses[mes] = { restante: 0, pago: 0 };
         if (foiQuitada(p, d.is_credito)) meses[mes].pago += p.valor;
-        else                             meses[mes].restante += p.valor;
+        else if (isPendente(p, inclPrevistos)) meses[mes].restante += p.valor;
+        // Previsto ignorado
       }
     }
     return Object.entries(meses)
@@ -474,6 +481,18 @@ export default function Endividamento() {
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: '12px', marginBottom: '20px', flexWrap: 'wrap' as const, alignItems: 'center' }}>
+        {/* Botão Pendente / Pendente+Previsto */}
+        <div style={{ display: 'flex', borderRadius: '8px', border: `1.5px solid ${CORES.borda}`, overflow: 'hidden' }}>
+          {([['pendente', 'Pendente'], ['pendente+previsto', 'Pendente + Previsto']] as const).map(([val, label]) => {
+            const ativo = filtroSit === val;
+            return (
+              <button key={val} onClick={() => setFiltroSit(val)}
+                style={{ padding: '8px 16px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', borderRight: val === 'pendente' ? `1px solid ${CORES.borda}` : 'none', backgroundColor: ativo ? CORES.sidebar : CORES.card, color: ativo ? '#fff' : CORES.texto, transition: 'all 0.15s' }}>
+                {label}
+              </button>
+            );
+          })}
+        </div>
         <select style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${CORES.borda}`, backgroundColor: CORES.card, color: CORES.texto, fontSize: '14px', cursor: 'pointer', outline: 'none', minWidth: '160px' }}
           value={filtroCartao} onChange={(e) => { setFiltroCartao(e.target.value); setFiltroConta(''); }}>
           <option value="">Todos os cartões</option>
