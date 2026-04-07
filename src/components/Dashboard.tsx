@@ -504,68 +504,75 @@ export default function Dashboard() {
             <CardResumo label="Despesas Cartão Crédito"  valor={fmt(totalCartaoCredito)}   sub="Todas as compras no crédito" borda="#c4b5fd" icone="💳" />
           </div>
 
-          {/* ── Linha 2: Contas + Cartões ─────────────────────────────────── */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '20px' }}>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <SecaoExpansivel titulo="Contas Correntes" icone="🏦" badge={fmt(totalSaldoContas)} badgeCor={totalSaldoContas >= 0 ? '#065f46' : '#991b1b'}>
-                {contas.filter(c => c.tipo === 'corrente').length === 0 ? <Vazio /> : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {contas.filter(c => c.tipo === 'corrente').map(c => {
-                      const saldo = saldosContas[c.id] ?? 0
-                      const logo = logoBanco(c.nome)
-                      return (
-                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', border: '1px solid #e5e7eb' }}>
-                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
-                            {logo.sigla}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                            <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
-                          </div>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
+          {/* ── Linha 2: Contas Correntes (grid largura total) ────────────── */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={cardStyle}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>🏦 Contas Correntes</div>
+                <div style={{ fontSize: '15px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</div>
+              </div>
+              {contas.filter(c => c.tipo === 'corrente').length === 0 ? <Vazio /> : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                  {contas.filter(c => c.tipo === 'corrente').map(c => {
+                    const saldo = saldosContas[c.id] ?? 0
+                    const logo = logoBanco(c.nome)
+                    return (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px', fontWeight: 700, color: logo.color, letterSpacing: '-0.5px' }}>
+                          {logo.sigla}
                         </div>
-                      )
-                    })}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e5e7eb', paddingTop: '10px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#374151', textTransform: 'uppercase' }}>Total</span>
-                      <span style={{ fontSize: '17px', fontWeight: 700, color: totalSaldoContas >= 0 ? '#065f46' : '#991b1b' }}>{fmt(totalSaldoContas)}</span>
-                    </div>
-                  </div>
-                )}
-              </SecaoExpansivel>
-
-              <SecaoExpansivel titulo="Investimentos" icone="📈" badge={fmt(totalSaldoInvestimentos)} badgeCor="#065f46">
-                {contas.filter(c => c.tipo === 'investimento').length === 0 ? <Vazio /> : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {contas.filter(c => c.tipo === 'investimento').map(c => {
-                      const saldo = saldosContas[c.id] ?? 0
-                      const logo = logoBanco(c.nome)
-                      return (
-                        <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f0fdf4', borderRadius: '10px', padding: '10px 14px', border: '1px solid #bbf7d0' }}>
-                          <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color }}>
-                            {logo.sigla}
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
-                            <div style={{ fontSize: '11px', color: '#16a34a' }}>Investimento</div>
-                          </div>
-                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#065f46', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                          <div style={{ fontSize: '11px', color: '#9ca3af' }}>Conta corrente</div>
                         </div>
-                      )
-                    })}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #bbf7d0', paddingTop: '10px' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 700, color: '#16a34a', textTransform: 'uppercase' }}>Total Investido</span>
-                      <span style={{ fontSize: '17px', fontWeight: 700, color: '#065f46' }}>{fmt(totalSaldoInvestimentos)}</span>
-                    </div>
-                  </div>
-                )}
-              </SecaoExpansivel>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: saldo >= 0 ? '#065f46' : '#991b1b', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
+          </div>
 
-            <SecaoExpansivel titulo="Cartões de Crédito" icone="💳" badge={`${cartoes.length} cartões`} badgeCor="#6b7280">
-              {cartoes.length === 0 ? <Vazio /> : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          {/* ── Linha 2b: Investimentos (grid largura total) ──────────────── */}
+          {contas.filter(c => c.tipo === 'investimento').length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>📈 Investimentos</div>
+                  <div style={{ fontSize: '15px', fontWeight: 700, color: '#065f46' }}>{fmt(totalSaldoInvestimentos)}</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '12px' }}>
+                  {contas.filter(c => c.tipo === 'investimento').map(c => {
+                    const saldo = saldosContas[c.id] ?? 0
+                    const logo = logoBanco(c.nome)
+                    return (
+                      <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '12px', background: '#f0fdf4', borderRadius: '10px', padding: '12px 14px', border: '1px solid #bbf7d0' }}>
+                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '12px', fontWeight: 700, color: logo.color }}>
+                          {logo.sigla}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.nome}</div>
+                          <div style={{ fontSize: '11px', color: '#16a34a' }}>Investimento</div>
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: 700, color: '#065f46', whiteSpace: 'nowrap' }}>{fmt(saldo)}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── Linha 2c: Cartões de Crédito (grid largura total) ─────────── */}
+          {cartoes.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <div style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: '#111827' }}>💳 Cartões de Crédito</div>
+                  <div style={{ fontSize: '12px', color: '#6b7280' }}>{cartoes.length} cartão(ões)</div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
                   {cartoes.map(c => {
                     const usado = comprometidoCartoes[c.id] || 0
                     const disponivel = c.limite_total - usado
@@ -573,34 +580,36 @@ export default function Dashboard() {
                     const corBarra = pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981'
                     const logo = logoBanco(c.nome)
                     return (
-                      <div key={c.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '10px 14px', border: '1px solid #e5e7eb' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                          <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '10px', fontWeight: 700, color: logo.color }}>
+                      <div key={c.id} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px 14px', border: '1px solid #e5e7eb' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+                          <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: logo.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '11px', fontWeight: 700, color: logo.color }}>
                             {logo.sigla}
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{ fontSize: '13px', fontWeight: 600, color: '#111827' }}>{c.nome}</div>
                             <div style={{ fontSize: '11px', color: '#6b7280' }}>Vence dia {c.data_vencimento} · Limite {fmt(c.limite_total)}</div>
                           </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: disponivel >= 0 ? '#065f46' : '#991b1b' }}>{fmt(disponivel)}</div>
+                          <div style={{ textAlign: 'right' as const }}>
+                            <div style={{ fontSize: '15px', fontWeight: 700, color: disponivel >= 0 ? '#065f46' : '#991b1b' }}>{fmt(disponivel)}</div>
                             <div style={{ fontSize: '10px', color: '#9ca3af' }}>disponível</div>
                           </div>
                         </div>
-                        <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '5px' }}>
-                          <div style={{ background: corBarra, borderRadius: '99px', height: '5px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
+                        <div style={{ background: '#e5e7eb', borderRadius: '99px', height: '7px' }}>
+                          <div style={{ background: corBarra, borderRadius: '99px', height: '7px', width: `${Math.min(pct, 100)}%`, transition: 'width 0.4s' }} />
                         </div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>
-                          Usado: <strong style={{ color: '#374151' }}>{fmt(usado)}</strong>
-                          <span style={{ marginLeft: '6px' }}>({pct.toFixed(0)}%)</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+                          <span style={{ fontSize: '11px', color: corBarra, fontWeight: 700 }}>{pct.toFixed(0)}% usado</span>
+                          <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                            Usado: <strong style={{ color: '#374151' }}>{fmt(usado)}</strong>
+                          </span>
                         </div>
                       </div>
                     )
                   })}
                 </div>
-              )}
-            </SecaoExpansivel>
-          </div>
+              </div>
+            </div>
+          )}
 
           {/* ── Linha 3: Limites por Categoria (largura total) ────────────── */}
           <div style={{ marginBottom: '20px' }}>
