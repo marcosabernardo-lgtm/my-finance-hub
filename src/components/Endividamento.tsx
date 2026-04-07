@@ -184,7 +184,7 @@ function TabelaDividas({ dividas, corBarra }: { dividas: Divida[]; corBarra: str
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
                   {d.parcelas.map((p) => {
                     const { atual, total } = parseParcela(p.numero_parcela);
-                    const pago = p.situacao === 'Pago';
+                    const pago = p.situacao === 'Pago' || p.situacao === 'Faturado';
                     return (
                       <div key={p.id} style={{ backgroundColor: pago ? '#f0fdf4' : '#fff', border: `1px solid ${pago ? '#86efac' : CORES.borda}`, borderRadius: '8px', padding: '10px 12px' }}>
                         <div style={{ display: 'inline-block', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: 700, backgroundColor: pago ? '#dcfce7' : '#fef3c7', color: pago ? '#16a34a' : '#d97706', marginBottom: '4px' }}>
@@ -255,12 +255,16 @@ export default function Endividamento() {
       parcelas.sort((a, b) => parseParcela(a.numero_parcela).atual - parseParcela(b.numero_parcela).atual);
       const p0           = parcelas[0];
       const { total }    = parseParcela(p0.numero_parcela);
-      const pagas        = parcelas.filter((p) => p.situacao === 'Pago').length;
-      const pendentes    = parcelas.filter((p) => p.situacao !== 'Pago');
-      const pendOrd      = [...pendentes].sort((a, b) => (a.data_pagamento || '').localeCompare(b.data_pagamento || ''));
       const cartaoNome   = (p0 as any).cartoes?.nome || null;
       const catNome      = (p0 as any).categorias?.nome || null;
       const isCredito    = !!p0.cartao_id || p0.metodo_pagamento === 'Crédito';
+      // Crédito: Faturado OU Pago = quitado. Débito/PIX: só Pago.
+      const foiQuitada   = (p: Movimentacao) => isCredito
+        ? (p.situacao === 'Faturado' || p.situacao === 'Pago')
+        : p.situacao === 'Pago';
+      const pagas        = parcelas.filter(foiQuitada).length;
+      const pendentes    = parcelas.filter((p) => !foiQuitada(p));
+      const pendOrd      = [...pendentes].sort((a, b) => (a.data_pagamento || '').localeCompare(b.data_pagamento || ''));
       // Parcelamento = não é crédito E categoria se chama "Parcelamento"
       const isParcelamento = !isCredito && (catNome || '').toLowerCase() === 'parcelamento';
 
@@ -312,8 +316,8 @@ export default function Endividamento() {
       for (const p of d.parcelas) {
         const mes = getMesAno(p.data_pagamento);
         if (!meses[mes]) meses[mes] = { restante: 0, pago: 0 };
-        if (p.situacao === 'Pago') meses[mes].pago += p.valor;
-        else                       meses[mes].restante += p.valor;
+        if (p.situacao === 'Pago' || p.situacao === 'Faturado') meses[mes].pago += p.valor;
+        else                                                         meses[mes].restante += p.valor;
       }
     }
     return Object.entries(meses)
