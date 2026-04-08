@@ -18,7 +18,7 @@ interface Movimentacao {
   metodo_pagamento: string | null
   cartao_id: number | null
   categoria_id: number | null
-  categorias?: { nome: string }
+  categorias?: { nome: string } | null  // fix: objeto único, não array
 }
 
 // Calcula semana do mês (1 a 6)
@@ -221,7 +221,7 @@ export default function Calendario() {
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
-    const mesStr   = String(mes + 1).padStart(2, '0')
+    const mesStr    = String(mes + 1).padStart(2, '0')
     const ultimoDia = new Date(ano, mes + 1, 0).getDate()
     const { data } = await supabase
       .from('movimentacoes')
@@ -230,7 +230,16 @@ export default function Calendario() {
       .gte('data_movimentacao', `${ano}-${mesStr}-01`)
       .lte('data_movimentacao', `${ano}-${mesStr}-${ultimoDia}`)
       .order('data_movimentacao', { ascending: true })
-    setMovs(data || [])
+
+    // fix: o Supabase pode retornar categorias como array — normalizamos para objeto único
+    const normalizado: Movimentacao[] = (data || []).map((m: any) => ({
+      ...m,
+      categorias: Array.isArray(m.categorias)
+        ? (m.categorias[0] ?? null)
+        : (m.categorias ?? null),
+    }))
+
+    setMovs(normalizado)
     setLoading(false)
   }, [householdId, mes, ano])
 
@@ -253,8 +262,8 @@ export default function Calendario() {
   const saldo         = totalReceitas - totalDespesas
 
   // Grade do calendário
-  const primeiroDia    = new Date(ano, mes, 1).getDay() // 0=Dom
-  const ultimoDiaNum   = new Date(ano, mes + 1, 0).getDate()
+  const primeiroDia     = new Date(ano, mes, 1).getDay() // 0=Dom
+  const ultimoDiaNum    = new Date(ano, mes + 1, 0).getDate()
   const diasMesAnterior = new Date(ano, mes, 0).getDate()
 
   // Células: dias do mês anterior + dias do mês + dias do mês seguinte
@@ -279,7 +288,7 @@ export default function Calendario() {
 
   function navMes(dir: number) {
     const novoMes = mes + dir
-    if (novoMes < 0)  { setMes(11); setAno(a => a - 1) }
+    if (novoMes < 0)       { setMes(11); setAno(a => a - 1) }
     else if (novoMes > 11) { setMes(0);  setAno(a => a + 1) }
     else setMes(novoMes)
   }
