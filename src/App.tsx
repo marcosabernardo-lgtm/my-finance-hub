@@ -17,7 +17,8 @@ import NotificacoesConfig from "./components/NotificacoesConfig";
 import ConsultorIA from "./components/ConsultorIA";
 import ConferenciaWhatsApp from "./components/ConferenciaWhatsApp";
 import Endividamento from "./components/Endividamento";
-import HomePanel from "./components/HomePanel";
+import HomePanel from "./components/HomePanel"
+import Calendario from "./components/Calendario";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
@@ -86,7 +87,7 @@ type Pagina =
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
   | "alertas" | "notificacoes" | "consultor" | "conferencia"
-  | "endividamento"
+  | "endividamento" | "calendario"
 
 const grupos: {
   label: string
@@ -118,6 +119,7 @@ const grupos: {
       { label: "Semanal",        key: "semanal",        icon: Calendar                        },
       { label: "DRE",            key: "dre",            icon: FileText                        },
       { label: "Endividamento",  key: "endividamento",  icon: TrendingDown                    },
+      { label: "Calendário",     key: "calendario",     icon: Calendar                            },
     ],
   },
   {
