@@ -131,7 +131,7 @@ export default function HomePanel() {
       supabase.from("movimentacoes").select("cartao_id,valor").eq("household_id",householdId).eq("situacao","Pendente")
         .not("cartao_id","is",null).gte("data_pagamento",hoje.toISOString().split("T")[0]),
       // Dívidas parceladas
-      supabase.from("movimentacoes").select("id,descricao,valor,situacao,numero_parcela,data_pagamento,cartao_id,grupo_id,conta_origem_destino,categoria_id")
+      supabase.from("movimentacoes").select("id,descricao,valor,situacao,numero_parcela,data_pagamento,cartao_id,grupo_id,conta_origem_destino,categoria_id,categorias(nome),cartoes(nome)")
         .eq("household_id",householdId).eq("tipo","Despesa").not("numero_parcela","is",null).not("grupo_id","is",null)
         .order("data_pagamento",{ascending:true}),
       // TODAS despesas pendente+pago (para alertas — SEM filtro de mês, igual ao Alertas.tsx)
@@ -183,7 +183,7 @@ export default function HomePanel() {
       ps.sort((a:any,b:any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
       const p0 = ps[0]
       const isCredito = !!p0.cartao_id
-      const isParc    = !isCredito && (p0.categorias?.nome || '').toLowerCase() === 'parcelamento'
+      const isParc    = !isCredito && ((p0 as any).categorias?.nome || '').toLowerCase() === 'parcelamento'
       const foiQuit   = (p:any) => isCredito ? (p.situacao==="Faturado"||p.situacao==="Pago") : p.situacao==="Pago"
       const pendentes = ps.filter((p:any) => p.situacao==="Pendente")
       if (!pendentes.length) return null
