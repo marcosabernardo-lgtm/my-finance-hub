@@ -2,22 +2,19 @@ import { useEffect, useState, useCallback, useMemo } from "react"
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../hooks/useAuth"
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const MESES_CURTOS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
 
-const hoje     = new Date()
+const hoje     = new Date(); hoje.setHours(0,0,0,0)
 const mesAtual = hoje.getMonth() + 1
 const anoAtual = hoje.getFullYear()
-const mesAnterior = mesAtual === 1 ? 12 : mesAtual - 1
-const anoAnterior = mesAtual === 1 ? anoAtual - 1 : anoAtual
-const mesNome  = hoje.toLocaleString("pt-BR", { month: "long", year: "numeric" })
-const mesFormatado = mesNome.charAt(0).toUpperCase() + mesNome.slice(1)
+const mesAnterior  = mesAtual === 1 ? 12 : mesAtual - 1
+const anoAnterior  = mesAtual === 1 ? anoAtual - 1 : anoAtual
+const mesFormatado = (hoje.toLocaleString("pt-BR", { month: "long", year: "numeric" })).replace(/^\w/, c => c.toUpperCase())
 
 function diasAte(dataStr: string) {
   const d = new Date(dataStr + "T00:00:00")
-  const h = new Date(); h.setHours(0,0,0,0)
-  return Math.round((d.getTime() - h.getTime()) / 86400000)
+  return Math.round((d.getTime() - hoje.getTime()) / 86400000)
 }
 
 function logoBanco(nome: string) {
@@ -33,8 +30,7 @@ function logoBanco(nome: string) {
   if (n.includes("swile"))     return { bg: "#FF6B6B", color: "#fff", sigla: "SWI" }
   if (n.includes("havan"))     return { bg: "#003087", color: "#fff", sigla: "HAV" }
   if (n.includes("pernambucanas")) return { bg: "#E30613", color: "#fff", sigla: "PER" }
-  const sigla = nome.replace(/[^a-zA-Z]/g, "").slice(0, 3).toUpperCase()
-  return { bg: "#e5e7eb", color: "#374151", sigla }
+  return { bg: "#e5e7eb", color: "#374151", sigla: nome.replace(/[^a-zA-Z]/g,"").slice(0,3).toUpperCase() }
 }
 
 function parseP(s: string) {
@@ -42,39 +38,33 @@ function parseP(s: string) {
   return m ? { atual: +m[1], total: +m[2] } : { atual: 0, total: 0 }
 }
 
-function Variacao({ atual, anterior, inverso = false }: { atual: number; anterior: number; inverso?: boolean }) {
+// ── Variação com seta e cor ───────────────────────────────────────────────────
+function Variacao({ atual, anterior, boaSeSubir = false }: { atual: number; anterior: number; boaSeSubir?: boolean }) {
   if (anterior === 0) return null
   const pct   = ((atual - anterior) / anterior) * 100
   const subiu = pct >= 0
-  // inverso=true: receita subindo é BOM (verde), despesa subindo é RUIM (vermelho)
-  const corSubiu  = inverso ? "#16a34a" : "#ef4444"
-  const corDesceu = inverso ? "#ef4444" : "#16a34a"
-  const sinal     = pct >= 0 ? "+" : ""
+  const bom   = boaSeSubir ? subiu : !subiu
+  const sinal = pct >= 0 ? "+" : ""
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 3,
-      fontSize: 12, fontWeight: 700,
-      color: subiu ? corSubiu : corDesceu,
-      marginLeft: 8,
-    }}>
+    <span style={{ display:"inline-flex", alignItems:"center", gap:3, fontSize:12, fontWeight:700, color: bom ? "#16a34a" : "#ef4444", marginLeft:8 }}>
       {subiu ? "▲" : "▼"} {sinal}{pct.toFixed(1)}%
     </span>
   )
 }
 
-// ─── Mini gráfico ─────────────────────────────────────────────────────────────
+// ── Mini gráfico ──────────────────────────────────────────────────────────────
 function MiniGrafico({ dados, cor, meta }: { dados: { label: string; valor: number }[]; cor: string; meta?: number }) {
   const max = Math.max(...dados.map(d => d.valor), meta || 0, 1) * 1.15
   const H = 90
   return (
-    <svg width="100%" height={H + 20} viewBox={`0 0 ${dados.length * 36} ${H + 20}`} preserveAspectRatio="none">
-      {meta && <line x1={0} y1={H-(meta/max)*H} x2={dados.length*36} y2={H-(meta/max)*H} stroke={cor} strokeWidth={1.5} strokeDasharray="4,3" opacity={0.5} />}
-      {dados.map((d, i) => {
-        const h = Math.max((d.valor/max)*H, d.valor > 0 ? 3 : 0)
-        const c = meta ? (d.valor > meta ? "#ef4444" : "#16a34a") : cor
+    <svg width="100%" height={H+20} viewBox={`0 0 ${dados.length*36} ${H+20}`} preserveAspectRatio="none">
+      {meta && <line x1={0} y1={H-(meta/max)*H} x2={dados.length*36} y2={H-(meta/max)*H} stroke={cor} strokeWidth={1.5} strokeDasharray="4,3" opacity={0.5}/>}
+      {dados.map((d,i) => {
+        const h = Math.max((d.valor/max)*H, d.valor>0?3:0)
+        const c = meta ? (d.valor>meta?"#ef4444":"#16a34a") : cor
         return (
           <g key={i}>
-            <rect x={i*36+6} y={H-h} width={24} height={h} fill={c} rx={3} />
+            <rect x={i*36+6} y={H-h} width={24} height={h} fill={c} rx={3}/>
             <text x={i*36+18} y={H+14} textAnchor="middle" fontSize={8} fill="#9ca3af">{d.label}</text>
           </g>
         )
@@ -86,19 +76,20 @@ function MiniGrafico({ dados, cor, meta }: { dados: { label: string; valor: numb
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function HomePanel() {
   const { user } = useAuth()
-  const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [householdId, setHouseholdId] = useState<string|null>(null)
   const [loading, setLoading]         = useState(true)
-  const [contas,    setContas]         = useState<any[]>([])
-  const [cartoes,   setCartoes]        = useState<any[]>([])
-  const [categorias,setCategorias]     = useState<any[]>([])
-  const [movsMes,   setMovsMes]        = useState<any[]>([])
-  const [movsMesAnt,setMovsMesAnt]     = useState<any[]>([])
-  const [movsAno,   setMovsAno]        = useState<any[]>([])
+  const [contas,      setContas]      = useState<any[]>([])
+  const [cartoes,     setCartoes]     = useState<any[]>([])
+  const [categorias,  setCategorias]  = useState<any[]>([])
+  const [movsMes,     setMovsMes]     = useState<any[]>([])
+  const [movsMesAnt,  setMovsMesAnt]  = useState<any[]>([])
+  const [movsAno,     setMovsAno]     = useState<any[]>([])
   const [movsCartaoAno, setMovsCartaoAno] = useState<any[]>([])
-  const [saldosContas,  setSaldosContas]  = useState<Record<number, number>>({})
-  const [compCartoes,   setCompCartoes]   = useState<Record<number, number>>({})
+  const [saldosContas,  setSaldosContas]  = useState<Record<number,number>>({})
+  const [compCartoes,   setCompCartoes]   = useState<Record<number,number>>({})
   const [dividas,       setDividas]       = useState<any[]>([])
-  const [cartaoGrafico, setCartaoGrafico] = useState<number | null>(null)
+  const [movsAll,       setMovsAll]       = useState<any[]>([])  // todas despesas (para alertas)
+  const [cartaoGrafico, setCartaoGrafico] = useState<number|null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -110,39 +101,42 @@ export default function HomePanel() {
     if (!householdId) return
     setLoading(true)
 
-    const mesStr    = String(mesAtual).padStart(2, "0")
-    const mesAntStr = String(mesAnterior).padStart(2, "0")
-    const dataIni   = `${anoAtual}-${mesStr}-01`
-    const dataFim   = `${anoAtual}-${mesStr}-${new Date(anoAtual, mesAtual, 0).getDate()}`
+    const mesStr     = String(mesAtual).padStart(2,"0")
+    const mesAntStr  = String(mesAnterior).padStart(2,"0")
+    const dataIni    = `${anoAtual}-${mesStr}-01`
+    const dataFim    = `${anoAtual}-${mesStr}-${new Date(anoAtual,mesAtual,0).getDate()}`
     const dataIniAnt = `${anoAnterior}-${mesAntStr}-01`
-    const dataFimAnt = `${anoAnterior}-${mesAntStr}-${new Date(anoAnterior, mesAnterior, 0).getDate()}`
+    const dataFimAnt = `${anoAnterior}-${mesAntStr}-${new Date(anoAnterior,mesAnterior,0).getDate()}`
 
-    const [contasR, cartoesR, catsR, mesR, mesAntR, anoR, cartaoAnoR, todasR, pendCartR, diviR] = await Promise.all([
-      supabase.from("contas").select("id,nome,saldo_inicial,tipo").eq("household_id", householdId).eq("ativo", true),
-      supabase.from("cartoes").select("id,nome,limite_total,data_vencimento").eq("household_id", householdId).eq("ativo", true),
-      supabase.from("categorias").select("id,nome,limite_gastos,classificacao").eq("household_id", householdId),
+    const [contasR,cartoesR,catsR,mesR,mesAntR,anoR,cartaoAnoR,todasR,pendCartR,diviR,movsAllR] = await Promise.all([
+      supabase.from("contas").select("id,nome,saldo_inicial,tipo").eq("household_id",householdId).eq("ativo",true),
+      supabase.from("cartoes").select("id,nome,limite_total,data_vencimento").eq("household_id",householdId).eq("ativo",true),
+      supabase.from("categorias").select("id,nome,limite_gastos,classificacao").eq("household_id",householdId),
       // Mês atual
       supabase.from("movimentacoes").select("id,tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,categoria_id,descricao")
-        .eq("household_id", householdId).gte("data_movimentacao", dataIni).lte("data_movimentacao", dataFim),
-      // Mês anterior (para comparação)
+        .eq("household_id",householdId).gte("data_movimentacao",dataIni).lte("data_movimentacao",dataFim),
+      // Mês anterior
       supabase.from("movimentacoes").select("tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,cartao_id")
-        .eq("household_id", householdId).gte("data_movimentacao", dataIniAnt).lte("data_movimentacao", dataFimAnt),
-      // Ano inteiro
+        .eq("household_id",householdId).gte("data_movimentacao",dataIniAnt).lte("data_movimentacao",dataFimAnt),
+      // Ano inteiro (gráficos)
       supabase.from("movimentacoes").select("tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,cartao_id")
-        .eq("household_id", householdId).gte("data_movimentacao", `${anoAtual}-01-01`).lte("data_movimentacao", `${anoAtual}-12-31`),
+        .eq("household_id",householdId).gte("data_movimentacao",`${anoAtual}-01-01`).lte("data_movimentacao",`${anoAtual}-12-31`),
       // Cartão ano por data_pagamento
       supabase.from("movimentacoes").select("cartao_id,valor,situacao,data_pagamento")
-        .eq("household_id", householdId).eq("tipo", "Despesa").not("cartao_id", "is", null)
-        .gte("data_pagamento", `${anoAtual}-01-01`).lte("data_pagamento", `${anoAtual}-12-31`),
+        .eq("household_id",householdId).eq("tipo","Despesa").not("cartao_id","is",null)
+        .gte("data_pagamento",`${anoAtual}-01-01`).lte("data_pagamento",`${anoAtual}-12-31`),
       // Todas pagas (saldo contas)
-      supabase.from("movimentacoes").select("conta_origem_destino,tipo,valor,situacao").eq("household_id", householdId).eq("situacao", "Pago"),
-      // Pendentes nos cartões (comprometido)
-      supabase.from("movimentacoes").select("cartao_id,valor").eq("household_id", householdId).eq("situacao", "Pendente")
-        .not("cartao_id", "is", null).gte("data_pagamento", hoje.toISOString().split("T")[0]),
+      supabase.from("movimentacoes").select("conta_origem_destino,tipo,valor,situacao").eq("household_id",householdId).eq("situacao","Pago"),
+      // Pendentes cartões (comprometido)
+      supabase.from("movimentacoes").select("cartao_id,valor").eq("household_id",householdId).eq("situacao","Pendente")
+        .not("cartao_id","is",null).gte("data_pagamento",hoje.toISOString().split("T")[0]),
       // Dívidas parceladas
       supabase.from("movimentacoes").select("id,descricao,valor,situacao,numero_parcela,data_pagamento,cartao_id,grupo_id,conta_origem_destino,categoria_id")
-        .eq("household_id", householdId).eq("tipo", "Despesa").not("numero_parcela", "is", null).not("grupo_id", "is", null)
-        .order("data_pagamento", { ascending: true }),
+        .eq("household_id",householdId).eq("tipo","Despesa").not("numero_parcela","is",null).not("grupo_id","is",null)
+        .order("data_pagamento",{ascending:true}),
+      // TODAS despesas pendente+pago (para alertas — SEM filtro de mês, igual ao Alertas.tsx)
+      supabase.from("movimentacoes").select("id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,categoria_id,numero_parcela")
+        .eq("household_id",householdId).eq("tipo","Despesa").in("situacao",["Pendente","Pago"]),
     ])
 
     const conts = contasR.data || []
@@ -153,13 +147,14 @@ export default function HomePanel() {
     setMovsMesAnt(mesAntR.data || [])
     setMovsAno(anoR.data || [])
     setMovsCartaoAno(cartaoAnoR.data || [])
-    if (cartoesR.data && cartoesR.data.length > 0) setCartaoGrafico(cartoesR.data[0].id)
+    setMovsAll(movsAllR.data || [])
+    if (cartoesR.data?.length) setCartaoGrafico(cartoesR.data[0].id)
 
     // Saldos contas
-    const saldos: Record<number, number> = {}
+    const saldos: Record<number,number> = {}
     for (const c of conts) {
-      let s = Number(c.saldo_inicial) || 0
-      for (const m of todasR.data || []) {
+      let s = Number(c.saldo_inicial)||0
+      for (const m of todasR.data||[]) {
         if (m.conta_origem_destino !== c.nome) continue
         if (m.tipo === "Receita") s += Number(m.valor)
         else if (m.tipo === "Despesa") s -= Number(m.valor)
@@ -170,46 +165,46 @@ export default function HomePanel() {
     setSaldosContas(saldos)
 
     // Comprometido cartões
-    const comp: Record<number, number> = {}
-    for (const m of pendCartR.data || []) {
+    const comp: Record<number,number> = {}
+    for (const m of pendCartR.data||[]) {
       if (!m.cartao_id) continue
-      comp[m.cartao_id] = (comp[m.cartao_id] || 0) + Number(m.valor)
+      comp[m.cartao_id] = (comp[m.cartao_id]||0) + Number(m.valor)
     }
     setCompCartoes(comp)
 
     // Dívidas — igual ao Endividamento.tsx
-    const divData = (diviR.data || []).filter((m: any) => parseP(m.numero_parcela).total > 1)
-    const porGrupoId: Record<string, any[]> = {}
+    const divData = (diviR.data||[]).filter((m:any) => parseP(m.numero_parcela).total > 1)
+    const porGrupoId: Record<string,any[]> = {}
     for (const m of divData) {
       if (!porGrupoId[m.grupo_id]) porGrupoId[m.grupo_id] = []
       porGrupoId[m.grupo_id].push(m)
     }
-    const grupos = Object.values(porGrupoId).map((ps: any[]) => {
-      ps.sort((a: any, b: any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
-      const p0        = ps[0]
+    const grupos = Object.values(porGrupoId).map((ps:any[]) => {
+      ps.sort((a:any,b:any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
+      const p0 = ps[0]
       const isCredito = !!p0.cartao_id
       const isParc    = !isCredito && false
-      const foiQuit   = (p: any) => isCredito ? (p.situacao === "Faturado" || p.situacao === "Pago") : p.situacao === "Pago"
-      const pendentes = ps.filter((p: any) => p.situacao === "Pendente")
-      if (pendentes.length === 0) return null
+      const foiQuit   = (p:any) => isCredito ? (p.situacao==="Faturado"||p.situacao==="Pago") : p.situacao==="Pago"
+      const pendentes = ps.filter((p:any) => p.situacao==="Pendente")
+      if (!pendentes.length) return null
       return {
         chave: isCredito ? `${p0.cartao_id}||${p0.descricao.trim().toLowerCase()}` : p0.descricao.trim().toLowerCase(),
-        descricao: p0.descricao, isCredito, isParc,
-        pendentes: pendentes.length, valorParcela: p0.valor,
-        valorRestante: p0.valor * pendentes.length,
-        pagas: ps.filter(foiQuit).length, total: parseP(p0.numero_parcela).total,
+        descricao:p0.descricao, isCredito, isParc,
+        pendentes:pendentes.length, valorParcela:p0.valor,
+        valorRestante:p0.valor*pendentes.length,
+        pagas:ps.filter(foiQuit).length, total:parseP(p0.numero_parcela).total,
       }
     }).filter(Boolean)
-    const porChave: Record<string, any[]> = {}
+    const porChave: Record<string,any[]> = {}
     for (const g of grupos as any[]) {
       if (!porChave[g.chave]) porChave[g.chave] = []
       porChave[g.chave].push(g)
     }
-    setDividas(Object.values(porChave).map((gs: any[]) => ({
-      descricao: gs[0].descricao, isCredito: gs[0].isCredito, isParc: gs[0].isParc,
-      pendentes: gs.reduce((s, g) => s + g.pendentes, 0),
-      valorParcela: gs[0].valorParcela,
-      valorRestante: gs.reduce((s, g) => s + g.valorRestante, 0),
+    setDividas(Object.values(porChave).map((gs:any[]) => ({
+      descricao:gs[0].descricao, isCredito:gs[0].isCredito, isParc:gs[0].isParc,
+      pendentes:gs.reduce((s,g)=>s+g.pendentes,0),
+      valorParcela:gs[0].valorParcela,
+      valorRestante:gs.reduce((s,g)=>s+g.valorRestante,0),
     })))
 
     setLoading(false)
@@ -219,274 +214,241 @@ export default function HomePanel() {
 
   // ── Cálculos mês atual ────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
-    movsMes.filter(m => m.tipo === "Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento !== "Transferência entre Contas")
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMes])
+    movsMes.filter(m=>m.tipo==="Receita"&&["Pago","Pendente"].includes(m.situacao)&&m.metodo_pagamento!=="Transferência entre Contas")
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMes])
 
   const totalDespesas = useMemo(() =>
-    movsMes.filter(m => m.tipo === "Despesa" && ["Pago","Pendente"].includes(m.situacao) && !m.cartao_id)
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMes])
+    movsMes.filter(m=>m.tipo==="Despesa"&&["Pago","Pendente"].includes(m.situacao)&&!m.cartao_id)
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMes])
 
   const totalCartao = useMemo(() =>
-    movsMes.filter(m => m.tipo === "Despesa" && ["Pago","Pendente"].includes(m.situacao) && m.cartao_id)
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMes])
+    movsMes.filter(m=>m.tipo==="Despesa"&&["Pago","Pendente"].includes(m.situacao)&&m.cartao_id)
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMes])
 
-  const totalSaldo = contas.filter(c => c.tipo === "corrente").reduce((s,c) => s + (saldosContas[c.id]||0), 0)
+  const totalSaldo = contas.filter(c=>c.tipo==="corrente").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
 
-  // ── Cálculos mês anterior (comparação) ───────────────────────────────────
+  // ── Cálculos mês anterior ─────────────────────────────────────────────────
   const totalReceitasAnt = useMemo(() =>
-    movsMesAnt.filter(m => m.tipo === "Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento !== "Transferência entre Contas")
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMesAnt])
+    movsMesAnt.filter(m=>m.tipo==="Receita"&&["Pago","Pendente"].includes(m.situacao)&&m.metodo_pagamento!=="Transferência entre Contas")
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMesAnt])
 
   const totalDespesasAnt = useMemo(() =>
-    movsMesAnt.filter(m => m.tipo === "Despesa" && ["Pago","Pendente"].includes(m.situacao) && !m.cartao_id)
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMesAnt])
+    movsMesAnt.filter(m=>m.tipo==="Despesa"&&["Pago","Pendente"].includes(m.situacao)&&!m.cartao_id)
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMesAnt])
 
   const totalCartaoAnt = useMemo(() =>
-    movsMesAnt.filter(m => m.tipo === "Despesa" && ["Pago","Pendente"].includes(m.situacao) && m.cartao_id)
-      .reduce((s,m) => s + Number(m.valor), 0), [movsMesAnt])
+    movsMesAnt.filter(m=>m.tipo==="Despesa"&&["Pago","Pendente"].includes(m.situacao)&&m.cartao_id)
+      .reduce((s,m)=>s+Number(m.valor),0),[movsMesAnt])
 
-  // ── Cards de fluxo (Vencidos 14d / Hoje / Futuro 14d) ────────────────────
-  // Fluxo usa movsMes — filtra por data_pagamento (ou data_movimentacao se não houver)
-  // Critério alinhado com Alertas: situacao Pendente, data de referência é data_pagamento
+  // ── Cards de fluxo — USA movsAll SEM filtro de mês (igual Alertas.tsx) ───
+  // Vencidos = Pendente + diasAte < 0
+  // Vencendo hoje = Pendente + diasAte === 0
+  // Futuro 14 dias = Pendente + diasAte > 0 && <= 14
   const fluxo = useMemo(() => {
-    // Para receitas: data_movimentacao. Para despesas: data_pagamento || data_movimentacao
-    const pendentes = movsMes.filter(m =>
+    const pendentes = movsAll.filter(m =>
       m.situacao === "Pendente" &&
       m.metodo_pagamento !== "Transferência entre Contas"
     )
 
-    const vencidos14: any[]    = []
-    const vencendoHoje: any[]  = []
-    const futuro14: any[]      = []
+    const vencidos:   any[] = []
+    const hoje14:     any[] = []
+    const futuro14:   any[] = []
 
     for (const m of pendentes) {
       const ref  = m.data_pagamento || m.data_movimentacao
       if (!ref) continue
       const dias = diasAte(ref)
-      if (dias >= -14 && dias < 0)     vencidos14.push(m)
-      else if (dias === 0)             vencendoHoje.push(m)
-      else if (dias > 0 && dias <= 14) futuro14.push(m)
+      if (dias < 0)              vencidos.push(m)
+      else if (dias === 0)       hoje14.push(m)
+      else if (dias <= 14)       futuro14.push(m)
     }
 
-    const soma = (arr: any[], tipo: string) =>
-      arr.filter(m => m.tipo === tipo).reduce((s,m) => s + Number(m.valor), 0)
-    const cnt  = (arr: any[], tipo: string) =>
-      arr.filter(m => m.tipo === tipo).length
+    const somaDesp = (arr:any[]) => arr.reduce((s,m)=>s+Number(m.valor),0)
+    const cnt      = (arr:any[]) => arr.length
 
     return [
-      {
-        titulo: "Vencidos", sub: "Em até 14 dias",
-        receitas: soma(vencidos14, "Receita"),  cntRec: cnt(vencidos14, "Receita"),
-        despesas: soma(vencidos14, "Despesa"),  cntDesp: cnt(vencidos14, "Despesa"),
-      },
-      {
-        titulo: "Vencendo", sub: "hoje",
-        receitas: soma(vencendoHoje, "Receita"), cntRec: cnt(vencendoHoje, "Receita"),
-        despesas: soma(vencendoHoje, "Despesa"), cntDesp: cnt(vencendoHoje, "Despesa"),
-      },
-      {
-        titulo: "Futuro", sub: "Próximos 14 dias",
-        receitas: soma(futuro14, "Receita"),  cntRec: cnt(futuro14, "Receita"),
-        despesas: soma(futuro14, "Despesa"),  cntDesp: cnt(futuro14, "Despesa"),
-      },
+      { titulo:"Vencidos",  sub:"Pendentes em atraso",   cor:"#ef4444", arr:vencidos, soma:somaDesp(vencidos), qtd:cnt(vencidos) },
+      { titulo:"Vencendo",  sub:"hoje",                  cor:"#f59e0b", arr:hoje14,   soma:somaDesp(hoje14),   qtd:cnt(hoje14)   },
+      { titulo:"Futuro",    sub:"Próximos 14 dias",      cor:"#0d7280", arr:futuro14, soma:somaDesp(futuro14), qtd:cnt(futuro14) },
     ]
-  }, [movsMes])
+  }, [movsAll])
 
   // ── Limites por categoria ─────────────────────────────────────────────────
   const limitesCats = useMemo(() => {
-    const gastos: Record<number, number> = {}
+    const gastos: Record<number,number> = {}
     for (const m of movsMes) {
       if (!m.categoria_id) continue
-      if (m.situacao === "Pago" || (m.situacao === "Pendente" && m.numero_parcela === "Parcela 1/1"))
-        gastos[m.categoria_id] = (gastos[m.categoria_id]||0) + Number(m.valor)
+      if (m.situacao==="Pago"||(m.situacao==="Pendente"&&m.numero_parcela==="Parcela 1/1"))
+        gastos[m.categoria_id] = (gastos[m.categoria_id]||0)+Number(m.valor)
     }
     return categorias
-      .filter(c => c.limite_gastos > 0 && gastos[c.id] > 0)
-      .map(c => ({
-        nome: c.nome,
-        gasto: gastos[c.id]||0,
-        limite: c.limite_gastos,
-        pct: Math.round((gastos[c.id]||0)/c.limite_gastos*100),
-      }))
-      .sort((a,b) => b.pct - a.pct)
-  }, [movsMes, categorias])
+      .filter(c=>c.limite_gastos>0&&gastos[c.id]>0)
+      .map(c=>({ nome:c.nome, gasto:gastos[c.id]||0, limite:c.limite_gastos, pct:Math.round((gastos[c.id]||0)/c.limite_gastos*100) }))
+      .sort((a,b)=>b.pct-a.pct)
+  }, [movsMes,categorias])
 
   // ── Gráficos ──────────────────────────────────────────────────────────────
-  const dadosReceitas = useMemo(() => Array.from({length:12}, (_,i) => ({
-    label: MESES_CURTOS[i],
-    valor: movsAno.filter(m => {
-      const mm = parseInt(m.data_movimentacao?.substring(5,7)||"0")
-      return m.tipo === "Receita" && m.situacao === "Pago" && mm === i+1 && m.metodo_pagamento !== "Transferência entre Contas"
-    }).reduce((s,m) => s+Number(m.valor),0)
-  })), [movsAno])
+  const dadosReceitas = useMemo(() => Array.from({length:12},(_,i)=>({
+    label:MESES_CURTOS[i],
+    valor:movsAno.filter(m=>{
+      const mm=parseInt(m.data_movimentacao?.substring(5,7)||"0")
+      return m.tipo==="Receita"&&m.situacao==="Pago"&&mm===i+1&&m.metodo_pagamento!=="Transferência entre Contas"
+    }).reduce((s,m)=>s+Number(m.valor),0)
+  })),[movsAno])
 
-  const dadosDespesas = useMemo(() => Array.from({length:12}, (_,i) => ({
-    label: MESES_CURTOS[i],
-    valor: movsAno.filter(m => {
-      const mm = parseInt(m.data_movimentacao?.substring(5,7)||"0")
-      return m.tipo === "Despesa" && mm === i+1 && (m.situacao === "Pago" || (m.situacao === "Pendente" && m.numero_parcela === "Parcela 1/1"))
-    }).reduce((s,m) => s+Number(m.valor),0)
-  })), [movsAno])
+  const dadosDespesas = useMemo(() => Array.from({length:12},(_,i)=>({
+    label:MESES_CURTOS[i],
+    valor:movsAno.filter(m=>{
+      const mm=parseInt(m.data_movimentacao?.substring(5,7)||"0")
+      return m.tipo==="Despesa"&&mm===i+1&&(m.situacao==="Pago"||(m.situacao==="Pendente"&&m.numero_parcela==="Parcela 1/1"))
+    }).reduce((s,m)=>s+Number(m.valor),0)
+  })),[movsAno])
 
   const metaDespesas = useMemo(() =>
-    categorias.filter(c => !["Renda Ativa","Renda Passiva"].includes(c.classificacao) && c.limite_gastos > 0)
-      .reduce((s,c) => s + c.limite_gastos, 0), [categorias])
+    categorias.filter(c=>!["Renda Ativa","Renda Passiva"].includes(c.classificacao)&&c.limite_gastos>0)
+      .reduce((s,c)=>s+c.limite_gastos,0),[categorias])
 
-  const dadosCartao = useMemo(() => Array.from({length:12}, (_,i) => ({
-    label: MESES_CURTOS[i],
-    valor: movsCartaoAno.filter(m => {
-      if (!m.data_pagamento) return false
-      const mf = parseInt(m.data_pagamento.substring(5,7))
-      const af = parseInt(m.data_pagamento.substring(0,4))
-      return m.cartao_id === cartaoGrafico && mf === i+1 && af === anoAtual && ["Faturado","Pendente","Previsto"].includes(m.situacao)
-    }).reduce((s,m) => s+Number(m.valor),0)
-  })), [movsCartaoAno, cartaoGrafico])
+  const dadosCartao = useMemo(() => Array.from({length:12},(_,i)=>({
+    label:MESES_CURTOS[i],
+    valor:movsCartaoAno.filter(m=>{
+      if(!m.data_pagamento) return false
+      const mf=parseInt(m.data_pagamento.substring(5,7))
+      const af=parseInt(m.data_pagamento.substring(0,4))
+      return m.cartao_id===cartaoGrafico&&mf===i+1&&af===anoAtual&&["Faturado","Pendente","Previsto"].includes(m.situacao)
+    }).reduce((s,m)=>s+Number(m.valor),0)
+  })),[movsCartaoAno,cartaoGrafico])
 
-  // ── Dívidas totais ────────────────────────────────────────────────────────
-  const totalDividas    = dividas.reduce((s,d) => s + d.valorRestante, 0)
-  const totalDivCredito = dividas.filter(d => d.isCredito).reduce((s,d) => s + d.valorRestante, 0)
-  const totalDivDebito  = dividas.filter(d => !d.isCredito && !d.isParc).reduce((s,d) => s + d.valorRestante, 0)
-  const totalDivParc    = dividas.filter(d => d.isParc).reduce((s,d) => s + d.valorRestante, 0)
-  const cartaoNomeGraf  = cartoes.find(c => c.id === cartaoGrafico)?.nome || "Cartão"
+  // ── Dívidas ───────────────────────────────────────────────────────────────
+  const totalDividas    = dividas.reduce((s,d)=>s+d.valorRestante,0)
+  const totalDivCredito = dividas.filter(d=>d.isCredito).reduce((s,d)=>s+d.valorRestante,0)
+  const totalDivDebito  = dividas.filter(d=>!d.isCredito&&!d.isParc).reduce((s,d)=>s+d.valorRestante,0)
+  const totalDivParc    = dividas.filter(d=>d.isParc).reduce((s,d)=>s+d.valorRestante,0)
+  const cartaoNomeGraf  = cartoes.find(c=>c.id===cartaoGrafico)?.nome||"Cartão"
 
-  const cardStyle: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"18px 20px", border:"1px solid #e2e8f0" }
+  const S: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"18px 20px", border:"1px solid #e2e8f0" }
 
   if (loading) return (
-    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#f5f0e8", fontFamily:"'Segoe UI', system-ui, sans-serif" }}>
-      <div style={{ color:"#6b7280", fontSize:15 }}>Carregando visão geral...</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f5f0e8",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+      <div style={{color:"#6b7280",fontSize:15}}>Carregando visão geral...</div>
     </div>
   )
 
   return (
-    <div style={{ background:"#f5f0e8", minHeight:"100vh", fontFamily:"'Segoe UI', system-ui, sans-serif", padding:"28px 32px" }}>
+    <div style={{background:"#f5f0e8",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:"28px 32px"}}>
 
       {/* ── Título ── */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:24 }}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
         <div>
-          <h1 style={{ fontSize:26, fontWeight:800, color:"#1a2332", margin:0 }}>Visão Geral</h1>
-          <p style={{ color:"#6b7280", fontSize:13, margin:"4px 0 0" }}>{mesFormatado}</p>
+          <h1 style={{fontSize:26,fontWeight:800,color:"#1a2332",margin:0}}>Visão Geral</h1>
+          <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>{mesFormatado}</p>
         </div>
-        <button onClick={fetchDados} style={{ fontSize:13, color:"#0d7280", background:"none", border:"1px solid #0d7280", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontWeight:600 }}>
+        <button onClick={fetchDados} style={{fontSize:13,color:"#0d7280",background:"none",border:"1px solid #0d7280",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontWeight:600}}>
           ↻ Atualizar
         </button>
       </div>
 
       {/* ── Cards resumo com variação ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14, marginBottom:24 }}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         {/* Saldo */}
-        <div style={{ ...cardStyle, borderLeft:"4px solid #6ee7b7" }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.05em" }}>Saldo em Contas</div>
-          <div style={{ fontSize:22, fontWeight:700, color: totalSaldo>=0 ? "#065f46" : "#991b1b", margin:"8px 0 2px" }}>{fmt(totalSaldo)}</div>
-          <div style={{ fontSize:11, color:"#9ca3af" }}>Contas correntes ativas</div>
+        <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
+          <div style={{fontSize:22,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"8px 0 2px"}}>{fmt(totalSaldo)}</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>Contas correntes ativas</div>
         </div>
         {/* Receitas */}
-        <div style={{ ...cardStyle, borderLeft:"4px solid #93c5fd" }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.05em" }}>Receitas do Mês</div>
-          <div style={{ fontSize:22, fontWeight:700, color:"#111827", margin:"8px 0 2px" }}>
+        <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Receitas do Mês</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
             {fmt(totalReceitas)}
-            <Variacao atual={totalReceitas} anterior={totalReceitasAnt} inverso={true} />
+            <Variacao atual={totalReceitas} anterior={totalReceitasAnt} boaSeSubir={true}/>
           </div>
-          <div style={{ fontSize:11, color:"#9ca3af" }}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
         </div>
         {/* Despesas */}
-        <div style={{ ...cardStyle, borderLeft:"4px solid #fca5a5" }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.05em" }}>Despesas do Mês</div>
-          <div style={{ fontSize:22, fontWeight:700, color:"#111827", margin:"8px 0 2px" }}>
+        <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas do Mês</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
             {fmt(totalDespesas)}
-            <Variacao atual={totalDespesas} anterior={totalDespesasAnt} />
+            <Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/>
           </div>
-          <div style={{ fontSize:11, color:"#9ca3af" }}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}</div>
         </div>
         {/* Cartão */}
-        <div style={{ ...cardStyle, borderLeft:"4px solid #c4b5fd" }}>
-          <div style={{ fontSize:11, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.05em" }}>Despesas Cartão Crédito</div>
-          <div style={{ fontSize:22, fontWeight:700, color:"#111827", margin:"8px 0 2px" }}>
+        <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas Cartão Crédito</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
             {fmt(totalCartao)}
-            <Variacao atual={totalCartao} anterior={totalCartaoAnt} />
+            <Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/>
           </div>
-          <div style={{ fontSize:11, color:"#9ca3af" }}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
         </div>
       </div>
 
       {/* ── 3 Cards de fluxo ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:24 }}>
-        {fluxo.map((f, i) => (
-          <div key={i} style={{ background:"#0d7280", borderRadius:12, padding:"16px 20px", color:"#fff" }}>
-            <div style={{ fontSize:15, fontWeight:700, marginBottom:12 }}>
-              {f.titulo} <span style={{ fontSize:12, fontWeight:400, opacity:0.75 }}>{f.sub}</span>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
+        {fluxo.map((f,i) => (
+          <div key={i} style={{background:f.cor,borderRadius:12,padding:"16px 20px",color:"#fff"}}>
+            <div style={{fontSize:15,fontWeight:700,marginBottom:12}}>
+              {f.titulo} <span style={{fontSize:12,fontWeight:400,opacity:0.75}}>{f.sub}</span>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              <div>
-                <div style={{ fontSize:11, opacity:0.7, marginBottom:4 }}>Receitas</div>
-                <div style={{ fontSize:20, fontWeight:700 }}>{fmt(f.receitas)}</div>
-                <div style={{ fontSize:11, opacity:0.6, marginTop:2 }}>{f.cntRec} lançamento{f.cntRec !== 1 ? "s" : ""}</div>
-              </div>
-              <div>
-                <div style={{ fontSize:11, opacity:0.7, marginBottom:4 }}>Despesas</div>
-                <div style={{ fontSize:20, fontWeight:700 }}>{f.despesas > 0 ? `-${fmt(f.despesas)}` : fmt(0)}</div>
-                <div style={{ fontSize:11, opacity:0.6, marginTop:2 }}>{f.cntDesp} lançamento{f.cntDesp !== 1 ? "s" : ""}</div>
-              </div>
-            </div>
+            <div style={{fontSize:26,fontWeight:800,marginBottom:4}}>{fmt(f.soma)}</div>
+            <div style={{fontSize:12,opacity:0.75}}>{f.qtd} lançamento{f.qtd!==1?"s":""} pendente{f.qtd!==1?"s":""}</div>
           </div>
         ))}
       </div>
 
       {/* ── Contas + Cartões ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:24 }}>
-        {/* Contas */}
-        <div style={cardStyle}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>🏦 Contas Correntes</div>
-            <div style={{ fontSize:14, fontWeight:700, color: totalSaldo>=0 ? "#065f46" : "#991b1b" }}>{fmt(totalSaldo)}</div>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
+        <div style={S}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>🏦 Contas Correntes</div>
+            <div style={{fontSize:14,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b"}}>{fmt(totalSaldo)}</div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(180px,1fr))", gap:10 }}>
-            {contas.filter(c => c.tipo === "corrente").map(c => {
-              const saldo = saldosContas[c.id] ?? 0
-              const logo  = logoBanco(c.nome)
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+            {contas.filter(c=>c.tipo==="corrente").map(c=>{
+              const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
               return (
-                <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, background:"#f5f0e8", borderRadius:10, padding:"10px 12px" }}>
-                  <div style={{ width:36, height:36, borderRadius:8, background:logo.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:11, fontWeight:700, color:logo.color, flexShrink:0 }}>{logo.sigla}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:12, fontWeight:600, color:"#111827", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.nome}</div>
-                    <div style={{ fontSize:11, color:"#9ca3af" }}>Conta corrente</div>
+                <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
+                  <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                    <div style={{fontSize:11,color:"#9ca3af"}}>Conta corrente</div>
                   </div>
-                  <div style={{ fontSize:13, fontWeight:700, color: saldo>=0 ? "#065f46" : "#991b1b", whiteSpace:"nowrap" }}>{fmt(saldo)}</div>
+                  <div style={{fontSize:13,fontWeight:700,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
                 </div>
               )
             })}
           </div>
         </div>
 
-        {/* Cartões */}
-        <div style={cardStyle}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-            <div style={{ fontSize:14, fontWeight:700, color:"#111827" }}>💳 Cartões de Crédito</div>
-            <div style={{ fontSize:12, color:"#6b7280" }}>{cartoes.length} cartão(ões)</div>
+        <div style={S}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+            <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>💳 Cartões de Crédito</div>
+            <div style={{fontSize:12,color:"#6b7280"}}>{cartoes.length} cartão(ões)</div>
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px,1fr))", gap:10 }}>
-            {cartoes.map(c => {
-              const usado = compCartoes[c.id] || 0
-              const disp  = c.limite_total - usado
-              const pct   = c.limite_total > 0 ? (usado/c.limite_total)*100 : 0
-              const cor   = pct > 80 ? "#ef4444" : pct > 50 ? "#f59e0b" : "#10b981"
-              const logo  = logoBanco(c.nome)
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
+            {cartoes.map(c=>{
+              const usado=compCartoes[c.id]||0; const disp=c.limite_total-usado
+              const pct=c.limite_total>0?(usado/c.limite_total)*100:0
+              const cor=pct>80?"#ef4444":pct>50?"#f59e0b":"#10b981"
+              const logo=logoBanco(c.nome)
               return (
-                <div key={c.id} style={{ background:"#f5f0e8", borderRadius:10, padding:"10px 12px" }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <div style={{ width:32, height:32, borderRadius:7, background:logo.bg, display:"flex", alignItems:"center", justifyContent:"center", fontSize:10, fontWeight:700, color:logo.color, flexShrink:0 }}>{logo.sigla}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:11, fontWeight:600, color:"#111827", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.nome}</div>
-                      <div style={{ fontSize:10, color:"#6b7280" }}>Vence dia {c.data_vencimento}</div>
+                <div key={c.id} style={{background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                    <div style={{width:32,height:32,borderRadius:7,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:11,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                      <div style={{fontSize:10,color:"#6b7280"}}>Vence dia {c.data_vencimento}</div>
                     </div>
-                    <div style={{ textAlign:"right" as const }}>
-                      <div style={{ fontSize:12, fontWeight:700, color: disp>=0 ? "#065f46" : "#991b1b" }}>{fmt(disp)}</div>
-                      <div style={{ fontSize:9, color:"#9ca3af" }}>disponível</div>
+                    <div style={{textAlign:"right" as const}}>
+                      <div style={{fontSize:12,fontWeight:700,color:disp>=0?"#065f46":"#991b1b"}}>{fmt(disp)}</div>
+                      <div style={{fontSize:9,color:"#9ca3af"}}>disponível</div>
                     </div>
                   </div>
-                  <div style={{ background:"#e2e8f0", borderRadius:99, height:5 }}>
-                    <div style={{ background:cor, borderRadius:99, height:5, width:`${Math.min(pct,100)}%` }} />
+                  <div style={{background:"#e2e8f0",borderRadius:99,height:5}}>
+                    <div style={{background:cor,borderRadius:99,height:5,width:`${Math.min(pct,100)}%`}}/>
                   </div>
-                  <div style={{ fontSize:10, color:cor, fontWeight:700, marginTop:3 }}>{pct.toFixed(0)}% usado · {fmt(usado)}</div>
+                  <div style={{fontSize:10,color:cor,fontWeight:700,marginTop:3}}>{pct.toFixed(0)}% usado · {fmt(usado)}</div>
                 </div>
               )
             })}
@@ -495,61 +457,52 @@ export default function HomePanel() {
       </div>
 
       {/* ── 3 Gráficos ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:16, marginBottom:24 }}>
-        <div style={cardStyle}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>📈 Receitas {anoAtual}</div>
-          <div style={{ fontSize:11, color:"#9ca3af", margin:"2px 0 6px" }}>Mês a mês — Pago</div>
-          <MiniGrafico dados={dadosReceitas} cor="#2563eb" />
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:24}}>
+        <div style={S}>
+          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>📈 Receitas {anoAtual}</div>
+          <div style={{fontSize:11,color:"#9ca3af",margin:"2px 0 6px"}}>Mês a mês — Pago</div>
+          <MiniGrafico dados={dadosReceitas} cor="#16a34a"/>
         </div>
-        <div style={cardStyle}>
-          <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>📉 Despesas {anoAtual}</div>
-          <div style={{ fontSize:11, color:"#9ca3af", margin:"2px 0 6px" }}>Mês a mês{metaDespesas > 0 ? ` · Meta ${fmt(metaDespesas)}` : ""}</div>
-          <MiniGrafico dados={dadosDespesas} cor="#ef4444" meta={metaDespesas || undefined} />
+        <div style={S}>
+          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>📉 Despesas {anoAtual}</div>
+          <div style={{fontSize:11,color:"#9ca3af",margin:"2px 0 6px"}}>Mês a mês{metaDespesas>0?` · Meta ${fmt(metaDespesas)}`:""}</div>
+          <MiniGrafico dados={dadosDespesas} cor="#ef4444" meta={metaDespesas||undefined}/>
         </div>
-        <div style={cardStyle}>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#111827" }}>💳 Cartão {anoAtual}</div>
-          </div>
-          {/* Seletor de cartão */}
-          <div style={{ display:"flex", gap:4, flexWrap:"wrap", margin:"6px 0" }}>
-            {cartoes.map(c => (
-              <button key={c.id} onClick={() => setCartaoGrafico(c.id)} style={{
-                padding:"2px 8px", borderRadius:99, fontSize:10, fontWeight:600, cursor:"pointer", border:"none",
-                background: cartaoGrafico === c.id ? "#7c3aed" : "#f3f4f6",
-                color: cartaoGrafico === c.id ? "#fff" : "#374151",
-              }}>{c.nome}</button>
+        <div style={S}>
+          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>💳 Cartão {anoAtual}</div>
+          <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"4px 0"}}>
+            {cartoes.map(c=>(
+              <button key={c.id} onClick={()=>setCartaoGrafico(c.id)} style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",border:"none",background:cartaoGrafico===c.id?"#7c3aed":"#f3f4f6",color:cartaoGrafico===c.id?"#fff":"#374151"}}>
+                {c.nome}
+              </button>
             ))}
           </div>
-          <div style={{ fontSize:11, color:"#9ca3af", marginBottom:6 }}>{cartaoNomeGraf} — faturas mês a mês</div>
-          <MiniGrafico dados={dadosCartao} cor="#7c3aed" />
+          <div style={{fontSize:11,color:"#9ca3af",marginBottom:4}}>{cartaoNomeGraf}</div>
+          <MiniGrafico dados={dadosCartao} cor="#7c3aed"/>
         </div>
       </div>
 
       {/* ── Limites por Categoria ── */}
-      {limitesCats.length > 0 && (
-        <div style={{ ...cardStyle, marginBottom:24 }}>
-          <div style={{ fontSize:14, fontWeight:700, color:"#111827", marginBottom:16 }}>
+      {limitesCats.length>0&&(
+        <div style={{...S,marginBottom:24}}>
+          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>
             🏷️ Limites por Categoria — {MESES_CURTOS[mesAtual-1]}
           </div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px,1fr))", gap:12 }}>
-            {limitesCats.map((c, i) => {
-              const cor = c.pct > 100 ? "#ef4444" : c.pct > 80 ? "#f59e0b" : "#10b981"
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
+            {limitesCats.map((c,i)=>{
+              const cor=c.pct>100?"#ef4444":c.pct>80?"#f59e0b":"#10b981"
               return (
-                <div key={i} style={{ background:"#f5f0e8", borderRadius:10, padding:"12px 14px", border:"1px solid #e2e8f0" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-                    <span style={{ fontSize:13, fontWeight:600, color:"#374151" }}>{c.nome}</span>
-                    <span style={{ fontSize:12, color:cor, fontWeight:700, whiteSpace:"nowrap", marginLeft:8 }}>
-                      {fmt(c.gasto)} / {fmt(c.limite)}
-                    </span>
+                <div key={i} style={{background:"#f5f0e8",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
+                    <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>{c.nome}</span>
+                    <span style={{fontSize:12,color:cor,fontWeight:700,whiteSpace:"nowrap",marginLeft:8}}>{fmt(c.gasto)} / {fmt(c.limite)}</span>
                   </div>
-                  <div style={{ background:"#e2e8f0", borderRadius:99, height:7 }}>
-                    <div style={{ background:cor, borderRadius:99, height:7, width:`${Math.min(c.pct,100)}%`, transition:"width 0.4s" }} />
+                  <div style={{background:"#e2e8f0",borderRadius:99,height:7}}>
+                    <div style={{background:cor,borderRadius:99,height:7,width:`${Math.min(c.pct,100)}%`,transition:"width 0.4s"}}/>
                   </div>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginTop:4 }}>
-                    <span style={{ fontSize:10, color:cor, fontWeight:700 }}>{c.pct}% do limite</span>
-                    <span style={{ fontSize:10, color:"#9ca3af" }}>
-                      {c.pct > 100 ? `⚠️ ${fmt(c.gasto - c.limite)} acima` : `${fmt(c.limite - c.gasto)} restante`}
-                    </span>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
+                    <span style={{fontSize:10,color:cor,fontWeight:700}}>{c.pct}% do limite</span>
+                    <span style={{fontSize:10,color:"#9ca3af"}}>{c.pct>100?`⚠️ ${fmt(c.gasto-c.limite)} acima`:`${fmt(c.limite-c.gasto)} restante`}</span>
                   </div>
                 </div>
               )
@@ -559,28 +512,28 @@ export default function HomePanel() {
       )}
 
       {/* ── Endividamento ── */}
-      <div style={cardStyle}>
-        <div style={{ fontSize:14, fontWeight:700, color:"#111827", marginBottom:16 }}>💰 Endividamento</div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:16 }}>
-          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderRadius:10, padding:"14px" }}>
-            <div style={{ fontSize:11, fontWeight:600, textTransform:"uppercase" as const, color:"#6b7280", marginBottom:6 }}>Total em Dívidas</div>
-            <div style={{ fontSize:20, fontWeight:800, color:"#1a2332" }}>{fmt(totalDividas)}</div>
-            <div style={{ fontSize:11, color:"#9ca3af" }}>{dividas.length} parcelamento(s)</div>
+      <div style={S}>
+        <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>💰 Endividamento</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+          <div style={{background:"#f5f0e8",border:"1px solid #e2e8f0",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>Total em Dívidas</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#1a2332"}}>{fmt(totalDividas)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.length} parcelamento(s)</div>
           </div>
-          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:"4px solid #e05252", borderRadius:10, padding:"14px" }}>
-            <div style={{ fontSize:11, fontWeight:600, textTransform:"uppercase" as const, color:"#6b7280", marginBottom:6 }}>💳 Crédito</div>
-            <div style={{ fontSize:20, fontWeight:800, color:"#e05252" }}>{fmt(totalDivCredito)}</div>
-            <div style={{ fontSize:11, color:"#9ca3af" }}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
+          <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>💳 Crédito</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
           </div>
-          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:"4px solid #4a9eff", borderRadius:10, padding:"14px" }}>
-            <div style={{ fontSize:11, fontWeight:600, textTransform:"uppercase" as const, color:"#6b7280", marginBottom:6 }}>🏦 Débito / PIX</div>
-            <div style={{ fontSize:20, fontWeight:800, color:"#4a9eff" }}>{fmt(totalDivDebito)}</div>
-            <div style={{ fontSize:11, color:"#9ca3af" }}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
+          <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>🏦 Débito / PIX</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
           </div>
-          <div style={{ background:"#fff", border:"1px solid #e2e8f0", borderLeft:"4px solid #9b59b6", borderRadius:10, padding:"14px" }}>
-            <div style={{ fontSize:11, fontWeight:600, textTransform:"uppercase" as const, color:"#6b7280", marginBottom:6 }}>📋 Parcelamento</div>
-            <div style={{ fontSize:20, fontWeight:800, color:"#9b59b6" }}>{fmt(totalDivParc)}</div>
-            <div style={{ fontSize:11, color:"#9ca3af" }}>{dividas.filter(d=>d.isParc).length} item(s)</div>
+          <div style={{background:"#fdf4ff",border:"1px solid #e9d5ff",borderLeft:"4px solid #9b59b6",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>📋 Parcelamento</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
           </div>
         </div>
       </div>
