@@ -12,7 +12,6 @@ import Lancamento from "./components/Lancamento";
 import ConfirmarDebito from "./components/ConfirmarDebito";
 import ExtratoConta from "./components/ExtratoConta";
 import UploadPlanilha from "./components/UploadPlanilha";
-import Dashboard from "./components/Dashboard";
 import Alertas from "./components/Alertas";
 import NotificacoesConfig from "./components/NotificacoesConfig";
 import ConsultorIA from "./components/ConsultorIA";
@@ -25,7 +24,7 @@ import {
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  MessageSquare, LayoutDashboard, TrendingDown,
+  MessageSquare, TrendingDown,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -83,7 +82,7 @@ const useTheme = () => useContext(ThemeCtx)
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Pagina =
-  | "home" | "dashboard" | "resumo" | "movimentacoes"
+  | "home" | "resumo" | "movimentacoes"
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
   | "alertas" | "notificacoes" | "consultor" | "conferencia"
@@ -113,7 +112,6 @@ const grupos: {
   {
     label: "Análises",
     items: [
-      { label: "Dashboard",      key: "dashboard",      icon: LayoutDashboard                 },
       { label: "Consultor IA",   key: "consultor",      icon: Sparkles,    accent: "#667eea"  },
       { label: "Alertas",        key: "alertas",        icon: Bell                            },
       { label: "Resumo",         key: "resumo",         icon: BarChart3                       },
@@ -256,7 +254,6 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
   const renderConteudo = () => {
     switch (pagina) {
       case "home":          return <HomePanel />
-      case "dashboard":     return <Dashboard />
       case "alertas":       return <Alertas />
       case "lancamento":    return <Lancamento />
       case "confirmar":     return <ConfirmarDebito />

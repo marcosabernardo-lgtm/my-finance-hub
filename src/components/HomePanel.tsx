@@ -248,7 +248,8 @@ export default function HomePanel() {
     movsMes.filter(m=>m.tipo==="Despesa"&&["Pago","Pendente"].includes(m.situacao)&&m.cartao_id)
       .reduce((s,m)=>s+Number(m.valor),0),[movsMes])
 
-  const totalSaldo = contas.filter(c=>c.tipo==="corrente").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
+  const totalSaldo    = contas.filter(c=>c.tipo==="corrente").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
+  const totalSaldoInv = contas.filter(c=>c.tipo==="investimento").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
 
   // ── Cálculos mês anterior ─────────────────────────────────────────────────
   const totalReceitasAnt = useMemo(() =>
@@ -450,26 +451,53 @@ export default function HomePanel() {
 
       {/* ── Contas + Cartões ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
-        <div style={S}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>🏦 Contas Correntes</div>
-            <div style={{fontSize:14,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b"}}>{fmt(totalSaldo)}</div>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
-            {contas.filter(c=>c.tipo==="corrente").map(c=>{
-              const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
-              return (
-                <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
-                  <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
-                    <div style={{fontSize:11,color:"#9ca3af"}}>Conta corrente</div>
+        <div style={{display:"flex",flexDirection:"column" as const,gap:16}}>
+          {/* Contas Correntes */}
+          <div style={S}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+              <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>🏦 Contas Correntes</div>
+              <div style={{fontSize:14,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b"}}>{fmt(totalSaldo)}</div>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+              {contas.filter(c=>c.tipo==="corrente").map(c=>{
+                const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
+                return (
+                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
+                    <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                      <div style={{fontSize:11,color:"#9ca3af"}}>Conta corrente</div>
+                    </div>
+                    <div style={{fontSize:13,fontWeight:700,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
                   </div>
-                  <div style={{fontSize:13,fontWeight:700,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
+          {/* Investimentos */}
+          {contas.filter(c=>c.tipo==="investimento").length > 0 && (
+            <div style={S}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>📈 Investimentos</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#065f46"}}>{fmt(totalSaldoInv)}</div>
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+                {contas.filter(c=>c.tipo==="investimento").map(c=>{
+                  const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
+                  return (
+                    <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f0fdf4",borderRadius:10,padding:"10px 12px",border:"1px solid #bbf7d0"}}>
+                      <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                        <div style={{fontSize:11,color:"#16a34a"}}>Investimento</div>
+                      </div>
+                      <div style={{fontSize:13,fontWeight:700,color:"#065f46",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={S}>
