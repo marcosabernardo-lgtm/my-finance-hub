@@ -61,6 +61,7 @@ function isCredito(m: Movimentacao): boolean {
 // Transferência: não aparece
 function deveExibir(m: Movimentacao): boolean {
   if (m.tipo === 'Transferência') return false
+  if (m.metodo_pagamento === 'Transferência entre Contas') return false
   if (m.situacao === 'Previsto')  return false
 
   if (m.tipo === 'Receita') return m.situacao === 'Pago'
