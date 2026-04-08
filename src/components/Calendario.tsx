@@ -46,7 +46,7 @@ const getValorReal = (m: Movimentacao): number => {
   const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
   if (isCredito && m.numero_parcela?.includes('/')) {
     const [atual, total] = m.numero_parcela.split('/').map(Number)
-    if (atual === 1) return Number(m.valor) * total
+    if (atual === 1) return Number(m.valor) * (total || 1)
     return 0
   }
   return Number(m.valor)
@@ -56,17 +56,19 @@ const validarMov = (m: Movimentacao): boolean => {
   if (['Previsto', 'Faturado'].includes(m.situacao)) return false
   if (m.tipo === 'Transferência') return false
 
-  // Regra Crédito
   const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
+  
   if (isCredito) {
-    if (m.data_movimentacao === m.data_pagamento) return false // Ignora os "Azuis"
+    // Regra do Azul: Ignora se datas forem iguais
+    if (m.data_movimentacao === m.data_pagamento) return false
+    // Só mostra Parcela 1
     if (m.numero_parcela && m.numero_parcela.includes('/')) {
-      return m.numero_parcela.startsWith('1/') // Só Parcela 1
+      return m.numero_parcela.startsWith('1/')
     }
     return true
   }
 
-  // Regra Débito/PIX/Receita: Somente se Pago
+  // Débito/PIX/Receita: Somente se Pago
   return m.situacao === 'Pago'
 }
 
@@ -111,14 +113,14 @@ function CardMov({ m }: { m: Movimentacao }) {
 }
 
 // ─── Célula do dia ────────────────────────────────────────────────────────────
-function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: any) {
+function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: { dia: number; movs: Movimentacao[]; semana: number; isHoje: boolean; isMesAtual: boolean }) {
   const [aberto, setAberto] = useState(false)
   
-  const movsValidos = useMemo(() => movs.filter(validarMov), [movs])
+  const movsValidos = useMemo(() => movs.filter((m: Movimentacao) => validarMov(m)), [movs])
 
-  const receitas      = movsValidos.filter(m => m.tipo === 'Receita').reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
-  const despDebitoPix = movsValidos.filter(m => !m.metodo_pagamento?.includes('Crédito') && m.cartao_id === null && m.tipo === 'Despesa').reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
-  const despCredito   = movsValidos.filter(m => (m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null) && m.tipo === 'Despesa').reduce((s: number, m: Movimentacao) => s + getValorReal(m), 0)
+  const receitas      = movsValidos.filter((m: Movimentacao) => m.tipo === 'Receita').reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const despDebitoPix = movsValidos.filter((m: Movimentacao) => !m.metodo_pagamento?.includes('Crédito') && m.cartao_id === null && m.tipo === 'Despesa').reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const despCredito   = movsValidos.filter((m: Movimentacao) => (m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null) && m.tipo === 'Despesa').reduce((s: number, m: Movimentacao) => s + getValorReal(m), 0)
   
   const temMovs = movsValidos.length > 0
 
@@ -158,7 +160,7 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: any) {
         </div>
 
         {temMovs && (
-          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 2 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
             {receitas > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: isHoje ? '#a7f3d0' : '#16a34a' }}>+{fmt(receitas)}</div>}
             {despDebitoPix > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: isHoje ? '#fca5a5' : '#e05252' }}>-{fmt(despDebitoPix)}</div>}
             {despCredito > 0 && <div style={{ fontSize: 10, fontWeight: 700, color: isHoje ? '#fed7aa' : '#ea580c' }}>-{fmt(despCredito)} <small style={{fontWeight:400, opacity:0.8}}>créd</small></div>}
@@ -173,11 +175,11 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: any) {
           borderTop: 'none',
           borderRadius: '0 0 10px 10px',
           padding: '10px 10px 12px',
-          display: 'flex', flexDirection: 'column' as const, gap: 6,
+          display: 'flex', flexDirection: 'column', gap: 6,
           zIndex: 10,
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         }}>
-          {movsValidos.map(m => <CardMov key={m.id} m={m} />)}
+          {movsValidos.map((m: Movimentacao) => <CardMov key={m.id} m={m} />)}
         </div>
       )}
     </div>
@@ -212,7 +214,13 @@ export default function Calendario() {
       .gte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-01`)
       .lte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`)
 
-    setMovs((data as Movimentacao[]) || [])
+    // Tratamento para evitar erro de Array/Object no TypeScript
+    const normalizado: Movimentacao[] = (data || []).map((item: any) => ({
+      ...item,
+      categorias: Array.isArray(item.categorias) ? item.categorias[0] : item.categorias
+    }))
+
+    setMovs(normalizado)
     setLoading(false)
   }, [householdId, mes, ano])
 
@@ -220,7 +228,7 @@ export default function Calendario() {
 
   const movsPorDia = useMemo(() => {
     const map: Record<number, Movimentacao[]> = {}
-    movs.forEach(m => {
+    movs.forEach((m: Movimentacao) => {
       const dia = parseInt(m.data_movimentacao.substring(8, 10))
       if (!map[dia]) map[dia] = []
       map[dia].push(m)
@@ -228,13 +236,11 @@ export default function Calendario() {
     return map
   }, [movs])
 
-  // Totais do mês
-  const movsValidasMes = movs.filter(validarMov)
-  const totalReceitas  = movsValidasMes.filter(m => m.tipo === 'Receita').reduce((s, m) => s + Number(m.valor), 0)
-  const totalDebitoPix = movsValidasMes.filter(m => !m.metodo_pagamento?.includes('Crédito') && m.cartao_id === null && m.tipo === 'Despesa').reduce((s, m) => s + Number(m.valor), 0)
-  const totalCredito   = movsValidasMes.filter(m => (m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null) && m.tipo === 'Despesa').reduce((s, m) => s + getValorReal(m), 0)
+  const movsValidasMes = movs.filter((m: Movimentacao) => validarMov(m))
+  const totalReceitas  = movsValidasMes.filter((m: Movimentacao) => m.tipo === 'Receita').reduce((s, m) => s + Number(m.valor), 0)
+  const totalDebitoPix = movsValidasMes.filter((m: Movimentacao) => !m.metodo_pagamento?.includes('Crédito') && m.cartao_id === null && m.tipo === 'Despesa').reduce((s, m) => s + Number(m.valor), 0)
+  const totalCredito   = movsValidasMes.filter((m: Movimentacao) => (m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null) && m.tipo === 'Despesa').reduce((s, m) => s + getValorReal(m), 0)
 
-  // Grade do calendário
   const primeiroDia     = new Date(ano, mes, 1).getDay()
   const ultimoDiaNum    = new Date(ano, mes + 1, 0).getDate()
   const diasMesAnterior = new Date(ano, mes, 0).getDate()
@@ -256,7 +262,6 @@ export default function Calendario() {
   return (
     <div style={{ background: '#f5f0e8', minHeight: '100vh', fontFamily: "'Segoe UI', sans-serif", padding: '28px 32px' }}>
       
-      {/* Cabeçalho */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, color: '#1a2332', margin: 0 }}>📅 Calendário</h1>
@@ -267,7 +272,6 @@ export default function Calendario() {
         </button>
       </div>
 
-      {/* Navegação */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button onClick={() => navMes(-1)} style={{ width: 36, height: 36, borderRadius: '50%', border: '1px solid #e2e8f0', background: '#fff', cursor: 'pointer', fontSize: 18 }}>‹</button>
@@ -278,7 +282,6 @@ export default function Calendario() {
           <button onClick={() => { setMes(hoje.getMonth()); setAno(hoje.getFullYear()) }} style={{ fontSize: 12, color: '#0d7280', background: 'none', border: '1px solid #0d7280', borderRadius: 6, padding: '4px 10px', cursor: 'pointer' }}>Hoje</button>
         </div>
 
-        {/* Totais do mês */}
         <div style={{ display: 'flex', gap: 12 }}>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #16a34a', borderRadius: 10, padding: '8px 16px', textAlign: 'center' }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' }}>Receitas</div>
@@ -299,7 +302,6 @@ export default function Calendario() {
         </div>
       </div>
 
-      {/* Grade */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderBottom: '2px solid #e2e8f0' }}>
           {DIAS_SEMANA.map((d, i) => (
