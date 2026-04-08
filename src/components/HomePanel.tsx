@@ -458,14 +458,14 @@ export default function HomePanel() {
               <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>🏦 Contas Correntes</div>
               <div style={{fontSize:14,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b"}}>{fmt(totalSaldo)}</div>
             </div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
               {contas.filter(c=>c.tipo==="corrente").map(c=>{
                 const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
                 return (
                   <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
                     <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
                       <div style={{fontSize:11,color:"#9ca3af"}}>Conta corrente</div>
                     </div>
                     <div style={{fontSize:13,fontWeight:700,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
@@ -481,14 +481,14 @@ export default function HomePanel() {
                 <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>📈 Investimentos</div>
                 <div style={{fontSize:14,fontWeight:700,color:"#065f46"}}>{fmt(totalSaldoInv)}</div>
               </div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:10}}>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
                 {contas.filter(c=>c.tipo==="investimento").map(c=>{
                   const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
                   return (
                     <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f0fdf4",borderRadius:10,padding:"10px 12px",border:"1px solid #bbf7d0"}}>
                       <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:12,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                        <div style={{fontSize:12,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
                         <div style={{fontSize:11,color:"#16a34a"}}>Investimento</div>
                       </div>
                       <div style={{fontSize:13,fontWeight:700,color:"#065f46",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
@@ -516,7 +516,7 @@ export default function HomePanel() {
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                     <div style={{width:32,height:32,borderRadius:7,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:11,fontWeight:600,color:"#111827",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                      <div style={{fontSize:11,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
                       <div style={{fontSize:10,color:"#6b7280"}}>Vence dia {c.data_vencimento}</div>
                     </div>
                     <div style={{textAlign:"right" as const}}>
