@@ -21,46 +21,43 @@ interface Movimentacao {
   categorias?: { nome: string } | null
 }
 
-// ─── Lógica de Cálculo de Valor Real ──────────────────────────────────────────
+// ─── Lógica de Negócio ────────────────────────────────────────────────────────
 
-const getValorExibicao = (m: Movimentacao) => {
+const getValorExibicao = (m: Movimentacao): number => {
   // Se for crédito e tiver parcelas (ex: "1/10")
-  if ((m.metodo_pagamento?.includes('Crédito') || m.cartao_id) && m.numero_parcela?.includes('/')) {
+  const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
+  if (isCredito && m.numero_parcela?.includes('/')) {
     const [atual, total] = m.numero_parcela.split('/').map(Number)
-    if (atual === 1) return m.valor * total // Retorna o valor total na primeira parcela
-    return 0 // Oculta as demais parcelas
+    if (atual === 1) return Number(m.valor) * total 
+    return 0 
   }
-  return m.valor
+  return Number(m.valor)
 }
 
-// ─── Regras de Filtro Estritas ───────────────────────────────────────────────
-
-const filtrarMovimentacao = (m: Movimentacao) => {
-  // 1. Bloqueio de Previsões, Transferências e Faturados
+const filtrarMovimentacao = (m: Movimentacao): boolean => {
   if (['Previsto', 'Faturado'].includes(m.situacao)) return false
   if (m.tipo === 'Transferência') return false
 
-  // 2. Regra para Receitas
-  if (m.tipo === 'Receita') return m.situacao === 'Pago'
-
-  // 3. Regra para Débito / PIX / Dinheiro
+  // Regra Débito / PIX / Dinheiro: Somente se Pago
   const isAvista = ['Débito', 'PIX', 'Pix', 'Dinheiro'].includes(m.metodo_pagamento || '')
   if (isAvista) return m.situacao === 'Pago'
 
-  // 4. Regra para Crédito
+  // Regra Crédito: Pendente ou Pago, mas apenas parcela 1 (ou não parcelado)
   const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
   if (isCredito) {
-    // Só mostra se for a parcela 1 ou se não for parcelado
     if (m.numero_parcela && m.numero_parcela.includes('/')) {
       return m.numero_parcela.startsWith('1/')
     }
     return true
   }
 
+  // Receitas: Somente se Pago
+  if (m.tipo === 'Receita') return m.situacao === 'Pago'
+
   return false
 }
 
-// ─── Componentes Visuais ─────────────────────────────────────────────────────
+// ─── Componentes ─────────────────────────────────────────────────────────────
 
 function CardMov({ m }: { m: Movimentacao }) {
   const valorExibido = getValorExibicao(m)
@@ -79,7 +76,7 @@ function CardMov({ m }: { m: Movimentacao }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
           {isCredito && m.numero_parcela && (
             <span style={{ fontSize: 10, fontWeight: 800, color: '#ea580c', background: '#fff7ed', borderRadius: 4, padding: '1px 6px', border: '1px solid #ffedd5' }}>
-              TOTAL {m.numero_parcela.split('/')[1]}x
+              VALOR TOTAL ({m.numero_parcela.split('/')[1]}x)
             </span>
           )}
           <span style={{ 
@@ -89,7 +86,6 @@ function CardMov({ m }: { m: Movimentacao }) {
           }}>
             {m.situacao}
           </span>
-          <span style={{ fontSize: 10, color: '#9ca3af' }}>{m.metodo_pagamento}</span>
         </div>
       </div>
       <div style={{ fontSize: 14, fontWeight: 700, color: m.tipo === 'Receita' ? '#16a34a' : '#e05252' }}>
@@ -99,12 +95,20 @@ function CardMov({ m }: { m: Movimentacao }) {
   )
 }
 
-function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: any) {
+interface CelulaProps {
+  dia: number;
+  movs: Movimentacao[];
+  isHoje: boolean;
+  isMesAtual: boolean;
+  semana: number;
+}
+
+function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: CelulaProps) {
   const [aberto, setAberto] = useState(false)
   const movsFiltrados = useMemo(() => movs.filter(filtrarMovimentacao), [movs])
 
-  const receitas = movsFiltrados.filter(m => m.tipo === 'Receita').reduce((s, m) => s + m.valor, 0)
-  const despesas = movsFiltrados.filter(m => m.tipo === 'Despesa').reduce((s, m) => s + getValorExibicao(m), 0)
+  const receitas = movsFiltrados.filter(m => m.tipo === 'Receita').reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const despesas = movsFiltrados.filter(m => m.tipo === 'Despesa').reduce((s: number, m: Movimentacao) => s + getValorExibicao(m), 0)
 
   if (!isMesAtual) return <div style={{ minHeight: 95, background: '#f8f9fa', opacity: 0.4, border: '1px solid #e2e8f0', borderRadius: 10 }} />
 
@@ -146,6 +150,8 @@ function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: any) {
   )
 }
 
+// ─── Principal ───────────────────────────────────────────────────────────────
+
 export default function Calendario() {
   const { user } = useAuth()
   const [householdId, setHouseholdId] = useState<string | null>(null)
@@ -166,12 +172,12 @@ export default function Calendario() {
     const ultimoDia = new Date(ano, mes + 1, 0).getDate()
     const { data } = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,descricao,valor,data_movimentacao,metodo_pagamento,cartao_id,numero_parcela')
+      .select('id,tipo,situacao,descricao,valor,data_movimentacao,metodo_pagamento,cartao_id,numero_parcela,categoria_id')
       .eq('household_id', householdId)
       .gte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-01`)
       .lte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`)
     
-    setMovs(data || [])
+    setMovs((data as Movimentacao[]) || [])
     setLoading(false)
   }, [householdId, mes, ano])
 
@@ -187,36 +193,41 @@ export default function Calendario() {
     return map
   }, [movs])
 
-  // Lógica de navegação e grade simplificada para o exemplo
-  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
   const primeiroDiaSemana = new Date(ano, mes, 1).getDay()
+  const diasNoMes = new Date(ano, mes + 1, 0).getDate()
   const celulas = []
   for (let i = 0; i < primeiroDiaSemana; i++) celulas.push({ dia: 0, atual: false })
   for (let i = 1; i <= diasNoMes; i++) celulas.push({ dia: i, atual: true })
 
   return (
-    <div style={{ padding: 20, background: '#f5f0e8', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2>📅 {MESES[mes]} {ano}</h2>
+    <div style={{ padding: 30, background: '#f5f0e8', minHeight: '100vh', fontFamily: 'sans-serif' }}>
+      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 25 }}>
+        <h1 style={{ margin: 0 }}>📅 {MESES[mes]} {ano}</h1>
         <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => { setMes(m => m === 0 ? 11 : m - 1); if(mes===0) setAno(a=>a-1) }}>◀</button>
-          <button onClick={() => { setMes(m => m === 11 ? 0 : m + 1); if(mes===11) setAno(a=>a+1) }}>▶</button>
+          <button style={btnStyle} onClick={() => { setMes(m => m === 0 ? 11 : m - 1); if(mes===0) setAno(a=>a-1) }}>◀</button>
+          <button style={btnStyle} onClick={() => { setMes(m => m === 11 ? 0 : m + 1); if(mes===11) setAno(a=>a+1) }}>▶</button>
         </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5 }}>
-        {DIAS_SEMANA.map(d => <div key={d} style={{ textAlign: 'center', fontWeight: 'bold', padding: 10 }}>{d}</div>)}
-        {celulas.map((c, i) => (
-          <CelulaDia 
-            key={i} 
-            dia={c.dia} 
-            isMesAtual={c.atual} 
-            movs={c.atual ? (movsPorDia[c.dia] || []) : []}
-            isHoje={c.atual && c.dia === hoje.getDate() && mes === hoje.getMonth()}
-            semana={Math.ceil((i + 1) / 7)}
-          />
-        ))}
-      </div>
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: 50, color: '#666' }}>Carregando dados...</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 8 }}>
+          {DIAS_SEMANA.map(d => <div key={d} style={{ textAlign: 'center', fontWeight: 800, color: '#64748b', paddingBottom: 10 }}>{d}</div>)}
+          {celulas.map((c, i) => (
+            <CelulaDia 
+              key={i} 
+              dia={c.dia} 
+              isMesAtual={c.atual} 
+              movs={c.atual ? (movsPorDia[c.dia] || []) : []}
+              isHoje={c.atual && c.dia === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear()}
+              semana={Math.ceil((i + 1) / 7)}
+            />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
+
+const btnStyle = { padding: '8px 15px', cursor: 'pointer', borderRadius: 8, border: '1px solid #ccc', background: '#fff' }
