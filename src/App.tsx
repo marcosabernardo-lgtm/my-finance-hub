@@ -107,7 +107,6 @@ const grupos: {
       { label: "Lançar",            key: "lancamento",    icon: PlusCircle   },
       { label: "Confirmar Débitos", key: "confirmar",     icon: CheckCircle  },
       { label: "Movimentações",     key: "movimentacoes", icon: List         },
-      { label: "Conf. WhatsApp",    key: "conferencia",   icon: MessageSquare, accent: "#22c55e" },
     ],
   },
   {
@@ -119,7 +118,7 @@ const grupos: {
       { label: "Semanal",        key: "semanal",        icon: Calendar                        },
       { label: "DRE",            key: "dre",            icon: FileText                        },
       { label: "Endividamento",  key: "endividamento",  icon: TrendingDown                    },
-      { label: "Calendário",     key: "calendario",     icon: Calendar                        },
+      { label: "Calendário",     key: "calendario",     icon: Calendar                            },
     ],
   },
   {
@@ -272,7 +271,6 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "consultor":     return <ConsultorIA />
       case "conferencia":   return <ConferenciaWhatsApp />
       case "endividamento": return <Endividamento />
-      case "calendario":    return <Calendario />   // ← fix: case adicionado
       default:              return null
     }
   }
