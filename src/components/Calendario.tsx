@@ -162,8 +162,6 @@ function SecaoTipo({ icone, titulo, cor, movs }: {
 }) {
   const [aberto, setAberto] = useState(true)
   if (movs.length === 0) return null
-  const total = movs.reduce((s, m) => s + valorExibir(m), 0)
-
   return (
     <div style={{ border: `1px solid ${cor}22`, borderLeft: `3px solid ${cor}`, borderRadius: 8, overflow: 'hidden' }}>
       {/* Cabeçalho clicável */}
@@ -180,12 +178,7 @@ function SecaoTipo({ icone, titulo, cor, movs }: {
             {movs.length}
           </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 12, fontWeight: 800, color: cor }}>
-            {movs[0]?.tipo === 'Receita' ? '+' : '-'}{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </span>
-          <span style={{ fontSize: 10, color: cor }}>{aberto ? '▲' : '▼'}</span>
-        </div>
+        <span style={{ fontSize: 10, color: cor }}>{aberto ? '▲' : '▼'}</span>
       </div>
       {/* Lista */}
       {aberto && (
