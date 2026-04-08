@@ -90,15 +90,22 @@ function CardMov({ m }: { m: Movimentacao }) {
 }
 
 // ─── Célula do dia ────────────────────────────────────────────────────────────
-function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: any) {
+interface CelulaDiaProps {
+  dia: number
+  movs: Movimentacao[]
+  isHoje: boolean
+  isMesAtual: boolean
+  semana: number
+}
+
+function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: CelulaDiaProps) {
   const [aberto, setAberto] = useState(false)
 
-  // Filtro rigoroso para exibição no calendário
-  const movsValidos = movs.filter((m: Movimentacao) => isReceita(m) || isDebitoPix(m) || isCredito(m))
+  const movsValidos = movs.filter(m => isReceita(m) || isDebitoPix(m) || isCredito(m))
   
-  const receitas      = movsValidos.filter(isReceita).reduce((s, m) => s + Number(m.valor), 0)
-  const despDebitoPix = movsValidos.filter(isDebitoPix).reduce((s, m) => s + Number(m.valor), 0)
-  const despCredito   = movsValidos.filter(isCredito).reduce((s, m) => s + Number(m.valor), 0)
+  const receitas      = movsValidos.filter(isReceita).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const despDebitoPix = movsValidos.filter(isDebitoPix).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const despCredito   = movsValidos.filter(isCredito).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
 
   if (!isMesAtual) {
     return <div style={{ minHeight: 90, background: '#f8f9fa', border: '1px solid #e2e8f0', borderRadius: 10, opacity: 0.4 }} />
@@ -114,7 +121,7 @@ function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: any) {
           border: isHoje ? '2px solid #0d7280' : aberto ? '2px solid #0d7280' : '1px solid #e2e8f0',
           borderRadius: aberto ? '10px 10px 0 0' : 10,
           cursor: movsValidos.length > 0 ? 'pointer' : 'default',
-          position: 'relative', transition: 'all 0.2s'
+          position: 'relative'
         }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -142,7 +149,7 @@ function CelulaDia({ dia, movs, isHoje, isMesAtual, semana }: any) {
           borderRadius: '0 0 10px 10px', padding: 10, display: 'flex', flexDirection: 'column', gap: 6,
           zIndex: 10, boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
         }}>
-          {movsValidos.map((m: Movimentacao) => <CardMov key={m.id} m={m} />)}
+          {movsValidos.map(m => <CardMov key={m.id} m={m} />)}
         </div>
       )}
     </div>
@@ -196,12 +203,10 @@ export default function Calendario() {
     return map
   }, [movs])
 
-  // Totais do Topo baseados nas mesmas regras estritas
-  const totalReceitas  = movs.filter(isReceita).reduce((s, m) => s + Number(m.valor), 0)
-  const totalDebPix    = movs.filter(isDebitoPix).reduce((s, m) => s + Number(m.valor), 0)
-  const totalCredito   = movs.filter(isCredito).reduce((s, m) => s + Number(m.valor), 0)
+  const totalReceitas  = movs.filter(isReceita).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const totalDebPix    = movs.filter(isDebitoPix).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
+  const totalCredito   = movs.filter(isCredito).reduce((s: number, m: Movimentacao) => s + Number(m.valor), 0)
 
-  // Grade do Calendário
   const primeiroDiaNum = new Date(ano, mes, 1).getDay()
   const ultimoDiaNum   = new Date(ano, mes + 1, 0).getDate()
   const diasMesAnt     = new Date(ano, mes, 0).getDate()
@@ -226,7 +231,7 @@ export default function Calendario() {
   return (
     <div style={{ background: '#f5f0e8', minHeight: '100vh', padding: '28px 32px', fontFamily: 'system-ui' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: 0 }}>📅 Calendário de Movimentações</h1>
+        <h1 style={{ fontSize: 26, fontWeight: 800 }}>📅 Calendário de Movimentações</h1>
         <button onClick={fetchDados} style={{ padding: '8px 16px', borderRadius: 8, cursor: 'pointer', background: '#fff', border: '1px solid #d1d5db' }}>↻ Atualizar</button>
       </div>
 
@@ -273,7 +278,7 @@ export default function Calendario() {
   )
 }
 
-function CardTopo({ label, valor, cor }: any) {
+function CardTopo({ label, valor, cor }: { label: string, valor: number, cor: string }) {
   return (
     <div style={{ background: '#fff', padding: '10px 20px', borderRadius: 12, border: '1px solid #e2e8f0', borderLeft: `4px solid ${cor}`, textAlign: 'center' }}>
       <div style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>{label}</div>
