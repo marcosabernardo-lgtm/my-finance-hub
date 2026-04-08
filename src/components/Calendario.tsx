@@ -156,6 +156,47 @@ function CardMov({ m }: { m: Movimentacao }) {
   )
 }
 
+// ─── Seção expansível por tipo ────────────────────────────────────────────────
+function SecaoTipo({ icone, titulo, cor, movs }: {
+  icone: string; titulo: string; cor: string; movs: Movimentacao[]
+}) {
+  const [aberto, setAberto] = useState(true)
+  if (movs.length === 0) return null
+  const total = movs.reduce((s, m) => s + valorExibir(m), 0)
+
+  return (
+    <div style={{ border: `1px solid ${cor}22`, borderLeft: `3px solid ${cor}`, borderRadius: 8, overflow: 'hidden' }}>
+      {/* Cabeçalho clicável */}
+      <div
+        onClick={() => setAberto(a => !a)}
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 10px', background: `${cor}10`, cursor: 'pointer', userSelect: 'none' as const }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontSize: 14 }}>{icone}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: cor, textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>
+            {titulo}
+          </span>
+          <span style={{ fontSize: 10, fontWeight: 700, background: cor, color: '#fff', borderRadius: 99, padding: '1px 7px' }}>
+            {movs.length}
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 12, fontWeight: 800, color: cor }}>
+            {movs[0]?.tipo === 'Receita' ? '+' : '-'}{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+          </span>
+          <span style={{ fontSize: 10, color: cor }}>{aberto ? '▲' : '▼'}</span>
+        </div>
+      </div>
+      {/* Lista */}
+      {aberto && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5, padding: '8px 8px' }}>
+          {movs.map(m => <CardMov key={m.id} m={m} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Célula do dia ────────────────────────────────────────────────────────────
 function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: {
   dia: number; movs: Movimentacao[]; semana: number; isHoje: boolean; isMesAtual: boolean
@@ -256,55 +297,24 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: {
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         }}>
           {/* Totais do dia */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
             {[
-              { label: 'Receitas',      valor: totalReceitas, cor: CORES.receita, sinal: '+' },
-              { label: 'Déb / PIX',     valor: totalDebito,   cor: CORES.debito,  sinal: '-' },
-              { label: 'Crédito',       valor: totalCredito,  cor: CORES.credito, sinal: '-' },
-              { label: 'Total Desp.',   valor: totalDebito + totalCredito, cor: CORES.texto, sinal: '-' },
+              { label: 'Receitas',    valor: totalReceitas,              cor: CORES.receita, sinal: '+' },
+              { label: 'Déb/PIX',    valor: totalDebito,                cor: CORES.debito,  sinal: '-' },
+              { label: 'Crédito',    valor: totalCredito,               cor: CORES.credito, sinal: '-' },
+              { label: 'Tot. Desp.', valor: totalDebito + totalCredito, cor: CORES.texto,   sinal: '-' },
             ].map(c => (
-              <div key={c.label} style={{ background: CORES.card, borderRadius: 8, padding: '6px 8px', borderLeft: `3px solid ${c.cor}`, textAlign: 'center' as const }}>
-                <div style={{ fontSize: 9, fontWeight: 700, color: CORES.sub, textTransform: 'uppercase' as const }}>{c.label}</div>
-                <div style={{ fontSize: 12, fontWeight: 800, color: c.cor }}>{c.sinal}{fmt(c.valor)}</div>
+              <div key={c.label} style={{ background: CORES.card, borderRadius: 8, padding: '5px 10px', borderLeft: `3px solid ${c.cor}`, flex: '1 1 auto', minWidth: 0 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: CORES.sub, textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const }}>{c.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: c.cor, whiteSpace: 'nowrap' as const }}>{c.sinal}{fmt(c.valor)}</div>
               </div>
             ))}
           </div>
 
-          {/* Receitas */}
-          {movsExibir.filter(m => m.tipo === 'Receita').length > 0 && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.receita, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
-                📈 Receitas ({movsExibir.filter(m => m.tipo === 'Receita').length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-                {movsExibir.filter(m => m.tipo === 'Receita').map(m => <CardMov key={m.id} m={m} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Débito / PIX */}
-          {movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).length > 0 && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.debito, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
-                🏦 Débito / PIX ({movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-                {movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).map(m => <CardMov key={m.id} m={m} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Crédito */}
-          {movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).length > 0 && (
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.credito, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
-                💳 Crédito ({movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).length})
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
-                {movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).map(m => <CardMov key={m.id} m={m} />)}
-              </div>
-            </div>
-          )}
+          {/* Seções expansíveis por tipo */}
+          <SecaoTipo icone="📈" titulo="Receitas"    cor={CORES.receita} movs={movsExibir.filter(m => m.tipo === 'Receita')} />
+          <SecaoTipo icone="🏦" titulo="Débito / PIX" cor={CORES.debito}  movs={movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m))} />
+          <SecaoTipo icone="💳" titulo="Crédito"     cor={CORES.credito} movs={movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m))} />
         </div>
       )}
     </div>
