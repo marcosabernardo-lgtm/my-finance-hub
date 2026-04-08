@@ -183,7 +183,7 @@ export default function HomePanel() {
       ps.sort((a:any,b:any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
       const p0 = ps[0]
       const isCredito = !!p0.cartao_id
-      const isParc    = !isCredito && false
+      const isParc    = !isCredito && (p0.categorias?.nome || '').toLowerCase() === 'parcelamento'
       const foiQuit   = (p:any) => isCredito ? (p.situacao==="Faturado"||p.situacao==="Pago") : p.situacao==="Pago"
       const pendentes = ps.filter((p:any) => p.situacao==="Pendente")
       if (!pendentes.length) return null
@@ -397,6 +397,34 @@ export default function HomePanel() {
         ))}
       </div>
 
+      {/* ── Endividamento ── */}
+      <div style={{...S, marginBottom:24}}>
+        <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>💰 Endividamento</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
+          <div style={{background:"#f5f0e8",border:"1px solid #e2e8f0",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>Total em Dívidas</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#1a2332"}}>{fmt(totalDividas)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.length} parcelamento(s)</div>
+          </div>
+          <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>💳 Crédito</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
+          </div>
+          <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>🏦 Débito / PIX</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
+          </div>
+          <div style={{background:"#fdf4ff",border:"1px solid #e9d5ff",borderLeft:"4px solid #9b59b6",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>📋 Parcelamento</div>
+            <div style={{fontSize:20,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
+          </div>
+        </div>
+      </div>
+
+
       {/* ── Contas + Cartões ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         <div style={S}>
@@ -511,32 +539,6 @@ export default function HomePanel() {
         </div>
       )}
 
-      {/* ── Endividamento ── */}
-      <div style={S}>
-        <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>💰 Endividamento</div>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-          <div style={{background:"#f5f0e8",border:"1px solid #e2e8f0",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>Total em Dívidas</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#1a2332"}}>{fmt(totalDividas)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.length} parcelamento(s)</div>
-          </div>
-          <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>💳 Crédito</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
-          </div>
-          <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>🏦 Débito / PIX</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
-          </div>
-          <div style={{background:"#fdf4ff",border:"1px solid #e9d5ff",borderLeft:"4px solid #9b59b6",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>📋 Parcelamento</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
-          </div>
-        </div>
-      </div>
 
     </div>
   )
