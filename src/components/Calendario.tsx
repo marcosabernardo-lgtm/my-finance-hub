@@ -14,17 +14,16 @@ interface Movimentacao {
   descricao: string
   valor: number
   data_movimentacao: string
+  data_pagamento: string | null // Adicionado para a nova regra
   metodo_pagamento: string | null
   cartao_id: number | null
   categoria_id: number | null
   numero_parcela: string | null
-  categorias?: { nome: string } | null
 }
 
 // ─── Lógica de Negócio ────────────────────────────────────────────────────────
 
 const getValorExibicao = (m: Movimentacao): number => {
-  // Se for crédito e tiver parcelas (ex: "1/10")
   const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
   if (isCredito && m.numero_parcela?.includes('/')) {
     const [atual, total] = m.numero_parcela.split('/').map(Number)
@@ -35,23 +34,28 @@ const getValorExibicao = (m: Movimentacao): number => {
 }
 
 const filtrarMovimentacao = (m: Movimentacao): boolean => {
+  // 1. Bloqueios básicos
   if (['Previsto', 'Faturado'].includes(m.situacao)) return false
   if (m.tipo === 'Transferência') return false
 
-  // Regra Débito / PIX / Dinheiro: Somente se Pago
-  const isAvista = ['Débito', 'PIX', 'Pix', 'Dinheiro'].includes(m.metodo_pagamento || '')
-  if (isAvista) return m.situacao === 'Pago'
-
-  // Regra Crédito: Pendente ou Pago, mas apenas parcela 1 (ou não parcelado)
+  // 2. Regra Estrita para CRÉDITO (Baseada no seu print)
   const isCredito = m.metodo_pagamento?.includes('Crédito') || m.cartao_id !== null
   if (isCredito) {
+    // NOVA REGRA: Se as datas forem iguais, é lançamento automático (azul), não mostrar.
+    if (m.data_movimentacao === m.data_pagamento) return false
+
+    // Só mostra se for a primeira parcela (ou 1/1)
     if (m.numero_parcela && m.numero_parcela.includes('/')) {
       return m.numero_parcela.startsWith('1/')
     }
     return true
   }
 
-  // Receitas: Somente se Pago
+  // 3. Regra Débito / PIX / Dinheiro
+  const isAvista = ['Débito', 'PIX', 'Pix', 'Dinheiro'].includes(m.metodo_pagamento || '')
+  if (isAvista) return m.situacao === 'Pago'
+
+  // 4. Receitas
   if (m.tipo === 'Receita') return m.situacao === 'Pago'
 
   return false
@@ -74,7 +78,7 @@ function CardMov({ m }: { m: Movimentacao }) {
           {m.descricao}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-          {isCredito && m.numero_parcela && (
+          {isCredito && m.numero_parcela && m.numero_parcela.includes('/') && (
             <span style={{ fontSize: 10, fontWeight: 800, color: '#ea580c', background: '#fff7ed', borderRadius: 4, padding: '1px 6px', border: '1px solid #ffedd5' }}>
               VALOR TOTAL ({m.numero_parcela.split('/')[1]}x)
             </span>
@@ -86,6 +90,7 @@ function CardMov({ m }: { m: Movimentacao }) {
           }}>
             {m.situacao}
           </span>
+          <span style={{ fontSize: 10, color: '#9ca3af' }}>{m.metodo_pagamento}</span>
         </div>
       </div>
       <div style={{ fontSize: 14, fontWeight: 700, color: m.tipo === 'Receita' ? '#16a34a' : '#e05252' }}>
@@ -172,7 +177,7 @@ export default function Calendario() {
     const ultimoDia = new Date(ano, mes + 1, 0).getDate()
     const { data } = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,descricao,valor,data_movimentacao,metodo_pagamento,cartao_id,numero_parcela,categoria_id')
+      .select('id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,numero_parcela,categoria_id')
       .eq('household_id', householdId)
       .gte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-01`)
       .lte('data_movimentacao', `${ano}-${String(mes + 1).padStart(2, '0')}-${ultimoDia}`)
