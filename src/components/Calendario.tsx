@@ -35,6 +35,7 @@ interface Movimentacao {
   cartao_id: number | null
   numero_parcela: string | null
   categorias?: { nome: string } | null
+  cartoes?: { nome: string } | null
 }
 
 function semanaDomes(data: Date): number {
@@ -135,7 +136,12 @@ function CardMov({ m }: { m: Movimentacao }) {
           </span>
           {cred && (
             <span style={{ fontSize: 10, fontWeight: 700, color: CORES.credito, background: '#fff7ed', borderRadius: 4, padding: '1px 6px' }}>
-              💳 {labelCredito(m)}
+              💳 {m.cartoes?.nome || m.metodo_pagamento || 'Crédito'}
+            </span>
+          )}
+          {cred && (
+            <span style={{ fontSize: 10, color: CORES.sub }}>
+              {labelCredito(m)}
             </span>
           )}
           {!cred && m.metodo_pagamento && (
@@ -245,17 +251,60 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual }: {
           border: `2px solid ${CORES.hoje}`,
           borderTop: 'none',
           borderRadius: '0 0 10px 10px',
-          padding: '10px 10px 12px',
-          display: 'flex', flexDirection: 'column' as const, gap: 6,
+          padding: '12px 10px 14px',
+          display: 'flex', flexDirection: 'column' as const, gap: 10,
           boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: CORES.sub, marginBottom: 2, textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>
-            {movsExibir.length} movimentação{movsExibir.length !== 1 ? 'ões' : ''}
+          {/* Totais do dia */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6 }}>
+            {[
+              { label: 'Receitas',      valor: totalReceitas, cor: CORES.receita, sinal: '+' },
+              { label: 'Déb / PIX',     valor: totalDebito,   cor: CORES.debito,  sinal: '-' },
+              { label: 'Crédito',       valor: totalCredito,  cor: CORES.credito, sinal: '-' },
+              { label: 'Total Desp.',   valor: totalDebito + totalCredito, cor: CORES.texto, sinal: '-' },
+            ].map(c => (
+              <div key={c.label} style={{ background: CORES.card, borderRadius: 8, padding: '6px 8px', borderLeft: `3px solid ${c.cor}`, textAlign: 'center' as const }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: CORES.sub, textTransform: 'uppercase' as const }}>{c.label}</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: c.cor }}>{c.sinal}{fmt(c.valor)}</div>
+              </div>
+            ))}
           </div>
-          {movsExibir
-            .sort((a, b) => a.tipo.localeCompare(b.tipo))
-            .map(m => <CardMov key={m.id} m={m} />)
-          }
+
+          {/* Receitas */}
+          {movsExibir.filter(m => m.tipo === 'Receita').length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.receita, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
+                📈 Receitas ({movsExibir.filter(m => m.tipo === 'Receita').length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+                {movsExibir.filter(m => m.tipo === 'Receita').map(m => <CardMov key={m.id} m={m} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Débito / PIX */}
+          {movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.debito, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
+                🏦 Débito / PIX ({movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+                {movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m)).map(m => <CardMov key={m.id} m={m} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Crédito */}
+          {movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).length > 0 && (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: CORES.credito, textTransform: 'uppercase' as const, letterSpacing: '0.5px', marginBottom: 5, paddingLeft: 4 }}>
+                💳 Crédito ({movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).length})
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 5 }}>
+                {movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m)).map(m => <CardMov key={m.id} m={m} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -286,7 +335,7 @@ export default function Calendario() {
     const ultimoDia = new Date(ano, mes + 1, 0).getDate()
     const { data }  = await supabase
       .from('movimentacoes')
-      .select('id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,numero_parcela,categorias(nome)')
+      .select('id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,numero_parcela,categorias(nome),cartoes(nome)')
       .eq('household_id', householdId)
       .gte('data_movimentacao', `${ano}-${mesStr}-01`)
       .lte('data_movimentacao', `${ano}-${mesStr}-${ultimoDia}`)
@@ -295,6 +344,7 @@ export default function Calendario() {
     const normalizado: Movimentacao[] = (data || []).map((item: any) => ({
       ...item,
       categorias: Array.isArray(item.categorias) ? item.categorias[0] ?? null : item.categorias ?? null,
+      cartoes:    Array.isArray(item.cartoes)    ? item.cartoes[0]    ?? null : item.cartoes    ?? null,
     }))
     setMovs(normalizado)
     setLoading(false)
