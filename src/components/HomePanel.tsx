@@ -188,11 +188,12 @@ export default function HomePanel() {
       const pendentes = ps.filter((p:any) => p.situacao==="Pendente")
       if (!pendentes.length) return null
       return {
-        chave: isCredito ? `${p0.cartao_id}||${p0.descricao.trim().toLowerCase()}` : p0.descricao.trim().toLowerCase(),
-        descricao:p0.descricao, isCredito, isParc,
+        chave: isCredito ? `${(p0 as any).cartoes?.nome||p0.cartao_id}||${p0.descricao.trim().toLowerCase()}` : p0.descricao.trim().toLowerCase(),
+        descricao:p0.descricao, isCredito, isParc, cartaoNome:(p0 as any).cartoes?.nome||null,
         pendentes:pendentes.length, valorParcela:p0.valor,
-        valorRestante:p0.valor*pendentes.length,
+        valorRestante:pendentes.reduce((s:number,p:any)=>s+Number(p.valor),0),
         pagas:ps.filter(foiQuit).length, total:parseP(p0.numero_parcela).total,
+        _pendentes:pendentes,
       }
     }).filter(Boolean)
     const porChave: Record<string,any[]> = {}
@@ -200,12 +201,17 @@ export default function HomePanel() {
       if (!porChave[g.chave]) porChave[g.chave] = []
       porChave[g.chave].push(g)
     }
-    setDividas(Object.values(porChave).map((gs:any[]) => ({
-      descricao:gs[0].descricao, isCredito:gs[0].isCredito, isParc:gs[0].isParc,
-      pendentes:gs.reduce((s,g)=>s+g.pendentes,0),
-      valorParcela:gs[0].valorParcela,
-      valorRestante:gs.reduce((s,g)=>s+g.valorRestante,0),
-    })))
+    setDividas(Object.values(porChave).map((gs:any[]) => {
+      const todasPendentes = gs.flatMap((g:any) => g._pendentes)
+      const totalPend = todasPendentes.length
+      const totalRestante = todasPendentes.reduce((s:number,p:any)=>s+Number(p.valor),0)
+      return {
+        descricao:gs[0].descricao, isCredito:gs[0].isCredito, isParc:gs[0].isParc, cartaoNome:gs[0].cartaoNome,
+        pendentes:totalPend,
+        valorParcela:gs[0].valorParcela,
+        valorRestante:totalRestante,
+      }
+    }))
 
     setLoading(false)
   }, [householdId])
@@ -409,7 +415,7 @@ export default function HomePanel() {
           <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
             <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>💳 Crédito</div>
             <div style={{fontSize:20,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
+            <div style={{fontSize:11,color:"#9ca3af"}}>{[...new Set(dividas.filter(d=>d.isCredito).map(d=>d.cartaoNome))].length} cartão(ões) · {dividas.filter(d=>d.isCredito).length} item(s)</div>
           </div>
           <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
             <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>🏦 Débito / PIX</div>
