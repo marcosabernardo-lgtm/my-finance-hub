@@ -18,18 +18,17 @@ interface Movimentacao {
   metodo_pagamento: string | null
   cartao_id: number | null
   categoria_id: number | null
-  categorias?: { nome: string } | null  // fix: objeto único, não array
+  categorias?: { nome: string } | null
 }
 
-// Calcula semana do mês (1 a 6)
 function semanaDomes(data: Date): number {
   const primeiroDia = new Date(data.getFullYear(), data.getMonth(), 1)
   return Math.ceil((data.getDate() + primeiroDia.getDay()) / 7)
 }
 
 function corTipo(tipo: string): string {
-  if (tipo === 'Receita')      return '#16a34a'
-  if (tipo === 'Despesa')      return '#e05252'
+  if (tipo === 'Receita')       return '#16a34a'
+  if (tipo === 'Despesa')       return '#e05252'
   if (tipo === 'Transferência') return '#6b7280'
   return '#6b7280'
 }
@@ -41,6 +40,20 @@ function corSituacao(sit: string): { bg: string; color: string } {
   if (sit === 'Previsto') return { bg: '#f3e8ff', color: '#7c3aed' }
   return { bg: '#f3f4f6', color: '#6b7280' }
 }
+
+// ─── Helpers de classificação ─────────────────────────────────────────────────
+const isReceita = (m: Movimentacao) =>
+  m.tipo === 'Receita'
+
+const isDebitoPix = (m: Movimentacao) =>
+  m.tipo === 'Despesa' &&
+  m.situacao !== 'Faturado' &&
+  (m.metodo_pagamento === 'Débito' || m.metodo_pagamento === 'Pix')
+
+const isCredito = (m: Movimentacao) =>
+  m.tipo === 'Despesa' &&
+  m.situacao !== 'Faturado' &&
+  (m.metodo_pagamento === 'Crédito' || m.cartao_id !== null)
 
 // ─── Card de movimentação ─────────────────────────────────────────────────────
 function CardMov({ m }: { m: Movimentacao }) {
@@ -94,9 +107,10 @@ function CelulaDia({
 }) {
   const [aberto, setAberto] = useState(false)
 
-  const receitas  = movs.filter(m => m.tipo === 'Receita').reduce((s, m) => s + Number(m.valor), 0)
-  const despesas  = movs.filter(m => m.tipo === 'Despesa').reduce((s, m) => s + Number(m.valor), 0)
-  const temMovs   = movs.length > 0
+  const receitas      = movs.filter(isReceita).reduce((s, m) => s + Number(m.valor), 0)
+  const despDebitoPix = movs.filter(isDebitoPix).reduce((s, m) => s + Number(m.valor), 0)
+  const despCredito   = movs.filter(isCredito).reduce((s, m) => s + Number(m.valor), 0)
+  const temMovs       = movs.length > 0
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column' as const }}>
@@ -152,9 +166,16 @@ function CelulaDia({
                 +{fmt(receitas)}
               </div>
             )}
-            {despesas > 0 && (
+            {despDebitoPix > 0 && (
               <div style={{ fontSize: 10, fontWeight: 700, color: isHoje ? '#fca5a5' : '#e05252' }}>
-                -{fmt(despesas)}
+                -{fmt(despDebitoPix)}
+                <span style={{ fontWeight: 400, opacity: 0.75, marginLeft: 3 }}>déb/pix</span>
+              </div>
+            )}
+            {despCredito > 0 && (
+              <div style={{ fontSize: 10, fontWeight: 700, color: isHoje ? '#fed7aa' : '#ea580c' }}>
+                -{fmt(despCredito)}
+                <span style={{ fontWeight: 400, opacity: 0.75, marginLeft: 3 }}>cred</span>
               </div>
             )}
             <div style={{
@@ -231,7 +252,6 @@ export default function Calendario() {
       .lte('data_movimentacao', `${ano}-${mesStr}-${ultimoDia}`)
       .order('data_movimentacao', { ascending: true })
 
-    // fix: o Supabase pode retornar categorias como array — normalizamos para objeto único
     const normalizado: Movimentacao[] = (data || []).map((m: any) => ({
       ...m,
       categorias: Array.isArray(m.categorias)
@@ -257,16 +277,15 @@ export default function Calendario() {
   }, [movs])
 
   // Totais do mês
-  const totalReceitas = movs.filter(m => m.tipo === 'Receita').reduce((s, m) => s + Number(m.valor), 0)
-  const totalDespesas = movs.filter(m => m.tipo === 'Despesa').reduce((s, m) => s + Number(m.valor), 0)
-  const saldo         = totalReceitas - totalDespesas
+  const totalReceitas     = movs.filter(isReceita).reduce((s, m) => s + Number(m.valor), 0)
+  const totalDebitoPix    = movs.filter(isDebitoPix).reduce((s, m) => s + Number(m.valor), 0)
+  const totalCredito      = movs.filter(isCredito).reduce((s, m) => s + Number(m.valor), 0)
 
   // Grade do calendário
-  const primeiroDia     = new Date(ano, mes, 1).getDay() // 0=Dom
+  const primeiroDia     = new Date(ano, mes, 1).getDay()
   const ultimoDiaNum    = new Date(ano, mes + 1, 0).getDate()
   const diasMesAnterior = new Date(ano, mes, 0).getDate()
 
-  // Células: dias do mês anterior + dias do mês + dias do mês seguinte
   const celulas: { dia: number; mes: 'atual' | 'ant' | 'prox' }[] = []
   for (let i = primeiroDia - 1; i >= 0; i--) {
     celulas.push({ dia: diasMesAnterior - i, mes: 'ant' })
@@ -327,12 +346,12 @@ export default function Calendario() {
             <div style={{ fontSize: 16, fontWeight: 800, color: '#16a34a' }}>+{fmt(totalReceitas)}</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #e05252', borderRadius: 10, padding: '8px 16px', textAlign: 'center' as const }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>Despesas</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#e05252' }}>-{fmt(totalDespesas)}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>Déb / Pix</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#e05252' }}>-{fmt(totalDebitoPix)}</div>
           </div>
-          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderLeft: `3px solid ${saldo >= 0 ? '#0d7280' : '#e05252'}`, borderRadius: 10, padding: '8px 16px', textAlign: 'center' as const }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>Saldo</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: saldo >= 0 ? '#0d7280' : '#e05252' }}>{fmt(saldo)}</div>
+          <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderLeft: '3px solid #ea580c', borderRadius: 10, padding: '8px 16px', textAlign: 'center' as const }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>Crédito</div>
+            <div style={{ fontSize: 16, fontWeight: 800, color: '#ea580c' }}>-{fmt(totalCredito)}</div>
           </div>
           <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: 10, padding: '8px 16px', textAlign: 'center' as const }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: '#6b7280', textTransform: 'uppercase' as const, letterSpacing: '0.5px' }}>Movimentações</div>
@@ -402,8 +421,8 @@ export default function Calendario() {
       <div style={{ display: 'flex', gap: 20, marginTop: 16, justifyContent: 'center' as const, flexWrap: 'wrap' as const }}>
         {[
           { cor: '#16a34a', label: 'Receita' },
-          { cor: '#e05252', label: 'Despesa' },
-          { cor: '#6b7280', label: 'Transferência' },
+          { cor: '#e05252', label: 'Déb / Pix' },
+          { cor: '#ea580c', label: 'Crédito' },
           { cor: '#0d7280', label: 'Hoje' },
         ].map(({ cor, label }) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#6b7280' }}>
