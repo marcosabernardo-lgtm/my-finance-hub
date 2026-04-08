@@ -42,18 +42,22 @@ function parseP(s: string) {
   return m ? { atual: +m[1], total: +m[2] } : { atual: 0, total: 0 }
 }
 
-function Variacao({ atual, anterior }: { atual: number; anterior: number }) {
+function Variacao({ atual, anterior, inverso = false }: { atual: number; anterior: number; inverso?: boolean }) {
   if (anterior === 0) return null
-  const pct  = ((atual - anterior) / anterior) * 100
+  const pct   = ((atual - anterior) / anterior) * 100
   const subiu = pct >= 0
+  // inverso=true: receita subindo é BOM (verde), despesa subindo é RUIM (vermelho)
+  const corSubiu  = inverso ? "#16a34a" : "#ef4444"
+  const corDesceu = inverso ? "#ef4444" : "#16a34a"
+  const sinal     = pct >= 0 ? "+" : ""
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 3,
       fontSize: 12, fontWeight: 700,
-      color: subiu ? "#ef4444" : "#16a34a",
+      color: subiu ? corSubiu : corDesceu,
       marginLeft: 8,
     }}>
-      {subiu ? "▲" : "▼"} {Math.abs(pct).toFixed(1)}%
+      {subiu ? "▲" : "▼"} {sinal}{pct.toFixed(1)}%
     </span>
   )
 }
@@ -242,31 +246,49 @@ export default function HomePanel() {
       .reduce((s,m) => s + Number(m.valor), 0), [movsMesAnt])
 
   // ── Cards de fluxo (Vencidos 14d / Hoje / Futuro 14d) ────────────────────
+  // Fluxo usa movsMes — filtra por data_pagamento (ou data_movimentacao se não houver)
+  // Critério alinhado com Alertas: situacao Pendente, data de referência é data_pagamento
   const fluxo = useMemo(() => {
-    const todos = movsMes.filter(m => ["Pago","Pendente"].includes(m.situacao))
-    const recP  = (m: any) => m.data_pagamento || m.data_movimentacao
+    // Para receitas: data_movimentacao. Para despesas: data_pagamento || data_movimentacao
+    const pendentes = movsMes.filter(m =>
+      m.situacao === "Pendente" &&
+      m.metodo_pagamento !== "Transferência entre Contas"
+    )
 
-    const vencidos14: any[] = []
-    const vencendoHoje: any[] = []
-    const futuro14: any[] = []
+    const vencidos14: any[]    = []
+    const vencendoHoje: any[]  = []
+    const futuro14: any[]      = []
 
-    for (const m of todos) {
-      if (m.metodo_pagamento === "Transferência entre Contas") continue
-      const ref  = recP(m)
+    for (const m of pendentes) {
+      const ref  = m.data_pagamento || m.data_movimentacao
       if (!ref) continue
       const dias = diasAte(ref)
-      if (dias >= -14 && dias < 0)  vencidos14.push(m)
-      else if (dias === 0)           vencendoHoje.push(m)
+      if (dias >= -14 && dias < 0)     vencidos14.push(m)
+      else if (dias === 0)             vencendoHoje.push(m)
       else if (dias > 0 && dias <= 14) futuro14.push(m)
     }
 
     const soma = (arr: any[], tipo: string) =>
       arr.filter(m => m.tipo === tipo).reduce((s,m) => s + Number(m.valor), 0)
+    const cnt  = (arr: any[], tipo: string) =>
+      arr.filter(m => m.tipo === tipo).length
 
     return [
-      { titulo: "Vencidos",  sub: "Em até 14 dias",    cor: "#0d7280", receitas: soma(vencidos14, "Receita"),    despesas: soma(vencidos14, "Despesa") },
-      { titulo: "Vencendo",  sub: "hoje",               cor: "#0d7280", receitas: soma(vencendoHoje, "Receita"), despesas: soma(vencendoHoje, "Despesa") },
-      { titulo: "Futuro",    sub: "Próximos 14 dias",   cor: "#0d7280", receitas: soma(futuro14, "Receita"),     despesas: soma(futuro14, "Despesa") },
+      {
+        titulo: "Vencidos", sub: "Em até 14 dias",
+        receitas: soma(vencidos14, "Receita"),  cntRec: cnt(vencidos14, "Receita"),
+        despesas: soma(vencidos14, "Despesa"),  cntDesp: cnt(vencidos14, "Despesa"),
+      },
+      {
+        titulo: "Vencendo", sub: "hoje",
+        receitas: soma(vencendoHoje, "Receita"), cntRec: cnt(vencendoHoje, "Receita"),
+        despesas: soma(vencendoHoje, "Despesa"), cntDesp: cnt(vencendoHoje, "Despesa"),
+      },
+      {
+        titulo: "Futuro", sub: "Próximos 14 dias",
+        receitas: soma(futuro14, "Receita"),  cntRec: cnt(futuro14, "Receita"),
+        despesas: soma(futuro14, "Despesa"),  cntDesp: cnt(futuro14, "Despesa"),
+      },
     ]
   }, [movsMes])
 
@@ -362,7 +384,7 @@ export default function HomePanel() {
           <div style={{ fontSize:11, fontWeight:700, color:"#6b7280", textTransform:"uppercase", letterSpacing:"0.05em" }}>Receitas do Mês</div>
           <div style={{ fontSize:22, fontWeight:700, color:"#111827", margin:"8px 0 2px" }}>
             {fmt(totalReceitas)}
-            <Variacao atual={totalReceitas} anterior={totalReceitasAnt} />
+            <Variacao atual={totalReceitas} anterior={totalReceitasAnt} inverso={true} />
           </div>
           <div style={{ fontSize:11, color:"#9ca3af" }}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
         </div>
@@ -390,17 +412,19 @@ export default function HomePanel() {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:14, marginBottom:24 }}>
         {fluxo.map((f, i) => (
           <div key={i} style={{ background:"#0d7280", borderRadius:12, padding:"16px 20px", color:"#fff" }}>
-            <div style={{ fontSize:15, fontWeight:700, marginBottom:2 }}>
-              {f.titulo} <span style={{ fontSize:12, fontWeight:400, opacity:0.8 }}>{f.sub}</span>
+            <div style={{ fontSize:15, fontWeight:700, marginBottom:12 }}>
+              {f.titulo} <span style={{ fontSize:12, fontWeight:400, opacity:0.75 }}>{f.sub}</span>
             </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginTop:12 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <div>
                 <div style={{ fontSize:11, opacity:0.7, marginBottom:4 }}>Receitas</div>
-                <div style={{ fontSize:18, fontWeight:700 }}>{fmt(f.receitas)}</div>
+                <div style={{ fontSize:20, fontWeight:700 }}>{fmt(f.receitas)}</div>
+                <div style={{ fontSize:11, opacity:0.6, marginTop:2 }}>{f.cntRec} lançamento{f.cntRec !== 1 ? "s" : ""}</div>
               </div>
               <div>
                 <div style={{ fontSize:11, opacity:0.7, marginBottom:4 }}>Despesas</div>
-                <div style={{ fontSize:18, fontWeight:700 }}>{f.despesas > 0 ? `-${fmt(f.despesas)}` : fmt(0)}</div>
+                <div style={{ fontSize:20, fontWeight:700 }}>{f.despesas > 0 ? `-${fmt(f.despesas)}` : fmt(0)}</div>
+                <div style={{ fontSize:11, opacity:0.6, marginTop:2 }}>{f.cntDesp} lançamento{f.cntDesp !== 1 ? "s" : ""}</div>
               </div>
             </div>
           </div>
