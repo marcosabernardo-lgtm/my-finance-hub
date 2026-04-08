@@ -25,7 +25,7 @@ import {
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  MessageSquare, TrendingDown,
+  TrendingDown,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -271,6 +271,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "consultor":     return <ConsultorIA />
       case "conferencia":   return <ConferenciaWhatsApp />
       case "endividamento": return <Endividamento />
+      case "calendario":    return <Calendario />
       default:              return null
     }
   }
