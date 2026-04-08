@@ -172,44 +172,61 @@ export default function HomePanel() {
     }
     setCompCartoes(comp)
 
-    // Dívidas — igual ao Endividamento.tsx
+    // Dívidas — cópia fiel do Endividamento.tsx
     const divData = (diviR.data||[]).filter((m:any) => parseP(m.numero_parcela).total > 1)
+
+    // Passo 1: agrupar por grupo_id
     const porGrupoId: Record<string,any[]> = {}
     for (const m of divData) {
       if (!porGrupoId[m.grupo_id]) porGrupoId[m.grupo_id] = []
       porGrupoId[m.grupo_id].push(m)
     }
-    const grupos = Object.values(porGrupoId).map((ps:any[]) => {
-      ps.sort((a:any,b:any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
-      const p0 = ps[0]
-      const isCredito = !!p0.cartao_id
-      const isParc    = !isCredito && ((p0 as any).categorias?.nome || '').toLowerCase() === 'parcelamento'
-      const foiQuit   = (p:any) => isCredito ? (p.situacao==="Faturado"||p.situacao==="Pago") : p.situacao==="Pago"
-      const pendentes = ps.filter((p:any) => p.situacao==="Pendente")
-      if (!pendentes.length) return null
-      return {
-        chave: isCredito ? `${(p0 as any).cartoes?.nome||p0.cartao_id}||${p0.descricao.trim().toLowerCase()}` : p0.descricao.trim().toLowerCase(),
-        descricao:p0.descricao, isCredito, isParc, cartaoNome:(p0 as any).cartoes?.nome||null,
-        pendentes:pendentes.length, valorParcela:p0.valor,
-        valorRestante:pendentes.reduce((s:number,p:any)=>s+Number(p.valor),0),
-        pagas:ps.filter(foiQuit).length, total:parseP(p0.numero_parcela).total,
-        _pendentes:pendentes,
-      }
-    }).filter(Boolean)
-    const porChave: Record<string,any[]> = {}
-    for (const g of grupos as any[]) {
-      if (!porChave[g.chave]) porChave[g.chave] = []
-      porChave[g.chave].push(g)
+
+    // Passo 2: para cada grupo_id calcular metadados — igual Endividamento.tsx
+    const grupos = Object.entries(porGrupoId).map(([, parcelas]:any) => {
+      parcelas.sort((a:any,b:any) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual)
+      const p0        = parcelas[0]
+      const isCredito = !!p0.cartao_id || p0.metodo_pagamento === 'Crédito'
+      const catNome   = p0.categorias?.nome || null
+      const isParc    = !isCredito && (catNome||'').toLowerCase() === 'parcelamento'
+      const cartaoNome = p0.cartoes?.nome || null
+      const foiQuit   = (p:any) => isCredito
+        ? (p.situacao === 'Faturado' || p.situacao === 'Pago')
+        : p.situacao === 'Pago'
+      // filtroSit fixo = 'pendente' (igual ao default do Endividamento)
+      const pendentes = parcelas.filter((p:any) => p.situacao === 'Pendente')
+      const pagas     = parcelas.filter(foiQuit).length
+      const { total } = parseP(p0.numero_parcela)
+      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total }
+    }).filter((g:any) => g.pendentes.length > 0)
+
+    // Passo 3: agrupar por chave descricao — igual Endividamento.tsx
+    const porDesc: Record<string,any[]> = {}
+    for (const g of grupos) {
+      const chave = g.isCredito
+        ? `${g.cartaoNome}||${g.p0.descricao.trim().toLowerCase()}`
+        : g.p0.descricao.trim().toLowerCase()
+      if (!porDesc[chave]) porDesc[chave] = []
+      porDesc[chave].push(g)
     }
-    setDividas(Object.values(porChave).map((gs:any[]) => {
-      const todasPendentes = gs.flatMap((g:any) => g._pendentes)
-      const totalPend = todasPendentes.length
-      const totalRestante = todasPendentes.reduce((s:number,p:any)=>s+Number(p.valor),0)
+
+    // Passo 4: montar objeto final — IGUAL ao Endividamento.tsx
+    setDividas(Object.entries(porDesc).map(([, gs]:any) => {
+      const totalParcelas = gs.reduce((s:number,g:any) => s + g.total, 0)
+      const totalPagas    = gs.reduce((s:number,g:any) => s + g.pagas, 0)
+      const totalPend     = gs.reduce((s:number,g:any) => s + g.pendentes.length, 0)
+      const p0            = gs[0].p0
       return {
-        descricao:gs[0].descricao, isCredito:gs[0].isCredito, isParc:gs[0].isParc, cartaoNome:gs[0].cartaoNome,
-        pendentes:totalPend,
-        valorParcela:gs[0].valorParcela,
-        valorRestante:totalRestante,
+        descricao:    p0.descricao,
+        isCredito:    gs[0].isCredito,
+        isParc:       gs[0].isParc,
+        cartaoNome:   gs[0].cartaoNome,
+        pendentes:    totalPend,
+        valorParcela: p0.valor,
+        // IGUAL ao Endividamento: p0.valor * totalPend
+        valorRestante: p0.valor * totalPend,
+        totalParcelas,
+        totalPagas,
       }
     }))
 
