@@ -25,6 +25,7 @@ interface Movimentacao {
   numero_parcela: string | null
   categorias?: { nome: string } | null
   cartoes?:    { nome: string } | null
+  is_recorrente?: boolean | null
 }
 
 type Modo = 'movimentacoes' | 'pendentes'
@@ -53,6 +54,8 @@ function deveExibir(m: Movimentacao): boolean {
   if (m.tipo === 'Transferência') return false
   if (m.metodo_pagamento === 'Transferência entre Contas') return false
   if (m.situacao === 'Previsto') return false
+  // Recorrentes (lançados via Previsão Futura) não entram no calendário de movimentações
+  if (m.is_recorrente === true) return false
   if (m.tipo === 'Receita') return m.situacao === 'Pago'
   if (isCredito(m)) {
     if (m.data_movimentacao && m.data_pagamento && m.data_movimentacao === m.data_pagamento) return false
@@ -289,7 +292,7 @@ export default function Calendario() {
     setLoading(true)
     const mesStr    = String(mes + 1).padStart(2, '0')
     const ultimoDia = new Date(ano, mes + 1, 0).getDate()
-    const campos    = 'id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,numero_parcela,categorias(nome),cartoes(nome)'
+    const campos    = 'id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,numero_parcela,is_recorrente,categorias(nome),cartoes(nome)'
 
     const norm = (data: any[]) => data.map((item: any) => ({
       ...item,

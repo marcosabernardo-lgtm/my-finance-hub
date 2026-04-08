@@ -99,7 +99,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
     let registros: any[] = []
 
     if (isPrevisto) {
-      // Modo Previsao Futura — todos como Previsto
+      // Modo Previsao Futura — RECORRENTE — marca is_recorrente: true
       const meses = parseInt(numMeses) || 2
       const dataBase = new Date(dataInicio + 'T12:00:00')
       const isParcelado = formaPagamento === 'Parcelado' && metodoPagamento === 'Crédito'
@@ -118,6 +118,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
             forma_pagamento: `Parcelado ${parcelas}x`,
             numero_parcela: `Parcela ${i + 1}/${parcelas}`,
             situacao: 'Previsto', grupo_id: grupoId,
+            is_recorrente: true, // ← MARCADO COMO RECORRENTE
           })
         }
       } else {
@@ -132,11 +133,12 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
             conta_origem_destino: metodoPagamento === 'Dinheiro' ? 'Carteira' : conta?.nome ?? '',
             forma_pagamento: 'A Vista', numero_parcela: `Parcela ${i + 1}/${meses}`,
             situacao: 'Previsto', grupo_id: grupoId,
+            is_recorrente: true, // ← MARCADO COMO RECORRENTE
           })
         }
       }
     } else {
-      // Modo Lancamento Unico — comportamento original
+      // Modo Lancamento Unico — NÃO é recorrente
       const isParcelado = formaPagamento === 'Parcelado'
       const parcelas = isParcelado ? parseInt(numParcelas) : 1
 
@@ -154,7 +156,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
               metodo_pagamento: cartao.nome, cartao_id: cartao.id,
               forma_pagamento: `Parcelado ${parcelas}x`,
               numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
-              grupo_id: grupoId,
+              grupo_id: grupoId, is_recorrente: false,
             })
           }
         } else {
@@ -164,7 +166,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
             categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
             metodo_pagamento: cartao.nome, cartao_id: cartao.id,
             forma_pagamento: 'A Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pendente',
-            grupo_id: grupoId,
+            grupo_id: grupoId, is_recorrente: false,
           })
         }
       } else if (metodoPagamento === 'Boleto') {
@@ -181,7 +183,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
               valor: isUltima ? Math.round((valorTotal - valorParcela * (parcelas - 1)) * 100) / 100 : valorParcela,
               metodo_pagamento: 'Boleto', forma_pagamento: `Parcelado ${parcelas}x`,
               numero_parcela: `Parcela ${i + 1}/${parcelas}`, situacao: 'Pendente',
-              grupo_id: grupoId,
+              grupo_id: grupoId, is_recorrente: false,
             })
           }
         } else {
@@ -190,17 +192,19 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
             data_pagamento: toISO(dataPgto), tipo: 'Despesa',
             categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
             metodo_pagamento: 'Boleto', forma_pagamento: 'A Vista',
-            numero_parcela: 'Parcela 1/1', situacao: 'Pendente', grupo_id: grupoId,
+            numero_parcela: 'Parcela 1/1', situacao: 'Pendente',
+            grupo_id: grupoId, is_recorrente: false,
           })
         }
       } else {
+        // Débito / PIX / Dinheiro — lançamento normal do dia
         registros.push({
           household_id: householdId, data_movimentacao: dataMov, data_pagamento: dataMov,
           tipo: 'Despesa', categoria_id: Number(categoriaId), classificacao, descricao, valor: valorTotal,
           metodo_pagamento: metodoPagamento,
           conta_origem_destino: metodoPagamento === 'Dinheiro' ? 'Carteira' : conta?.nome ?? '',
           forma_pagamento: 'A Vista', numero_parcela: 'Parcela 1/1', situacao: 'Pago',
-          grupo_id: grupoId,
+          grupo_id: grupoId, is_recorrente: false,
         })
       }
     }
@@ -259,10 +263,10 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         </div>
         <div>
           <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
-            {isPrevisto ? 'Previsao Futura' : 'Lancamento Unico'}
+            {isPrevisto ? 'Previsao Futura (Recorrente)' : 'Lancamento Unico'}
           </div>
           <div style={{ fontSize: 11, color: '#6b7280' }}>
-            {isPrevisto ? 'Lancamentos futuros como Previsto' : 'Despesa realizada ou a vencer'}
+            {isPrevisto ? 'Lançamentos futuros como Previsto — marcados como recorrente' : 'Despesa realizada ou a vencer'}
           </div>
         </div>
       </div>
@@ -297,17 +301,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         <option value="Boleto">Boleto</option>
       </select>
 
-      {isDebitoOuPix && !isPrevisto && (
-        <>
-          <label style={labelStyle}>Conta de Origem *</label>
-          <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
-            <option value="">Selecione...</option>
-            {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-          </select>
-        </>
-      )}
-
-      {isDebitoOuPix && isPrevisto && (
+      {(isDebitoOuPix) && (
         <>
           <label style={labelStyle}>Conta de Origem *</label>
           <select style={inputStyle} value={contaId} onChange={e => setContaId(e.target.value)}>
@@ -327,7 +321,6 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         </>
       )}
 
-      {/* Modo lancamento unico — parcelamento normal */}
       {!isPrevisto && isParcelavel && (
         <>
           <label style={labelStyle}>Forma de Pagamento</label>
@@ -345,7 +338,6 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         </>
       )}
 
-      {/* Modo previsao futura */}
       {isPrevisto && (
         <>
           <label style={labelStyle}>Data do 1o Vencimento *</label>
@@ -356,7 +348,6 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
               1o vencimento calculado: <strong>{new Date(dataInicio + 'T12:00:00').toLocaleDateString('pt-BR')}</strong>
             </div>
           )}
-
           {isCartao && (
             <>
               <label style={labelStyle}>Forma de Pagamento</label>
@@ -366,7 +357,6 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
               </select>
             </>
           )}
-
           {isCartao && formaPagamento === 'Parcelado' ? (
             <>
               <label style={labelStyle}>Numero de Parcelas</label>
@@ -380,12 +370,11 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
                 value={numMeses} onChange={e => setNumMeses(e.target.value)} />
             </>
           )}
-
           {dataInicio && valor && (
             <div style={{ background: '#fdf4ff', border: '1px solid #e9d5ff', borderRadius: 8, padding: '10px 14px', marginBottom: 10, fontSize: 12, color: '#6d28d9' }}>
               {isCartao && formaPagamento === 'Parcelado'
                 ? `${numParcelas}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = ${(parseFloat(valor || '0') * parseInt(numParcelas || '0')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} total — todos como Previsto`
-                : `${numMeses}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = ${(parseFloat(valor || '0') * parseInt(numMeses || '0')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} total — todos como Previsto`
+                : `${numMeses}x de ${parseFloat(valor || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = ${(parseFloat(valor || '0') * parseInt(numMeses || '0')).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} total — todos como Previsto (Recorrente)`
               }
             </div>
           )}
@@ -393,7 +382,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
       )}
 
       <button style={btnPrimary} onClick={salvarDespesa} disabled={loading}>
-        {loading ? 'Salvando...' : isPrevisto ? 'Salvar Previsao' : 'Salvar Despesa'}
+        {loading ? 'Salvando...' : isPrevisto ? 'Salvar Previsao Recorrente' : 'Salvar Despesa'}
       </button>
     </div>
   )
