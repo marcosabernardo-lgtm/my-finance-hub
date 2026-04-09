@@ -38,7 +38,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
   const carregarFaturas = async () => {
     const { data, error } = await supabase
       .from('movimentacoes').select('data_pagamento, valor, cartao_id')
-      .eq('cartao_id', Number(cartaoId)).in('situacao', ['Pendente', 'Pago'])
+      .eq('cartao_id', Number(cartaoId)).eq('situacao', 'Pendente')
     if (error || !data) return
     const grupos: Record<string, FaturaAberta> = {}
     const cartao = cartoes.find(c => c.id === Number(cartaoId))
@@ -69,7 +69,8 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
     const { error: errInsert } = await supabase.from('movimentacoes').insert({
       household_id: householdId,
       data_movimentacao: dataPagamento,
-      data_pagamento: faturaSelecionada.data_vencimento, // ← data de vencimento da fatura (não do pagamento)
+      data_pagamento: dataPagamento, // data real do pagamento
+      mes_referencia: faturaSelecionada.data_vencimento, // ← mês de referência da fatura (vencimento)
       tipo: 'Transferência',
       categoria_id: null,
       descricao: `PAGAMENTO FATURA ${nomeCartaoSemCredito} ${mesAno}`,
@@ -89,7 +90,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
       .update({ situacao: 'Faturado' })
       .eq('cartao_id', faturaSelecionada.cartao_id)
       .eq('data_pagamento', faturaSelecionada.data_vencimento)
-      .in('situacao', ['Pendente', 'Pago'])
+      .eq('situacao', 'Pendente')
 
     if (errUpdate) {
       setMensagem('Pagamento registrado, mas erro ao atualizar despesas: ' + errUpdate.message)
