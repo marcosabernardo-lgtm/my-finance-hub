@@ -64,13 +64,23 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
     const mesAno = dataVenc.toLocaleDateString('pt-BR', { month: 'short', year: 'numeric' }).toUpperCase()
     const nomeCartaoSemCredito = faturaSelecionada.cartao_nome.replace('Crédito ', '')
 
+    // ← CORREÇÃO: incluir cartao_id no pagamento da fatura
+    // O DRE usa cartao_id + data_pagamento para fazer o rateio proporcional por categoria
     const { error: errInsert } = await supabase.from('movimentacoes').insert({
-      household_id: householdId, data_movimentacao: dataPagamento, data_pagamento: dataPagamento,
-      tipo: 'Transferência', categoria_id: null,
+      household_id: householdId,
+      data_movimentacao: dataPagamento,
+      data_pagamento: faturaSelecionada.data_vencimento, // ← data de vencimento da fatura (não do pagamento)
+      tipo: 'Transferência',
+      categoria_id: null,
       descricao: `PAGAMENTO FATURA ${nomeCartaoSemCredito} ${mesAno}`,
-      valor: parseFloat(valorPago), metodo_pagamento: 'Transferência',
-      conta_origem_destino: conta?.nome ?? '', forma_pagamento: 'À Vista',
-      numero_parcela: 'Parcela 1/1', situacao: 'Pago', classificacao: 'Pagamento de Fatura',
+      valor: parseFloat(valorPago),
+      metodo_pagamento: 'Transferência',
+      cartao_id: faturaSelecionada.cartao_id, // ← ADICIONADO: essencial para o DRE fazer o rateio
+      conta_origem_destino: conta?.nome ?? '',
+      forma_pagamento: 'À Vista',
+      numero_parcela: 'Parcela 1/1',
+      situacao: 'Pago',
+      classificacao: 'Pagamento de Fatura',
     })
 
     if (errInsert) { setMensagem('Erro ao registrar pagamento: ' + errInsert.message); setLoading(false); return }
@@ -164,6 +174,16 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
 
           <label style={labelStyle}>Valor Pago (R$) *</label>
           <input style={inputStyle} type="number" step="0.01" value={valorPago} onChange={e => setValorPago(e.target.value)} />
+
+          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '10px 14px', marginBottom: 12, fontSize: 12, color: '#15803d' }}>
+            💡 O pagamento parcial da fatura será rateado proporcionalmente entre as categorias no DRE.
+            <br/>Total da fatura: <strong>{formatarValor(faturaSelecionada.total)}</strong> · Pagando: <strong>{formatarValor(parseFloat(valorPago || '0'))}</strong>
+            {parseFloat(valorPago || '0') < faturaSelecionada.total && (
+              <span style={{ color: '#d97706', marginLeft: 8 }}>
+                ({((parseFloat(valorPago || '0') / faturaSelecionada.total) * 100).toFixed(0)}% da fatura)
+              </span>
+            )}
+          </div>
 
           <button onClick={pagarFatura} disabled={loading} style={{
             width: '100%', padding: '12px 20px', marginTop: 8,
