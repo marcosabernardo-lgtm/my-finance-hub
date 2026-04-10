@@ -52,12 +52,40 @@ function getMetodo(m: Movimentacao): 'cartao' | 'pix' | 'debito' | 'boleto' | 'o
   return 'outro'
 }
 
-function LinhaItem({ descricao, data, valor, parcela, diasRestantes }: {
-  descricao: string; data: string; valor: number; parcela?: string | null; diasRestantes?: number
+// ─── LinhaItem com botão de pagamento ────────────────────────────────────────
+function LinhaItem({ descricao, data, valor, parcela, diasRestantes, movId, isCartao, onPago }: {
+  descricao: string
+  data: string
+  valor: number
+  parcela?: string | null
+  diasRestantes?: number
+  movId?: number
+  isCartao?: boolean
+  onPago?: (id: number) => void
 }) {
+  const [salvando, setSalvando] = useState(false)
   const atrasado = diasRestantes !== undefined && diasRestantes < 0
+
+  async function handlePagar() {
+    if (!movId || !onPago) return
+    setSalvando(true)
+    const novaSituacao = isCartao ? 'Faturado' : 'Pago'
+    const { error } = await supabase
+      .from('movimentacoes')
+      .update({ situacao: novaSituacao })
+      .eq('id', movId)
+    if (!error) onPago(movId)
+    setSalvando(false)
+  }
+
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '8px 12px', background: atrasado ? '#fff5f5' : '#ede8df', borderRadius: '8px', borderLeft: `3px solid ${atrasado ? '#ef4444' : '#d6cfc4'}` }}>
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: '10px',
+      padding: '10px 12px',
+      background: atrasado ? '#fff5f5' : '#ede8df',
+      borderRadius: '8px',
+      borderLeft: `3px solid ${atrasado ? '#ef4444' : '#d6cfc4'}`
+    }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {descricao}
@@ -70,6 +98,28 @@ function LinhaItem({ descricao, data, valor, parcela, diasRestantes }: {
       <div style={{ fontSize: '13px', fontWeight: 700, color: atrasado ? '#ef4444' : '#111827', whiteSpace: 'nowrap' }}>
         {fmt(valor)}
       </div>
+      {movId && onPago && (
+        <button
+          onClick={handlePagar}
+          disabled={salvando}
+          title={isCartao ? 'Marcar como Faturado' : 'Marcar como Pago'}
+          style={{
+            flexShrink: 0,
+            padding: '4px 10px',
+            borderRadius: 6,
+            border: 'none',
+            background: salvando ? '#d1d5db' : '#16a34a',
+            color: '#fff',
+            fontSize: 11,
+            fontWeight: 700,
+            cursor: salvando ? 'wait' : 'pointer',
+            whiteSpace: 'nowrap' as const,
+            transition: 'background 0.15s',
+          }}
+        >
+          {salvando ? '...' : isCartao ? '✓ Faturado' : '✓ Pago'}
+        </button>
+      )}
     </div>
   )
 }
@@ -144,16 +194,19 @@ export default function Alertas() {
       .eq('tipo', 'Despesa')
       .in('situacao', ['Pendente', 'Pago'])
     setMovs(movsData || [])
-
     const { data: cats } = await supabase.from('categorias').select('id,nome,classificacao,limite_gastos').eq('household_id', householdId)
     setCategorias(cats || [])
-
     const { data: cards } = await supabase.from('cartoes').select('id,nome').eq('household_id', householdId).eq('ativo', true)
     setCartoes(cards || [])
     setLoading(false)
   }, [householdId])
 
   useEffect(() => { fetchDados() }, [fetchDados])
+
+  // Remove localmente sem recarregar tudo
+  const handlePago = useCallback((id: number) => {
+    setMovs(prev => prev.filter(m => m.id !== id))
+  }, [])
 
   const mesAtual = hoje.getMonth() + 1
   const anoAtual = hoje.getFullYear()
@@ -164,7 +217,6 @@ export default function Alertas() {
       return d.getMonth() + 1 === mesAtual && d.getFullYear() === anoAtual
     }), [movs, mesAtual, anoAtual])
 
-  // ── Vencidos (dias < 0) ───────────────────────────────────────────────────
   const vencidos = useMemo(() =>
     movs.filter(m => {
       if (m.situacao !== 'Pendente') return false
@@ -173,7 +225,6 @@ export default function Alertas() {
     }).sort((a, b) => (a.data_pagamento || a.data_movimentacao).localeCompare(b.data_pagamento || b.data_movimentacao)),
     [movs])
 
-  // ── Vencendo hoje (dias === 0) ────────────────────────────────────────────
   const vencendoHoje = useMemo(() =>
     movs.filter(m => {
       if (m.situacao !== 'Pendente') return false
@@ -182,7 +233,6 @@ export default function Alertas() {
     }).sort((a, b) => (a.data_pagamento || a.data_movimentacao).localeCompare(b.data_pagamento || b.data_movimentacao)),
     [movs])
 
-  // ── Próximos 14 dias (dias > 0 && <= 14) ─────────────────────────────────
   const proximos14 = useMemo(() =>
     movs.filter(m => {
       if (m.situacao !== 'Pendente') return false
@@ -192,7 +242,6 @@ export default function Alertas() {
     }).sort((a, b) => (a.data_pagamento || a.data_movimentacao).localeCompare(b.data_pagamento || b.data_movimentacao)),
     [movs])
 
-  // ── Agrupamentos por método ───────────────────────────────────────────────
   function agruparPorMetodo(lista: Movimentacao[]) {
     const debito     = lista.filter(m => getMetodo(m) === 'debito')
     const pix        = lista.filter(m => getMetodo(m) === 'pix')
@@ -211,11 +260,10 @@ export default function Alertas() {
     return { debito, pix, boleto, cartoesGrupos: Object.values(porCartao) }
   }
 
-  const vencidosGrupos    = useMemo(() => agruparPorMetodo(vencidos),    [vencidos, cartoes])
-  const hojeGrupos        = useMemo(() => agruparPorMetodo(vencendoHoje),[vencendoHoje, cartoes])
-  const proximos14Grupos  = useMemo(() => agruparPorMetodo(proximos14),  [proximos14, cartoes])
+  const vencidosGrupos   = useMemo(() => agruparPorMetodo(vencidos),    [vencidos, cartoes])
+  const hojeGrupos       = useMemo(() => agruparPorMetodo(vencendoHoje),[vencendoHoje, cartoes])
+  const proximos14Grupos = useMemo(() => agruparPorMetodo(proximos14),  [proximos14, cartoes])
 
-  // ── Categorias estouradas ─────────────────────────────────────────────────
   const categoriasEstouradas = useMemo(() => {
     const gastosPorCat: Record<number, { total: number; itens: Movimentacao[] }> = {}
     for (const m of movsMesAtual) {
@@ -237,7 +285,6 @@ export default function Alertas() {
       .sort((a, b) => b.pct - a.pct)
   }, [movsMesAtual, categorias])
 
-  // ── Risco de estouro ──────────────────────────────────────────────────────
   const riscoEstouro = useMemo(() => {
     const gastosPorCat: Record<number, number> = {}
     for (const m of movsMesAtual) {
@@ -270,7 +317,6 @@ export default function Alertas() {
       .sort((a, b) => b.pctProjecao - a.pctProjecao)
   }, [movsMesAtual, categorias])
 
-  // ── Maior consumo ─────────────────────────────────────────────────────────
   const maiorConsumo = useMemo(() => {
     const gastosPorCat: Record<number, { total: number; itens: Movimentacao[] }> = {}
     for (const m of movsMesAtual) {
@@ -296,28 +342,27 @@ export default function Alertas() {
   const totalAlertas = vencidos.length + vencendoHoje.length + proximos14.length + categoriasEstouradas.length + riscoEstouro.length
   const cores = ['#ef4444','#f59e0b','#0891b2','#7c3aed','#16a34a','#ea580c']
 
-  // ── Render blocos por método ──────────────────────────────────────────────
   function renderBlocos(grupos: ReturnType<typeof agruparPorMetodo>, cor: string, fundo: string, borda: string) {
     return (
       <>
         {grupos.debito.length > 0 && (
           <BlocoExpandivel icone="🏦" titulo="Débito" total={grupos.debito.reduce((s,m)=>s+Number(m.valor),0)} cor={cor} fundo={fundo} borda={borda} badge={`${grupos.debito.length}`} badgeCor={cor}>
-            {grupos.debito.map(m => <LinhaItem key={m.id} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
+            {grupos.debito.map(m => <LinhaItem key={m.id} movId={m.id} isCartao={false} onPago={handlePago} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
           </BlocoExpandivel>
         )}
         {grupos.pix.length > 0 && (
           <BlocoExpandivel icone="⚡" titulo="PIX" total={grupos.pix.reduce((s,m)=>s+Number(m.valor),0)} cor={cor} fundo={fundo} borda={borda} badge={`${grupos.pix.length}`} badgeCor={cor}>
-            {grupos.pix.map(m => <LinhaItem key={m.id} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
+            {grupos.pix.map(m => <LinhaItem key={m.id} movId={m.id} isCartao={false} onPago={handlePago} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
           </BlocoExpandivel>
         )}
         {grupos.boleto.length > 0 && (
           <BlocoExpandivel icone="📄" titulo="Boleto" total={grupos.boleto.reduce((s,m)=>s+Number(m.valor),0)} cor={cor} fundo={fundo} borda={borda} badge={`${grupos.boleto.length}`} badgeCor={cor}>
-            {grupos.boleto.map(m => <LinhaItem key={m.id} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
+            {grupos.boleto.map(m => <LinhaItem key={m.id} movId={m.id} isCartao={false} onPago={handlePago} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
           </BlocoExpandivel>
         )}
         {grupos.cartoesGrupos.map(({ cartao, movs: cms }) => (
           <BlocoExpandivel key={cartao.id} icone="💳" titulo={cartao.nome} total={cms.reduce((s,m)=>s+Number(m.valor),0)} cor={cor} fundo={fundo} borda={borda} badge={`${cms.length}`} badgeCor={cor}>
-            {cms.map(m => <LinhaItem key={m.id} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
+            {cms.map(m => <LinhaItem key={m.id} movId={m.id} isCartao={true} onPago={handlePago} descricao={m.descricao} data={m.data_pagamento||m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela} diasRestantes={diasAte(m.data_pagamento||m.data_movimentacao)}/>)}
           </BlocoExpandivel>
         ))}
       </>
@@ -327,7 +372,6 @@ export default function Alertas() {
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '960px', margin: '0 auto', background: '#f5f0e8', minHeight: '100vh' }}>
 
-      {/* Header */}
       <div style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111827', margin: 0 }}>🔔 Alertas</h1>
@@ -346,50 +390,37 @@ export default function Alertas() {
         <div style={{ padding: '80px', textAlign: 'center', color: '#9ca3af' }}>Carregando alertas...</div>
       ) : (
         <>
-          {/* ── 3 Cards de fluxo — estilo HomePanel ── */}
+          {/* 3 Cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '14px', marginBottom: '32px' }}>
-            {/* Vencidos */}
             <div style={{ background: '#ef4444', borderRadius: 12, padding: '16px 20px', color: '#fff' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-                Vencidos <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>Pendentes em atraso</span>
-              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Vencidos <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>Pendentes em atraso</span></div>
               <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>{fmt(vencidos.reduce((s,m)=>s+Number(m.valor),0))}</div>
               <div style={{ fontSize: 12, opacity: 0.75 }}>{vencidos.length} lançamento{vencidos.length !== 1 ? 's' : ''} pendente{vencidos.length !== 1 ? 's' : ''}</div>
             </div>
-            {/* Vencendo hoje */}
             <div style={{ background: '#f59e0b', borderRadius: 12, padding: '16px 20px', color: '#fff' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-                Vencendo <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>hoje</span>
-              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Vencendo <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>hoje</span></div>
               <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>{fmt(vencendoHoje.reduce((s,m)=>s+Number(m.valor),0))}</div>
               <div style={{ fontSize: 12, opacity: 0.75 }}>{vencendoHoje.length} lançamento{vencendoHoje.length !== 1 ? 's' : ''} pendente{vencendoHoje.length !== 1 ? 's' : ''}</div>
             </div>
-            {/* Próximos 14 dias */}
             <div style={{ background: '#0d7280', borderRadius: 12, padding: '16px 20px', color: '#fff' }}>
-              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>
-                Futuro <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>Próximos 14 dias</span>
-              </div>
+              <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Futuro <span style={{ fontSize: 12, fontWeight: 400, opacity: 0.75 }}>Próximos 14 dias</span></div>
               <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>{fmt(proximos14.reduce((s,m)=>s+Number(m.valor),0))}</div>
               <div style={{ fontSize: 12, opacity: 0.75 }}>{proximos14.length} lançamento{proximos14.length !== 1 ? 's' : ''} pendente{proximos14.length !== 1 ? 's' : ''}</div>
             </div>
           </div>
 
-          {/* ── 1. Vencidos ── */}
           <Secao titulo="Pagamentos Vencidos" icone="🚨" cor="#ef4444" count={vencidos.length}>
             {renderBlocos(vencidosGrupos, '#ef4444', '#fff5f5', '#fecaca')}
           </Secao>
 
-          {/* ── 2. Vencendo hoje ── */}
           <Secao titulo="Vencem Hoje" icone="⚡" cor="#f59e0b" count={vencendoHoje.length}>
             {renderBlocos(hojeGrupos, '#f59e0b', '#fffbeb', '#fde68a')}
           </Secao>
 
-          {/* ── 3. Próximos 14 dias ── */}
           <Secao titulo="Vencem nos Próximos 14 Dias" icone="⏰" cor="#0d7280" count={proximos14.length}>
             {renderBlocos(proximos14Grupos, '#0d7280', '#f0fdfa', '#99f6e4')}
           </Secao>
 
-          {/* ── 4. Limites estourados ── */}
           <Secao titulo="Limite de Gastos Estourado" icone="💸" cor="#7c3aed" count={categoriasEstouradas.length}>
             {categoriasEstouradas.map(c => (
               <BlocoExpandivel key={c.id} icone="⚠️" titulo={c.nome} total={c.gasto} cor="#7c3aed" fundo="#fdf4ff" borda="#e9d5ff" badge={`${c.pct}% do limite`} badgeCor="#7c3aed">
@@ -405,7 +436,6 @@ export default function Alertas() {
             ))}
           </Secao>
 
-          {/* ── 5. Maior consumo ── */}
           <Secao titulo="Maior Consumo do Mês" icone="📊" cor="#0891b2" count={maiorConsumo.length}>
             {maiorConsumo.map((c, i) => (
               <BlocoExpandivel key={c.id} icone={`#${i+1}`} titulo={c.nome} total={c.gasto} cor={cores[i]||'#6b7280'} fundo="#f5f0e8" borda="#e2e8f0" badge={`${c.pct}% do total`} badgeCor={cores[i]||'#6b7280'}>
@@ -417,7 +447,6 @@ export default function Alertas() {
             ))}
           </Secao>
 
-          {/* ── 6. Risco de estouro ── */}
           <Secao titulo="Risco de Estouro se Não Controlar" icone="🎯" cor="#ea580c" count={riscoEstouro.length}>
             {riscoEstouro.map(c => (
               <BlocoExpandivel key={c.id} icone="🎯" titulo={c.nome} total={c.projecao} cor="#ea580c" fundo="#fff7ed" borda="#fed7aa" badge={`Projeção: ${c.pctProjecao}%`} badgeCor="#ea580c">
