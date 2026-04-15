@@ -75,20 +75,22 @@ export default function HomePanel() {
   const { user } = useAuth()
   const [householdId, setHouseholdId] = useState<string|null>(null)
   const [loading, setLoading]         = useState(true)
-  const [contas,        setContas]        = useState<any[]>([])
-  const [cartoes,       setCartoes]       = useState<any[]>([])
-  const [categorias,    setCategorias]    = useState<any[]>([])
-  const [movsMes,       setMovsMes]       = useState<any[]>([])  // por data_movimentacao
-  const [movsMesPgto,   setMovsMesPgto]   = useState<any[]>([])  // por data_pagamento (despesas reais)
-  const [movsMesAnt,    setMovsMesAnt]    = useState<any[]>([])
-  const [movsMesAntPgto,setMovsMesAntPgto]= useState<any[]>([])
-  const [movsAno,       setMovsAno]       = useState<any[]>([])
-  const [movsCartaoAno, setMovsCartaoAno] = useState<any[]>([])
-  const [saldosContas,  setSaldosContas]  = useState<Record<number,number>>({})
-  const [compCartoes,   setCompCartoes]   = useState<Record<number,number>>({})
-  const [dividas,       setDividas]       = useState<any[]>([])
-  const [movsAll,       setMovsAll]       = useState<any[]>([])
-  const [cartaoGrafico, setCartaoGrafico] = useState<number|null>(null)
+  const [contas,          setContas]          = useState<any[]>([])
+  const [cartoes,         setCartoes]         = useState<any[]>([])
+  const [categorias,      setCategorias]      = useState<any[]>([])
+  const [movsMes,         setMovsMes]         = useState<any[]>([])
+  const [movsMesPgto,     setMovsMesPgto]     = useState<any[]>([])
+  const [movsMesAnt,      setMovsMesAnt]      = useState<any[]>([])
+  const [movsMesAntPgto,  setMovsMesAntPgto]  = useState<any[]>([])
+  const [movsAno,         setMovsAno]         = useState<any[]>([])
+  const [movsCartaoAno,   setMovsCartaoAno]   = useState<any[]>([])
+  const [saldosContas,    setSaldosContas]     = useState<Record<number,number>>({})
+  const [compCartoes,     setCompCartoes]      = useState<Record<number,number>>({})
+  const [dividas,         setDividas]          = useState<any[]>([])
+  const [movsAll,         setMovsAll]          = useState<any[]>([])
+  const [pagtoFaturaMes,  setPagtoFaturaMes]   = useState<number>(0)
+  const [pagtoFaturaAnt,  setPagtoFaturaAnt]   = useState<number>(0)
+  const [cartaoGrafico,   setCartaoGrafico]    = useState<number|null>(null)
 
   useEffect(() => {
     if (!user) return
@@ -107,52 +109,51 @@ export default function HomePanel() {
     const dataIniAnt = `${anoAnterior}-${mesAntStr}-01`
     const dataFimAnt = `${anoAnterior}-${mesAntStr}-${new Date(anoAnterior,mesAnterior,0).getDate()}`
 
-    const [contasR,cartoesR,catsR,mesR,mesPgtoR,mesAntR,mesAntPgtoR,anoR,cartaoAnoR,todasR,pendCartR,diviR,movsAllR] = await Promise.all([
+    const [contasR,cartoesR,catsR,mesR,mesPgtoR,mesAntR,mesAntPgtoR,anoR,cartaoAnoR,todasR,pendCartR,diviR,pgtoFatR,pgtoFatAntR,movsAllR] = await Promise.all([
       supabase.from("contas").select("id,nome,saldo_inicial,tipo").eq("household_id",householdId).eq("ativo",true),
       supabase.from("cartoes").select("id,nome,limite_total,data_vencimento").eq("household_id",householdId).eq("ativo",true),
       supabase.from("categorias").select("id,nome,limite_gastos,classificacao").eq("household_id",householdId),
-
-      // Mês atual por data_movimentacao (cartão crédito + limites categoria)
+      // Mês atual por data_movimentacao
       supabase.from("movimentacoes").select("id,tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,data_pagamento,cartao_id,categoria_id,descricao")
         .eq("household_id",householdId).gte("data_movimentacao",dataIni).lte("data_movimentacao",dataFim),
-
-      // Mês atual por data_pagamento (despesas débito/PIX que realmente saíram)
+      // Mês atual por data_pagamento (despesas débito/PIX)
       supabase.from("movimentacoes").select("id,tipo,situacao,valor,metodo_pagamento,cartao_id,data_pagamento,numero_parcela")
-        .eq("household_id",householdId).eq("tipo","Despesa")
-        .in("situacao",["Pago","Faturado"])
+        .eq("household_id",householdId).eq("tipo","Despesa").in("situacao",["Pago","Faturado"])
         .gte("data_pagamento",dataIni).lte("data_pagamento",dataFim),
-
       // Mês anterior por data_movimentacao
       supabase.from("movimentacoes").select("tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,cartao_id")
         .eq("household_id",householdId).gte("data_movimentacao",dataIniAnt).lte("data_movimentacao",dataFimAnt),
-
-      // Mês anterior por data_pagamento (despesas débito/PIX)
+      // Mês anterior por data_pagamento
       supabase.from("movimentacoes").select("tipo,situacao,valor,metodo_pagamento,cartao_id,data_pagamento,numero_parcela")
-        .eq("household_id",householdId).eq("tipo","Despesa")
-        .in("situacao",["Pago","Faturado"])
+        .eq("household_id",householdId).eq("tipo","Despesa").in("situacao",["Pago","Faturado"])
         .gte("data_pagamento",dataIniAnt).lte("data_pagamento",dataFimAnt),
-
-      // Ano inteiro (gráficos)
+      // Ano inteiro
       supabase.from("movimentacoes").select("tipo,situacao,valor,metodo_pagamento,numero_parcela,data_movimentacao,cartao_id")
         .eq("household_id",householdId).gte("data_movimentacao",`${anoAtual}-01-01`).lte("data_movimentacao",`${anoAtual}-12-31`),
-
       // Cartão ano por data_pagamento
       supabase.from("movimentacoes").select("cartao_id,valor,situacao,data_pagamento")
         .eq("household_id",householdId).eq("tipo","Despesa").not("cartao_id","is",null)
         .gte("data_pagamento",`${anoAtual}-01-01`).lte("data_pagamento",`${anoAtual}-12-31`),
-
       // Todas pagas (saldo contas)
-      supabase.from("movimentacoes").select("conta_origem_destino,tipo,valor,situacao").eq("household_id",householdId).eq("situacao","Pago"),
-
+      supabase.from("movimentacoes").select("conta_origem_destino,tipo,valor,situacao")
+        .eq("household_id",householdId).eq("situacao","Pago"),
       // Pendentes cartões (comprometido)
       supabase.from("movimentacoes").select("cartao_id,valor").eq("household_id",householdId).eq("situacao","Pendente")
         .not("cartao_id","is",null).gte("data_pagamento",hoje.toISOString().split("T")[0]),
-
       // Dívidas parceladas
       supabase.from("movimentacoes").select("id,descricao,valor,situacao,numero_parcela,data_pagamento,cartao_id,grupo_id,conta_origem_destino,categoria_id,categorias(nome),cartoes(nome)")
         .eq("household_id",householdId).eq("tipo","Despesa").not("numero_parcela","is",null).not("grupo_id","is",null)
         .order("data_pagamento",{ascending:true}),
-
+      // Pagamento de fatura mês atual
+      supabase.from("movimentacoes").select("valor")
+        .eq("household_id",householdId).eq("tipo","Transferência").eq("situacao","Pago")
+        .not("cartao_id","is",null)
+        .gte("data_pagamento",dataIni).lte("data_pagamento",dataFim),
+      // Pagamento de fatura mês anterior
+      supabase.from("movimentacoes").select("valor")
+        .eq("household_id",householdId).eq("tipo","Transferência").eq("situacao","Pago")
+        .not("cartao_id","is",null)
+        .gte("data_pagamento",dataIniAnt).lte("data_pagamento",dataFimAnt),
       // TODAS despesas pendente+pago (alertas)
       supabase.from("movimentacoes").select("id,tipo,situacao,descricao,valor,data_movimentacao,data_pagamento,metodo_pagamento,cartao_id,categoria_id,numero_parcela")
         .eq("household_id",householdId).eq("tipo","Despesa").in("situacao",["Pendente","Pago"]),
@@ -169,6 +170,8 @@ export default function HomePanel() {
     setMovsAno(anoR.data || [])
     setMovsCartaoAno(cartaoAnoR.data || [])
     setMovsAll(movsAllR.data || [])
+    setPagtoFaturaMes((pgtoFatR.data||[]).reduce((s:number,m:any) => s+Number(m.valor), 0))
+    setPagtoFaturaAnt((pgtoFatAntR.data||[]).reduce((s:number,m:any) => s+Number(m.valor), 0))
     if (cartoesR.data?.length) setCartaoGrafico(cartoesR.data[0].id)
 
     // Saldos contas
@@ -234,7 +237,7 @@ export default function HomePanel() {
 
   useEffect(() => { fetchDados() }, [fetchDados])
 
-  // ── Receitas: data_movimentacao, Pago|Pendente, sem Transferência entre Contas ──
+  // ── Receitas ──
   const totalReceitas = useMemo(() =>
     movsMes.filter(m => m.tipo==="Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento!=="Transferência entre Contas")
       .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
@@ -256,16 +259,13 @@ export default function HomePanel() {
   const totalReceitasAnt = useMemo(() =>
     movsMesAnt.filter(m => m.tipo==="Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento!=="Transferência entre Contas")
       .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
-
   const totalDespesasAnt = useMemo(() =>
-    movsMesAntPgto.filter(m => !m.cartao_id)
-      .reduce((s,m) => s+Number(m.valor), 0), [movsMesAntPgto])
-
+    movsMesAntPgto.filter(m => !m.cartao_id).reduce((s,m) => s+Number(m.valor), 0), [movsMesAntPgto])
   const totalCartaoAnt = useMemo(() =>
     movsMesAnt.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
       .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
 
-  // ── Fluxo (alertas) ──
+  // ── Fluxo ──
   const fluxo = useMemo(() => {
     const pendentes = movsAll.filter(m => m.situacao==="Pendente" && m.metodo_pagamento!=="Transferência entre Contas")
     const vencidos: any[] = [], hoje14: any[] = [], futuro14: any[] = []
@@ -356,7 +356,7 @@ export default function HomePanel() {
         </button>
       </div>
 
-      {/* Cards resumo */}
+      {/* ── 4 Cards resumo ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
         <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
@@ -375,24 +375,18 @@ export default function HomePanel() {
           <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
             {fmt(totalDespesas)}<Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:11,color:"#9ca3af"}}>
-            vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}
-            <span style={{marginLeft:6,color:"#d1d5db"}}>· Pago+Faturado por dt.pagamento</span>
-          </div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)} · Pago+Faturado/dt.pgto</div>
         </div>
-        <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
-          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas Cartão Crédito</div>
+        <div style={{...S,borderLeft:"4px solid #fbbf24"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pagamento de Fatura</div>
           <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
-            {fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/>
+            {fmt(pagtoFaturaMes)}<Variacao atual={pagtoFaturaMes} anterior={pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:11,color:"#9ca3af"}}>
-            vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}
-            <span style={{marginLeft:6,color:"#d1d5db"}}>· Pendente por dt.movimentação</span>
-          </div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)} · Faturas pagas no mês</div>
         </div>
       </div>
 
-      {/* 3 Cards fluxo */}
+      {/* ── 3 Cards fluxo ── */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
         {fluxo.map((f,i) => (
           <div key={i} style={{background:f.cor,borderRadius:12,padding:"16px 20px",color:"#fff"}}>
@@ -405,7 +399,7 @@ export default function HomePanel() {
         ))}
       </div>
 
-      {/* Endividamento */}
+      {/* ── Endividamento ── */}
       <div style={{...S, marginBottom:24}}>
         <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>💰 Endividamento</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
@@ -432,7 +426,7 @@ export default function HomePanel() {
         </div>
       </div>
 
-      {/* Contas + Cartões */}
+      {/* ── Contas + Cartões ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16,marginBottom:24}}>
         <div style={{display:"flex",flexDirection:"column" as const,gap:16}}>
           <div style={S}>
@@ -516,7 +510,7 @@ export default function HomePanel() {
         </div>
       </div>
 
-      {/* Gráficos */}
+      {/* ── Gráficos ── */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:24}}>
         <div style={S}>
           <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>📈 Receitas {anoAtual}</div>
@@ -542,7 +536,7 @@ export default function HomePanel() {
         </div>
       </div>
 
-      {/* Limites por Categoria */}
+      {/* ── Limites por Categoria ── */}
       {limitesCats.length>0&&(
         <div style={{...S,marginBottom:24}}>
           <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>
