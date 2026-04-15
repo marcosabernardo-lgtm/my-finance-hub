@@ -247,10 +247,7 @@ export default function HomePanel() {
     movsMesPgto.filter(m => !m.cartao_id)
       .reduce((s,m) => s+Number(m.valor), 0), [movsMesPgto])
 
-  // ── Cartão Crédito: data_movimentacao, Pendente, COM cartão ──
-  const totalCartao = useMemo(() =>
-    movsMes.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
-      .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
+
 
   const totalSaldo    = contas.filter(c=>c.tipo==="corrente").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
   const totalSaldoInv = contas.filter(c=>c.tipo==="investimento").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
@@ -261,9 +258,7 @@ export default function HomePanel() {
       .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
   const totalDespesasAnt = useMemo(() =>
     movsMesAntPgto.filter(m => !m.cartao_id).reduce((s,m) => s+Number(m.valor), 0), [movsMesAntPgto])
-  const totalCartaoAnt = useMemo(() =>
-    movsMesAnt.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
-      .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
+
 
   // ── Fluxo ──
   const fluxo = useMemo(() => {
