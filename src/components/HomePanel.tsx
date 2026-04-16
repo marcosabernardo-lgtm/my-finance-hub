@@ -249,6 +249,15 @@ export default function HomePanel() {
 
 
 
+  // ── Cartão Crédito: data_movimentacao, Pendente, COM cartão ──
+  const totalCartao = useMemo(() =>
+    movsMes.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
+      .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
+
+  const totalCartaoAnt = useMemo(() =>
+    movsMesAnt.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
+      .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
+
   const totalSaldo    = contas.filter(c=>c.tipo==="corrente").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
   const totalSaldoInv = contas.filter(c=>c.tipo==="investimento").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
 
@@ -352,8 +361,8 @@ export default function HomePanel() {
         </button>
       </div>
 
-      {/* ── 4 Cards resumo ── */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:14,marginBottom:24}}>
+      {/* ── 6 Cards resumo ── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:14}}>
         <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
           <div style={{fontSize:22,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"8px 0 2px"}}>{fmt(totalSaldo)}</div>
@@ -373,12 +382,28 @@ export default function HomePanel() {
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)} · Pago+Faturado/dt.pgto</div>
         </div>
+      </div>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
         <div style={{...S,borderLeft:"4px solid #fbbf24"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pagamento de Fatura</div>
           <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
             {fmt(pagtoFaturaMes)}<Variacao atual={pagtoFaturaMes} anterior={pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)} · Faturas pagas no mês</div>
+        </div>
+        <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas Cartão do Mês</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
+            {fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/>
+          </div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)} · Pendente dt.movimentação</div>
+        </div>
+        <div style={{...S,borderLeft:"4px solid #ef4444",background:"#fff5f5"}}>
+          <div style={{fontSize:11,fontWeight:700,color:"#991b1b",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total Gasto no Mês</div>
+          <div style={{fontSize:22,fontWeight:700,color:"#991b1b",margin:"8px 0 2px"}}>
+            {fmt(totalDespesas + pagtoFaturaMes)}<Variacao atual={totalDespesas + pagtoFaturaMes} anterior={totalDespesasAnt + pagtoFaturaAnt} boaSeSubir={false}/>
+          </div>
+          <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt + pagtoFaturaAnt)} · Despesas + Fatura</div>
         </div>
       </div>
 
