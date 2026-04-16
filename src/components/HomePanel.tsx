@@ -285,7 +285,8 @@ export default function HomePanel() {
     const gastos: Record<number,number> = {}
     for (const m of movsMes) {
       if (!m.categoria_id) continue
-      if (m.situacao==="Pago"||(m.situacao==="Pendente"&&m.numero_parcela==="Parcela 1/1"))
+      const isRecorrenteFaturado = m.situacao==="Faturado" && m.data_movimentacao && m.data_pagamento && m.data_movimentacao===m.data_pagamento
+      if (m.situacao==="Pago"||(m.situacao==="Pendente"&&m.numero_parcela==="Parcela 1/1")||isRecorrenteFaturado)
         gastos[m.categoria_id] = (gastos[m.categoria_id]||0)+Number(m.valor)
     }
     return categorias

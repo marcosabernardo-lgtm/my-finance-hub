@@ -2,8 +2,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Movimentacao {
   id: number
   tipo: string
@@ -23,8 +21,6 @@ interface Categoria {
   classificacao: string
   limite_gastos: number
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtPct = (v: number) => v.toFixed(1) + '%'
@@ -52,15 +48,25 @@ const corSituacaoStyle = (s: string): React.CSSProperties => {
   }
 }
 
-// Helper fora do componente para evitar problemas de inicialização
-const entraNoReal = (m: { tipo: string; situacao: string; numero_parcela: string | null }) => {
+// ── entraNoReal ────────────────────────────────────────────────────────────────
+// Regras:
+// 1. Pago → sempre entra
+// 2. Pendente Parcela 1/1 → entra (compra à vista ainda não paga)
+// 3. Faturado com data_movimentacao === data_pagamento → entra (assinatura recorrente: Vivo, Netflix etc)
+//    Faturado com datas diferentes → NÃO entra (compra parcelada/mês anterior, já entrou no mês certo)
+const entraNoReal = (m: {
+  tipo: string
+  situacao: string
+  numero_parcela: string | null
+  data_movimentacao?: string
+  data_pagamento?: string | null
+}) => {
   if (m.tipo !== 'Despesa') return false
   if (m.situacao === 'Pago') return true
   if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
+  if (m.situacao === 'Faturado' && m.data_movimentacao && m.data_pagamento && m.data_movimentacao === m.data_pagamento) return true
   return false
 }
-
-// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Resumo() {
   const { user } = useAuth()
@@ -74,19 +80,16 @@ export default function Resumo() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Drill-down: qual classificação está expandida
   const [expandida, setExpandida] = useState<string | null>(null)
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
-  // ── Household ───────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return
     supabase.from('households').select('id').eq('owner_id', user.id).single()
       .then(({ data }) => { if (data) setHouseholdId(data.id) })
   }, [user])
 
-  // ── Categorias ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!householdId) return
     supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
@@ -96,7 +99,6 @@ export default function Resumo() {
       .then(({ data }) => setCategorias(data || []))
   }, [householdId])
 
-  // ── Busca movimentações do mês ───────────────────────────────────────────────
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
@@ -119,7 +121,6 @@ export default function Resumo() {
 
   useEffect(() => { fetchDados() }, [fetchDados])
 
-  // ── Cálculos dos cards ───────────────────────────────────────────────────────
   const totalReceitas = useMemo(() =>
     movimentacoes.filter(m =>
       m.tipo === 'Receita' &&
@@ -142,23 +143,18 @@ export default function Resumo() {
   )
 
   const saldo = totalReceitas - totalDespesas
-  // Previsto = soma dos limites das categorias de despesa daquela classificação
-  // Real     = Pago + Faturado das movimentações do mês naquela classificação
 
   const linhasClassificacao = useMemo(() => {
     const catMap = Object.fromEntries(categorias.map(c => [c.id, c]))
 
     return CLASSIFICACOES.map(classif => {
-      // Somente categorias de despesa — exclui Renda Ativa/Passiva por garantia
       const catsClassif = categorias.filter(c =>
         c.classificacao === classif &&
         !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao)
       )
 
-      // Previsto = soma dos limites mensais das categorias
       const previsto = catsClassif.reduce((s, c) => s + (Number(c.limite_gastos) || 0), 0)
 
-      // Real = Pago + Faturado + Pendente Parcela 1/1 do mês nessa classificação
       const real = movimentacoes
         .filter(m => {
           if (!entraNoReal(m)) return false
@@ -170,7 +166,6 @@ export default function Resumo() {
 
       const divergencia = previsto - real
 
-      // Categorias detalhadas para drill-down
       const categoriasDrill = catsClassif.map(cat => {
         const realCat = movimentacoes
           .filter(m => entraNoReal(m) && m.categoria_id === cat.id)
@@ -192,11 +187,9 @@ export default function Resumo() {
   const totalReal = linhasClassificacao.reduce((s, l) => s + l.real, 0)
   const totalDivergencia = totalPrevisto - totalReal
 
-  // ─── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1100px', margin: '0 auto' }}>
 
-      {/* Header */}
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Resumo Financeiro</h1>
         <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
@@ -204,12 +197,7 @@ export default function Resumo() {
         </p>
       </div>
 
-      {/* ── Filtros ─────────────────────────────────────────────────────────── */}
-      <div style={{
-        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
-        padding: '14px 20px', marginBottom: '20px',
-        display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap'
-      }}>
+      <div style={{ background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '14px 20px', marginBottom: '20px', display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div>
           <label style={labelStyle}>Mês</label>
           <select value={filtroMes} onChange={e => setFiltroMes(Number(e.target.value))} style={selectStyle}>
@@ -224,39 +212,13 @@ export default function Resumo() {
         </div>
       </div>
 
-      {/* ── Cards ─────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
-
-        <CardInfo
-          label='Receitas'
-          valor={fmt(totalReceitas)}
-          sub='Pago + Faturado no mês'
-          cor='#065f46' bg='#d1fae5' borda='#6ee7b7'
-        />
-        <CardInfo
-          label='Despesas'
-          valor={fmt(totalDespesas)}
-          sub='Pago + Faturado no mês'
-          cor='#991b1b' bg='#fee2e2' borda='#fca5a5'
-        />
-        <CardInfo
-          label='Saldo'
-          valor={fmt(saldo)}
-          sub='Receitas − Despesas'
-          cor={saldo >= 0 ? '#065f46' : '#991b1b'}
-          bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'}
-          borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}
-        />
-        <CardInfo
-          label='Pendente'
-          valor={fmt(totalPendente)}
-          sub='Despesas ainda não pagas'
-          cor='#92400e' bg='#fef3c7' borda='#fcd34d'
-        />
-
+        <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='#065f46' bg='#d1fae5' borda='#6ee7b7'/>
+        <CardInfo label='Despesas' valor={fmt(totalDespesas)} sub='Pago + Recorrente Faturado' cor='#991b1b' bg='#fee2e2' borda='#fca5a5'/>
+        <CardInfo label='Saldo' valor={fmt(saldo)} sub='Receitas − Despesas' cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}/>
+        <CardInfo label='Pendente' valor={fmt(totalPendente)} sub='Despesas ainda não pagas' cor='#92400e' bg='#fef3c7' borda='#fcd34d'/>
       </div>
 
-      {/* ── Tabela de classificação ──────────────────────────────────────────── */}
       {loading ? (
         <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
       ) : (
@@ -281,92 +243,38 @@ export default function Resumo() {
 
                 return (
                   <>
-                    {/* Linha da classificação */}
-                    <tr
-                      key={linha.classif}
-                      onClick={() => setExpandida(aberta ? null : linha.classif)}
-                      style={{
-                        background: aberta ? '#fffbeb' : idx % 2 === 0 ? '#fff' : '#fafafa',
-                        borderBottom: '1px solid #f3f4f6',
-                        cursor: 'pointer',
-                        transition: 'background 0.1s',
-                      }}
-                    >
-                      {/* Classificação */}
+                    <tr key={linha.classif} onClick={() => setExpandida(aberta ? null : linha.classif)}
+                      style={{ background: aberta ? '#fffbeb' : idx % 2 === 0 ? '#fff' : '#fafafa', borderBottom: '1px solid #f3f4f6', cursor: 'pointer', transition: 'background 0.1s' }}>
                       <td style={{ ...tdStyle, fontWeight: 500, color: '#111827' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{
-                            display: 'inline-block', fontSize: '10px', color: '#9ca3af',
-                            transition: 'transform 0.2s',
-                            transform: aberta ? 'rotate(90deg)' : 'rotate(0deg)'
-                          }}>▶</span>
+                          <span style={{ display: 'inline-block', fontSize: '10px', color: '#9ca3af', transition: 'transform 0.2s', transform: aberta ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
                           {linha.classif}
                         </div>
-                        {/* Barra de progresso */}
                         <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '4px', marginTop: '5px', width: '100%' }}>
-                          <div style={{
-                            background: ultrapassou ? '#ef4444' : '#10b981',
-                            borderRadius: '99px', height: '4px',
-                            width: `${Math.min(linha.previsto > 0 ? (linha.real / linha.previsto) * 100 : 0, 100)}%`,
-                            transition: 'width 0.3s'
-                          }} />
+                          <div style={{ background: ultrapassou ? '#ef4444' : '#10b981', borderRadius: '99px', height: '4px', width: `${Math.min(linha.previsto > 0 ? (linha.real / linha.previsto) * 100 : 0, 100)}%`, transition: 'width 0.3s' }} />
                         </div>
                       </td>
-
-                      {/* Previsto */}
-                      <td style={{ ...tdStyle, textAlign: 'right', color: '#374151' }}>
-                        {fmt(linha.previsto)}
-                      </td>
-
-                      {/* % Previsto */}
-                      <td style={{ ...tdStyle, textAlign: 'right', color: '#9ca3af', fontSize: '12px' }}>
-                        {fmtPct(pctPrevisto)}
-                      </td>
-
-                      {/* Real */}
+                      <td style={{ ...tdStyle, textAlign: 'right', color: '#374151' }}>{fmt(linha.previsto)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', color: '#9ca3af', fontSize: '12px' }}>{fmtPct(pctPrevisto)}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
-                        <span style={{
-                          background: ultrapassou ? '#fee2e2' : linha.real > 0 ? '#d1fae5' : 'transparent',
-                          color: ultrapassou ? '#991b1b' : linha.real > 0 ? '#065f46' : '#9ca3af',
-                          padding: linha.real > 0 ? '2px 8px' : '0',
-                          borderRadius: '6px',
-                          display: 'inline-block',
-                        }}>
+                        <span style={{ background: ultrapassou ? '#fee2e2' : linha.real > 0 ? '#d1fae5' : 'transparent', color: ultrapassou ? '#991b1b' : linha.real > 0 ? '#065f46' : '#9ca3af', padding: linha.real > 0 ? '2px 8px' : '0', borderRadius: '6px', display: 'inline-block' }}>
                           {fmt(linha.real)}
                         </span>
                       </td>
-
-                      {/* % Real */}
-                      <td style={{ ...tdStyle, textAlign: 'right', color: '#9ca3af', fontSize: '12px' }}>
-                        {fmtPct(pctReal)}
-                      </td>
-
-                      {/* Divergência */}
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>
-                        {fmt(linha.divergencia)}
-                      </td>
+                      <td style={{ ...tdStyle, textAlign: 'right', color: '#9ca3af', fontSize: '12px' }}>{fmtPct(pctReal)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(linha.divergencia)}</td>
                     </tr>
 
-                    {/* ── Drill-down: categorias ── */}
                     {aberta && (
                       <tr key={`drill-${linha.classif}`}>
                         <td colSpan={6} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
                           <div style={{ padding: '0 0 8px' }}>
-
-                            {/* Sub-cabeçalho */}
                             <div style={{ background: '#fef3c7', padding: '8px 16px', borderBottom: '1px solid #fde68a', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e' }}>
-                                📂 {linha.classif}
-                              </span>
-                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>
-                                {linha.categoriasDrill.length} categoria{linha.categoriasDrill.length !== 1 ? 's' : ''}
-                              </span>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e' }}>📂 {linha.classif}</span>
+                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>{linha.categoriasDrill.length} categoria{linha.categoriasDrill.length !== 1 ? 's' : ''}</span>
                             </div>
-
                             {linha.categoriasDrill.length === 0 ? (
-                              <div style={{ padding: '12px 16px', color: '#9ca3af', fontSize: '12px' }}>
-                                Nenhuma categoria com lançamentos neste mês.
-                              </div>
+                              <div style={{ padding: '12px 16px', color: '#9ca3af', fontSize: '12px' }}>Nenhuma categoria com lançamentos neste mês.</div>
                             ) : (
                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                 <thead>
@@ -382,7 +290,6 @@ export default function Resumo() {
                                   {linha.categoriasDrill.map((d, ci) => {
                                     const pctLimite = d.previsto > 0 ? (d.real / d.previsto) * 100 : null
                                     const ultrapassouCat = d.real > d.previsto && d.previsto > 0
-
                                     return (
                                       <>
                                         <tr key={d.cat.id} style={{ background: ci % 2 === 0 ? '#fffdf5' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
@@ -390,29 +297,15 @@ export default function Resumo() {
                                             {d.cat.nome}
                                             {pctLimite !== null && (
                                               <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '3px', marginTop: '4px', width: '120px' }}>
-                                                <div style={{
-                                                  background: ultrapassouCat ? '#ef4444' : pctLimite >= 80 ? '#f59e0b' : '#10b981',
-                                                  borderRadius: '99px', height: '3px',
-                                                  width: `${Math.min(pctLimite, 100)}%`
-                                                }} />
+                                                <div style={{ background: ultrapassouCat ? '#ef4444' : pctLimite >= 80 ? '#f59e0b' : '#10b981', borderRadius: '99px', height: '3px', width: `${Math.min(pctLimite, 100)}%` }} />
                                               </div>
                                             )}
                                           </td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', color: '#6b7280' }}>
-                                            {d.previsto > 0 ? fmt(d.previsto) : '—'}
-                                          </td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: ultrapassouCat ? '#991b1b' : '#065f46' }}>
-                                            {fmt(d.real)}
-                                          </td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', color: '#9ca3af' }}>
-                                            {pctLimite !== null ? fmtPct(pctLimite) : '—'}
-                                          </td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: d.divergencia >= 0 ? '#065f46' : '#991b1b' }}>
-                                            {fmt(d.divergencia)}
-                                          </td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', color: '#6b7280' }}>{d.previsto > 0 ? fmt(d.previsto) : '—'}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: ultrapassouCat ? '#991b1b' : '#065f46' }}>{fmt(d.real)}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', color: '#9ca3af' }}>{pctLimite !== null ? fmtPct(pctLimite) : '—'}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: d.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(d.divergencia)}</td>
                                         </tr>
-
-                                        {/* Lançamentos da categoria */}
                                         {d.movs.length > 0 && (
                                           <tr key={`movs-${d.cat.id}`}>
                                             <td colSpan={5} style={{ padding: '0 0 0 32px', background: '#fffdf0' }}>
@@ -422,13 +315,9 @@ export default function Resumo() {
                                                     <tr key={m.id} style={{ borderBottom: '1px solid #fef9e7' }}>
                                                       <td style={{ padding: '4px 10px', color: '#6b7280', whiteSpace: 'nowrap' }}>{fmtDate(m.data_movimentacao)}</td>
                                                       <td style={{ padding: '4px 10px', color: '#374151', fontWeight: 500 }}>{m.descricao}</td>
-                                                      <td style={{ padding: '4px 10px', textAlign: 'right', color: '#991b1b', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                                        − {fmt(Number(m.valor))}
-                                                      </td>
+                                                      <td style={{ padding: '4px 10px', textAlign: 'right', color: '#991b1b', fontWeight: 600, whiteSpace: 'nowrap' }}>− {fmt(Number(m.valor))}</td>
                                                       <td style={{ padding: '4px 10px', whiteSpace: 'nowrap' }}>
-                                                        <span style={{ ...corSituacaoStyle(m.situacao), padding: '1px 6px', borderRadius: '99px', fontSize: '10px', fontWeight: 600 }}>
-                                                          {m.situacao}
-                                                        </span>
+                                                        <span style={{ ...corSituacaoStyle(m.situacao), padding: '1px 6px', borderRadius: '99px', fontSize: '10px', fontWeight: 600 }}>{m.situacao}</span>
                                                       </td>
                                                     </tr>
                                                   ))}
@@ -441,19 +330,13 @@ export default function Resumo() {
                                     )
                                   })}
                                 </tbody>
-
-                                {/* Subtotal da classificação */}
                                 <tfoot>
                                   <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
                                     <td style={{ padding: '7px 16px', fontWeight: 700, color: '#92400e' }}>Subtotal</td>
                                     <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{fmt(linha.previsto)}</td>
                                     <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{fmt(linha.real)}</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', color: '#9ca3af' }}>
-                                      {totalReal > 0 ? fmtPct((linha.real / totalReal) * 100) : '—'}
-                                    </td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>
-                                      {fmt(linha.divergencia)}
-                                    </td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', color: '#9ca3af' }}>{totalReal > 0 ? fmtPct((linha.real / totalReal) * 100) : '—'}</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(linha.divergencia)}</td>
                                   </tr>
                                 </tfoot>
                               </table>
@@ -466,39 +349,30 @@ export default function Resumo() {
                 )
               })}
 
-              {/* ── Linha TOTAL ── */}
               <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 700, color: '#f9fafb', fontSize: '13px' }}>TOTAL</td>
                 <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#d1d5db' }}>{fmt(totalPrevisto)}</td>
                 <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>
                 <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#f9fafb' }}>{fmt(totalReal)}</td>
                 <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>
-                <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>
-                  {fmt(totalDivergencia)}
-                </td>
+                <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>{fmt(totalDivergencia)}</td>
               </tr>
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Legenda */}
       {!loading && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
-          <span>* Real = Pago + Pendente À Vista (Parcela 1/1) · Faturado não entra (compras de meses anteriores) · Previsto = soma dos limites mensais</span>
+          <span>* Real = Pago + Pendente à Vista (1/1) + Faturado recorrente (datas iguais) · Previsto = soma dos limites mensais</span>
         </div>
       )}
-
     </div>
   )
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function CardInfo({ label, valor, sub, cor, bg, borda }: {
-  label: string; valor: string; sub: string; cor: string; bg: string; borda: string
-}) {
+function CardInfo({ label, valor, sub, cor, bg, borda }: { label: string; valor: string; sub: string; cor: string; bg: string; borda: string }) {
   return (
     <div style={{ background: bg, borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${borda}` }}>
       <div style={{ fontSize: '11px', fontWeight: 700, color: cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
@@ -508,20 +382,7 @@ function CardInfo({ label, valor, sub, cor, bg, borda }: {
   )
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280',
-  textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px'
-}
-const selectStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
-}
-const thStyle: React.CSSProperties = {
-  padding: '10px 10px', textAlign: 'right', fontWeight: 600,
-  color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap'
-}
-const tdStyle: React.CSSProperties = {
-  padding: '10px 10px', verticalAlign: 'middle'
-}
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
+const selectStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px' }
+const thStyle: React.CSSProperties = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
+const tdStyle: React.CSSProperties = { padding: '10px 10px', verticalAlign: 'middle' }
