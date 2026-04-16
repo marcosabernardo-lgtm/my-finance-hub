@@ -340,7 +340,7 @@ export default function HomePanel() {
   const totalDivDebito  = dividas.filter(d=>!d.isCredito&&!d.isParc).reduce((s,d)=>s+d.valorRestante,0)
   const totalDivParc    = dividas.filter(d=>d.isParc).reduce((s,d)=>s+d.valorRestante,0)
   const cartaoNomeGraf  = cartoes.find(c=>c.id===cartaoGrafico)?.nome||"Cartão"
-  const S: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"18px 20px", border:"1px solid #e2e8f0" }
+  const S: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"12px 14px", border:"1px solid #e2e8f0" }
 
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f5f0e8",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
@@ -362,45 +362,43 @@ export default function HomePanel() {
       </div>
 
       {/* ── 6 Cards resumo ── */}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:14}}>
+      <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:24}}>
         <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
-          <div style={{fontSize:22,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"8px 0 2px"}}>{fmt(totalSaldo)}</div>
+          <div style={{fontSize:18,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"6px 0 2px"}}>{fmt(totalSaldo)}</div>
           <div style={{fontSize:11,color:"#9ca3af"}}>Contas correntes ativas</div>
         </div>
         <div style={{...S,borderLeft:"4px solid #6ee7b7"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Receitas do Mês</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
+          <div style={{fontSize:18,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
             {fmt(totalReceitas)}<Variacao atual={totalReceitas} anterior={totalReceitasAnt} boaSeSubir={true}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
         </div>
         <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas do Mês</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
+          <div style={{fontSize:18,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
             {fmt(totalDespesas)}<Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)} · Pago+Faturado/dt.pgto</div>
-        </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14,marginBottom:24}}>
+
         <div style={{...S,borderLeft:"4px solid #fbbf24"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pagamento de Fatura</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
+          <div style={{fontSize:18,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
             {fmt(pagtoFaturaMes)}<Variacao atual={pagtoFaturaMes} anterior={pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)} · Faturas pagas no mês</div>
         </div>
         <div style={{...S,borderLeft:"4px solid #fca5a5"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas Cartão do Mês</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#111827",margin:"8px 0 2px"}}>
+          <div style={{fontSize:18,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
             {fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)} · Pendente dt.movimentação</div>
         </div>
         <div style={{...S,borderLeft:"4px solid #ef4444",background:"#fff5f5"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#991b1b",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total Gasto no Mês</div>
-          <div style={{fontSize:22,fontWeight:700,color:"#991b1b",margin:"8px 0 2px"}}>
+          <div style={{fontSize:18,fontWeight:700,color:"#991b1b",margin:"6px 0 2px"}}>
             {fmt(totalDespesas + pagtoFaturaMes)}<Variacao atual={totalDespesas + pagtoFaturaMes} anterior={totalDespesasAnt + pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt + pagtoFaturaAnt)} · Despesas + Fatura</div>
