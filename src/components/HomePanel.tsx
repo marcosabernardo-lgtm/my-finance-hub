@@ -381,7 +381,7 @@ export default function HomePanel() {
             {fmt(totalDespesas)}<Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:11,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)} · Pago+Faturado/dt.pgto</div>
-
+        </div>
         <div style={{...S,borderLeft:"4px solid #fbbf24"}}>
           <div style={{fontSize:11,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pagamento de Fatura</div>
           <div style={{fontSize:18,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
@@ -584,6 +584,8 @@ export default function HomePanel() {
         </div>
       )}
 
+      </div>
+      </div>
     </div>
   )
 }
