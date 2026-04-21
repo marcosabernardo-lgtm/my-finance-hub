@@ -64,6 +64,18 @@ export default function ExtratoConta() {
   const [saldoAnterior, setSaldoAnterior] = useState(0)
   const [loading, setLoading] = useState(false)
 
+  // ── Conferidos — apenas estado local, sem salvar no banco ──────────────────
+  const [conferidos, setConferidos] = useState<Set<number>>(new Set())
+
+  const toggleConferido = (id: number) => {
+    setConferidos(prev => {
+      const novo = new Set(prev)
+      if (novo.has(id)) novo.delete(id)
+      else novo.add(id)
+      return novo
+    })
+  }
+
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
 
   const contaAtual = useMemo(
@@ -97,6 +109,8 @@ export default function ExtratoConta() {
   const fetchExtrato = useCallback(async () => {
     if (!householdId || !contaId) return
     setLoading(true)
+    // Limpa conferidos ao mudar de mês/conta
+    setConferidos(new Set())
 
     const mesStr = String(filtroMes).padStart(2, '0')
     const dataInicio = `${filtroAno}-${mesStr}-01`
@@ -171,12 +185,24 @@ export default function ExtratoConta() {
   )
 
   const saldoFinal = saldoAnterior + entradasMes - saidasMes
+
   const totalTabelaFiltrada = useMemo(() =>
     lancamentosFiltrados.reduce((s, l) => {
       const v = Number(l.valor)
       return s + (l.tipo === 'Receita' ? v : -v)
     }, 0),
     [lancamentosFiltrados]
+  )
+
+  // ── Total conferido ──────────────────────────────────────────────────────────
+  const totalConferido = useMemo(() =>
+    lancamentosFiltrados
+      .filter(l => conferidos.has(l.id))
+      .reduce((s, l) => {
+        const v = Number(l.valor)
+        return s + (l.tipo === 'Receita' ? v : -v)
+      }, 0),
+    [lancamentosFiltrados, conferidos]
   )
 
   const catNome = (id: number | null) =>
@@ -306,13 +332,26 @@ export default function ExtratoConta() {
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
       <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
 
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#ede8df', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{
+          padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#ede8df',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+        }}>
           <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
             Lançamentos — {MESES[filtroMes - 1]} {filtroAno}
           </span>
-          <span style={{ fontSize: '12px', color: '#9ca3af' }}>
-            Filtrado por data de movimentação
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            {conferidos.size > 0 && (
+              <span style={{
+                fontSize: '12px', color: '#065f46', fontWeight: 600,
+                background: '#d1fae5', padding: '3px 10px', borderRadius: '99px'
+              }}>
+                ✅ {conferidos.size} conferido{conferidos.size !== 1 ? 's' : ''} — {fmt(Math.abs(totalConferido))}
+              </span>
+            )}
+            <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+              Filtrado por data de movimentação
+            </span>
+          </div>
         </div>
 
         {loading ? (
@@ -328,6 +367,10 @@ export default function ExtratoConta() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
+                  {/* Coluna do check */}
+                  <th style={{ padding: '10px 12px', width: '40px' }}>
+                    <span title="Conferir lançamentos" style={{ fontSize: '12px', color: '#9ca3af' }}>✓</span>
+                  </th>
                   {['Data','Categoria','Descrição','Tipo','Valor','Situação'].map(h => (
                     <th key={h} style={{
                       padding: '10px 12px', textAlign: h === 'Valor' ? 'right' : 'left',
@@ -339,43 +382,81 @@ export default function ExtratoConta() {
                 </tr>
               </thead>
               <tbody>
-                {lancamentosFiltrados.map((l, idx) => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid #f3f4f6', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
-                    <td style={tdStyle}>{fmtDate(l.data_movimentacao)}</td>
-                    <td style={{ ...tdStyle, color: '#6b7280' }}>{catNome(l.categoria_id)}</td>
-                    <td style={{ ...tdStyle, maxWidth: '260px' }}>
-                      <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {l.descricao}
-                      </div>
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        padding: '2px 8px', borderRadius: '99px',
-                        fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap',
-                        background: l.tipo === 'Receita' ? '#d1fae5' : '#fee2e2',
-                        color: l.tipo === 'Receita' ? '#065f46' : '#991b1b',
+                {lancamentosFiltrados.map((l, idx) => {
+                  const conferido = conferidos.has(l.id)
+                  return (
+                    <tr
+                      key={l.id}
+                      style={{
+                        borderBottom: '1px solid #f3f4f6',
+                        background: conferido
+                          ? '#f0fdf4'
+                          : idx % 2 === 0 ? '#fff' : '#fafafa',
+                        transition: 'background 0.2s',
+                        opacity: conferido ? 0.75 : 1,
+                      }}
+                    >
+                      {/* Checkbox de conferência */}
+                      <td style={{ padding: '10px 12px', textAlign: 'center', verticalAlign: 'middle' }}>
+                        <div
+                          onClick={() => toggleConferido(l.id)}
+                          title={conferido ? 'Desmarcar' : 'Marcar como conferido'}
+                          style={{
+                            width: '20px', height: '20px', borderRadius: '5px', cursor: 'pointer',
+                            border: `2px solid ${conferido ? '#16a34a' : '#d1d5db'}`,
+                            background: conferido ? '#16a34a' : '#fff',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            margin: '0 auto', transition: 'all 0.15s',
+                          }}
+                        >
+                          {conferido && <span style={{ color: '#fff', fontSize: '12px', fontWeight: 700, lineHeight: 1 }}>✓</span>}
+                        </div>
+                      </td>
+
+                      <td style={tdStyle}>{fmtDate(l.data_movimentacao)}</td>
+                      <td style={{ ...tdStyle, color: '#6b7280' }}>{catNome(l.categoria_id)}</td>
+                      <td style={{ ...tdStyle, maxWidth: '260px' }}>
+                        <div style={{
+                          fontWeight: 500,
+                          color: conferido ? '#6b7280' : '#111827',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          textDecoration: conferido ? 'line-through' : 'none',
+                        }}>
+                          {l.descricao}
+                        </div>
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          padding: '2px 8px', borderRadius: '99px',
+                          fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap',
+                          background: l.tipo === 'Receita' ? '#d1fae5' : '#fee2e2',
+                          color: l.tipo === 'Receita' ? '#065f46' : '#991b1b',
+                        }}>
+                          {l.tipo}
+                        </span>
+                      </td>
+                      <td style={{
+                        ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap',
+                        color: conferido ? '#6b7280' : l.tipo === 'Receita' ? '#065f46' : '#991b1b'
                       }}>
-                        {l.tipo}
-                      </span>
-                    </td>
-                    <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap',
-                      color: l.tipo === 'Receita' ? '#065f46' : '#991b1b' }}> 
-                      {l.tipo === 'Receita' ? '+' : '−'} {fmt(Number(l.valor))}
-                    </td>
-                    <td style={tdStyle}>
-                      <span style={{
-                        ...corSituacao(l.situacao),
-                        padding: '2px 8px', borderRadius: '99px',
-                        fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
-                      }}>
-                        {l.situacao}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                        {l.tipo === 'Receita' ? '+' : '−'} {fmt(Number(l.valor))}
+                      </td>
+                      <td style={tdStyle}>
+                        <span style={{
+                          ...corSituacao(l.situacao),
+                          padding: '2px 8px', borderRadius: '99px',
+                          fontSize: '11px', fontWeight: 600, whiteSpace: 'nowrap'
+                        }}>
+                          {l.situacao}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
               <tfoot>
                 <tr style={{ background: '#ede8df', borderTop: '2px solid #e5e7eb' }}>
+                  <td />
                   <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: '#374151', fontSize: '13px' }}>
                     Total {filtroTipo ? `(${filtroTipo})` : '(Todos)'}
                     <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
@@ -383,12 +464,27 @@ export default function ExtratoConta() {
                     </span>
                   </td>
                   <td />
-                  <td style={{ padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
-                    color: totalTabelaFiltrada >= 0 ? '#065f46' : '#991b1b' }}>
+                  <td style={{
+                    padding: '10px 12px', textAlign: 'right', fontWeight: 700, fontSize: '14px', whiteSpace: 'nowrap',
+                    color: totalTabelaFiltrada >= 0 ? '#065f46' : '#991b1b'
+                  }}>
                     {totalTabelaFiltrada >= 0 ? '+' : ''}{fmt(totalTabelaFiltrada)}
                   </td>
                   <td />
                 </tr>
+                {conferidos.size > 0 && (
+                  <tr style={{ background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
+                    <td />
+                    <td colSpan={3} style={{ padding: '8px 12px', fontWeight: 700, color: '#065f46', fontSize: '12px' }}>
+                      ✅ Conferido ({conferidos.size} lançamento{conferidos.size !== 1 ? 's' : ''})
+                    </td>
+                    <td />
+                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#065f46', fontSize: '13px', whiteSpace: 'nowrap' }}>
+                      {totalConferido >= 0 ? '+' : ''}{fmt(totalConferido)}
+                    </td>
+                    <td />
+                  </tr>
+                )}
               </tfoot>
             </table>
           </div>
