@@ -107,7 +107,7 @@ export default function Cadastros() {
       else { setMensagem('Categoria atualizada!'); setEditandoCategoriaDespesa(null) }
     } else {
       const { error } = await supabase.from('categorias').insert({
-        household_id: householdId,   // ✅ corrigido
+        household_id: householdId,
         nome: nomeCategoriaDespesa, classificacao: classificacaoDespesa,
         limite_gastos: limiteGastosDespesa ? Number(limiteGastosDespesa) : null,
         exemplos: exemplosDespesa || null,
@@ -140,7 +140,7 @@ export default function Cadastros() {
       else { setMensagem('Categoria atualizada!'); setEditandoCategoriaReceita(null) }
     } else {
       const { error } = await supabase.from('categorias').insert({
-        household_id: householdId,   // ✅ corrigido
+        household_id: householdId,
         nome: nomeCategoriaReceita, classificacao: classificacaoReceita,
         limite_gastos: limiteGastosReceita ? Number(limiteGastosReceita) : 0,
         exemplos: null,
@@ -174,7 +174,7 @@ export default function Cadastros() {
       else { setMensagem('Cartão atualizado!'); setEditandoCartao(null) }
     } else {
       const { error } = await supabase.from('cartoes').insert({
-        household_id: householdId,   // ✅ corrigido
+        household_id: householdId,
         nome: nomeCartao, data_fechamento: Number(dataFechamento),
         data_vencimento: Number(dataVencimento),
         limite_total: limiteTotal ? Number(limiteTotal) : null,
@@ -238,17 +238,11 @@ export default function Cadastros() {
     setEditandoConta(null); setNomeConta(''); setSaldoInicial(''); setDataInicial(''); setTipoConta('corrente'); setMensagem('')
   }
 
-  const abas = [
-    { key: 'cat-despesa', label: 'Categorias Despesas' },
-    { key: 'cat-receita', label: 'Categorias Receitas' },
-    { key: 'cartoes',     label: 'Cartões' },
-    { key: 'contas',      label: 'Contas' },
-  ] as const
-
-  const isEditando = editandoCategoriaDespesa || editandoCategoriaReceita || editandoCartao || editandoConta
-
-  const itemRow = (nome: string, detalhe: string, id: number, tabela: string, onEdit: () => void) => (
-    <div key={id} style={{
+  // ── Componente ItemRow (corrigido: componente em vez de função) ──────────────
+  const ItemRow = ({ nome, detalhe, id, tabela, onEdit }: {
+    nome: string; detalhe: string; id: number; tabela: string; onEdit: () => void
+  }) => (
+    <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
       background: '#ede8df', padding: '8px 12px', borderRadius: 6,
       border: '1px solid #f3f4f6',
@@ -269,6 +263,15 @@ export default function Cadastros() {
       </div>
     </div>
   )
+
+  const abas = [
+    { key: 'cat-despesa', label: 'Categorias Despesas' },
+    { key: 'cat-receita', label: 'Categorias Receitas' },
+    { key: 'cartoes',     label: 'Cartões' },
+    { key: 'contas',      label: 'Contas' },
+  ] as const
+
+  const isEditando = editandoCategoriaDespesa || editandoCategoriaReceita || editandoCartao || editandoConta
 
   const titulosForm: Record<Aba, string> = {
     'cat-despesa': isEditando ? 'Editando Categoria' : 'Nova Categoria de Despesa',
@@ -448,30 +451,67 @@ export default function Cadastros() {
             {aba === 'contas'      && `Contas (${contas.length})`}
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 450, overflowY: 'auto' }}>
+
             {aba === 'cat-despesa' && (categoriasDespesa.length === 0
               ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
-              : categoriasDespesa.map(c => itemRow(c.nome, `${c.classificacao}${c.limite_gastos > 0 ? ` · Limite: R$ ${c.limite_gastos}` : ''}`, c.id, 'categorias', () => editarCategoriaDespesa(c)))
+              : categoriasDespesa.map(c => (
+                <ItemRow
+                  key={c.id}
+                  nome={c.nome}
+                  detalhe={`${c.classificacao}${c.limite_gastos > 0 ? ` · Limite: R$ ${c.limite_gastos}` : ''}`}
+                  id={c.id}
+                  tabela="categorias"
+                  onEdit={() => editarCategoriaDespesa(c)}
+                />
+              ))
             )}
+
             {aba === 'cat-receita' && (categoriasReceita.length === 0
               ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
-              : categoriasReceita.map(c => itemRow(c.nome, `${c.classificacao}${c.limite_gastos > 0 ? ` · Previsto: R$ ${c.limite_gastos}` : ''}`, c.id, 'categorias', () => editarCategoriaReceita(c)))
+              : categoriasReceita.map(c => (
+                <ItemRow
+                  key={c.id}
+                  nome={c.nome}
+                  detalhe={`${c.classificacao}${c.limite_gastos > 0 ? ` · Previsto: R$ ${c.limite_gastos}` : ''}`}
+                  id={c.id}
+                  tabela="categorias"
+                  onEdit={() => editarCategoriaReceita(c)}
+                />
+              ))
             )}
+
             {aba === 'cartoes' && (cartoes.length === 0
               ? <p style={{ color: '#9ca3af' }}>Nenhum cartão cadastrado.</p>
-              : cartoes.map(c => itemRow(c.nome, `Fecha dia ${c.data_fechamento} · Vence dia ${c.data_vencimento}${c.limite_total ? ` · Limite: R$ ${c.limite_total}` : ''}`, c.id, 'cartoes', () => editarCartao(c)))
+              : cartoes.map(c => (
+                <ItemRow
+                  key={c.id}
+                  nome={c.nome}
+                  detalhe={`Fecha dia ${c.data_fechamento} · Vence dia ${c.data_vencimento}${c.limite_total ? ` · Limite: R$ ${c.limite_total}` : ''}`}
+                  id={c.id}
+                  tabela="cartoes"
+                  onEdit={() => editarCartao(c)}
+                />
+              ))
             )}
+
             {aba === 'contas' && (contas.length === 0
               ? <p style={{ color: '#9ca3af' }}>Nenhuma conta cadastrada.</p>
-              : contas.map(c => itemRow(
-                  c.nome,
-                  [
+              : contas.map(c => (
+                <ItemRow
+                  key={c.id}
+                  nome={c.nome}
+                  detalhe={[
                     c.tipo === 'investimento' ? '📈 Investimento' : '🏦 Corrente',
                     c.saldo_inicial > 0 ? `Saldo: R$ ${c.saldo_inicial}` : '',
                     c.data_inicial ? `Início: ${new Date(c.data_inicial + 'T12:00:00').toLocaleDateString('pt-BR')}` : ''
-                  ].filter(Boolean).join(' · '),
-                  c.id, 'contas', () => editarConta(c)
-                ))
+                  ].filter(Boolean).join(' · ')}
+                  id={c.id}
+                  tabela="contas"
+                  onEdit={() => editarConta(c)}
+                />
+              ))
             )}
+
           </div>
         </div>
 
