@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../hooks/useAuth'
 import LancamentoDespesa from './LancamentoDespesa'
 import LancamentoReceita from './LancamentoReceita'
 import LancamentoFatura from './LancamentoFatura'
@@ -10,6 +11,7 @@ type Cartao = { id: number; nome: string; data_fechamento: number; data_vencimen
 type Conta = { id: number; nome: string }
 
 export default function Lancamento() {
+  const { user } = useAuth()
   const [aba, setAba] = useState<'despesa' | 'receita' | 'transferencia' | 'fatura'>('despesa')
   const [householdId, setHouseholdId] = useState<string>('')
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -17,21 +19,38 @@ export default function Lancamento() {
   const [contas, setContas] = useState<Conta[]>([])
 
   useEffect(() => {
-    supabase.from('household_members').select('household_id').single()
-      .then(({ data }) => { if (data) setHouseholdId(data.household_id) })
-    supabase.from('categorias').select('id, nome, classificacao').order('nome')
-      .then(({ data }) => data && setCategorias(data))
-    supabase.from('cartoes').select('id, nome, data_fechamento, data_vencimento').order('nome')
-      .then(({ data }) => data && setCartoes(data))
-    supabase.from('contas').select('id, nome').order('nome')
-      .then(({ data }) => data && setContas(data))
-  }, [])
+    if (!user) return
+
+    supabase
+      .from('households')
+      .select('id')
+      .eq('owner_id', user.id)
+      .single()
+      .then(({ data }) => {
+        if (data) {
+          const hid = data.id
+          setHouseholdId(hid)
+
+          supabase.from('categorias').select('id, nome, classificacao')
+            .eq('household_id', hid).order('nome')
+            .then(({ data }) => data && setCategorias(data))
+
+          supabase.from('cartoes').select('id, nome, data_fechamento, data_vencimento')
+            .eq('household_id', hid).order('nome')
+            .then(({ data }) => data && setCartoes(data))
+
+          supabase.from('contas').select('id, nome')
+            .eq('household_id', hid).order('nome')
+            .then(({ data }) => data && setContas(data))
+        }
+      })
+  }, [user])
 
   const abas = [
-    { key: 'despesa',      label: 'Despesa',       color: '#ef4444' },
-    { key: 'receita',      label: 'Receita',        color: '#22c55e' },
-    { key: 'transferencia',label: 'Transferência',  color: '#8b5cf6' },
-    { key: 'fatura',       label: 'Pag. Fatura',    color: '#f59e0b' },
+    { key: 'despesa',       label: 'Despesa',      color: '#ef4444' },
+    { key: 'receita',       label: 'Receita',       color: '#22c55e' },
+    { key: 'transferencia', label: 'Transferência', color: '#8b5cf6' },
+    { key: 'fatura',        label: 'Pag. Fatura',   color: '#f59e0b' },
   ] as const
 
   return (
@@ -61,13 +80,13 @@ export default function Lancamento() {
       </div>
 
       {!householdId ? (
-        <p style={{ color: '#ef4444' }}>Carregando dados...</p>
+        <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando dados...</p>
       ) : (
         <>
-          {aba === 'despesa'       && <LancamentoDespesa      householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
-          {aba === 'receita'       && <LancamentoReceita      householdId={householdId} categorias={categorias} contas={contas} />}
+          {aba === 'despesa'       && <LancamentoDespesa       householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}
+          {aba === 'receita'       && <LancamentoReceita       householdId={householdId} categorias={categorias} contas={contas} />}
           {aba === 'transferencia' && <LancamentoTransferencia householdId={householdId} categorias={categorias} contas={contas} />}
-          {aba === 'fatura'        && <LancamentoFatura       householdId={householdId} cartoes={cartoes} contas={contas} />}
+          {aba === 'fatura'        && <LancamentoFatura        householdId={householdId} cartoes={cartoes} contas={contas} />}
         </>
       )}
     </div>
