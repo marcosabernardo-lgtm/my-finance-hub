@@ -137,18 +137,28 @@ export default function Resumo() {
     [movimentacoes]
   )
 
-  const totalDespesas = useMemo(() =>
-    movimentacoes.filter(m => entraNoReal(m))
-      .reduce((s, m) => s + Number(m.valor), 0),
+  // Despesas débito/PIX/Dinheiro/Boleto pagas no mês
+  const totalDespesasDebito = useMemo(() =>
+    movimentacoes.filter(m =>
+      m.tipo === 'Despesa' &&
+      m.situacao === 'Pago' &&
+      !(m.metodo_pagamento?.startsWith('Crédito') ?? false)
+    ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 
-  const totalPendente = useMemo(() =>
-    movimentacoes.filter(m => m.tipo === 'Despesa' && m.situacao === 'Pendente' && m.numero_parcela !== 'Parcela 1/1')
-      .reduce((s, m) => s + Number(m.valor), 0),
+  // Despesas crédito à vista (Parcela 1/1) pagas no mês
+  const totalDespesasCredito = useMemo(() =>
+    movimentacoes.filter(m =>
+      m.tipo === 'Despesa' &&
+      m.situacao === 'Pago' &&
+      (m.metodo_pagamento?.startsWith('Crédito') ?? false) &&
+      m.numero_parcela === 'Parcela 1/1'
+    ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
 
+  const totalDespesas = totalDespesasDebito + totalDespesasCredito
   const saldo = totalReceitas - totalDespesas
 
   const linhasClassificacao = useMemo(() => {
@@ -221,9 +231,9 @@ export default function Resumo() {
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
         <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='#065f46' bg='#d1fae5' borda='#6ee7b7'/>
-        <CardInfo label='Despesas' valor={fmt(totalDespesas)} sub='Pago + Recorrente Faturado' cor='#991b1b' bg='#fee2e2' borda='#fca5a5'/>
-        <CardInfo label='Saldo' valor={fmt(saldo)} sub='Receitas − Despesas' cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}/>
-        <CardInfo label='Pendente' valor={fmt(totalPendente)} sub='Despesas ainda não pagas' cor='#92400e' bg='#fef3c7' borda='#fcd34d'/>
+        <CardInfo label='Despesas Débito / PIX' valor={fmt(totalDespesasDebito)} sub='Pago no mês' cor='#991b1b' bg='#fee2e2' borda='#fca5a5'/>
+        <CardInfo label='Despesas Crédito à Vista' valor={fmt(totalDespesasCredito)} sub='Parcela 1/1 pago no mês' cor='#b45309' bg='#fef3c7' borda='#fbbf24'/>
+        <CardInfo label='Total Gasto' valor={fmt(totalDespesas)} sub='Débito + Crédito à Vista' cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}/>
       </div>
 
       {loading ? (
@@ -372,7 +382,7 @@ export default function Resumo() {
       {!loading && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
-          <span>* Real = Pago + Pendente à Vista (1/1) + Faturado recorrente (datas iguais) · Previsto = soma dos limites mensais</span>
+          <span>* Real = Pago Débito/PIX + Crédito à Vista (Parcela 1/1) · Previsto = soma dos limites mensais</span>
         </div>
       )}
     </div>
