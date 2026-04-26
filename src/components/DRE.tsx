@@ -161,7 +161,8 @@ export default function DRE() {
     const dataInicio = `${ano}-01-01`
     const dataFim = `${ano}-12-31`
 
-    const { data: movs } = await supabase
+    // Busca 1: movimentações do ano por data_movimentacao (receitas, despesas débito)
+    const { data: movsPorMov } = await supabase
       .from('movimentacoes')
       .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
       .eq('household_id', householdId)
@@ -169,7 +170,28 @@ export default function DRE() {
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
 
-    setMovimentacoes(movs || [])
+    // Busca 2: despesas Faturadas com data_pagamento no ano
+    // (compras de meses/anos anteriores que vencem neste ano)
+    const { data: movsFaturadosPgto } = await supabase
+      .from('movimentacoes')
+      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
+      .eq('household_id', householdId)
+      .eq('tipo', 'Despesa')
+      .eq('situacao', 'Faturado')
+      .gte('data_pagamento', dataInicio)
+      .lte('data_pagamento', dataFim)
+
+    // Merge sem duplicatas (pelo id)
+    const idsVistos = new Set<number>()
+    const movsMerged: any[] = []
+    for (const m of [...(movsPorMov || []), ...(movsFaturadosPgto || [])]) {
+      if (!idsVistos.has(m.id)) {
+        idsVistos.add(m.id)
+        movsMerged.push(m)
+      }
+    }
+
+    setMovimentacoes(movsMerged)
 
     const { data: faturas } = await supabase
       .from('movimentacoes')
