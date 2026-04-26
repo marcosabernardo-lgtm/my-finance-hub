@@ -241,10 +241,7 @@ export default function DRE() {
         const mr = getMes(m.data_pagamento)
         if (getAno(m.data_pagamento) !== ano) continue
 
-        const pgto = pagamentosFatura
-          .filter(p => p.cartao_id === m.cartao_id && p.mes === mr)
-          .reduce((s, p) => s + p.valor, 0)
-
+        // Total de todas as despesas faturadas desse cartão nesse mês
         const totalFat = movimentacoes
           .filter(x =>
             x.metodo_pagamento?.startsWith('Crédito') &&
@@ -256,9 +253,23 @@ export default function DRE() {
           )
           .reduce((s, x) => s + Number(x.valor), 0)
 
-        // Se não há pagamento de fatura registrado ainda, usa 100% do valor
-        // Evita que despesas sumam quando a fatura ainda não foi paga
-        const pct = totalFat > 0 && pgto > 0 ? Math.min(pgto / totalFat, 1) : totalFat > 0 ? 1 : 0
+        // Valor pago da fatura desse cartão nesse mês
+        const pgto = pagamentosFatura
+          .filter(p => p.cartao_id === m.cartao_id && p.mes === mr)
+          .reduce((s, p) => s + p.valor, 0)
+
+        let pct: number
+        if (pgto <= 0) {
+          // Fatura ainda não paga — inclui 100% (aparece no DRE como pendente real)
+          pct = 1
+        } else if (pgto >= totalFat * 0.99) {
+          // Pagou 100% (tolerância de 1% para arredondamentos) — usa valor integral
+          pct = 1
+        } else {
+          // Pagamento parcial — rateio proporcional
+          pct = pgto / totalFat
+        }
+
         const vr = Number(m.valor) * pct
         if (vr > 0) adicionar(m.categoria_id, 'Despesa', mr, vr)
         continue
