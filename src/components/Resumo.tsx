@@ -58,13 +58,20 @@ const entraNoReal = (m: {
   tipo: string
   situacao: string
   numero_parcela: string | null
+  metodo_pagamento?: string | null
   data_movimentacao?: string
   data_pagamento?: string | null
 }) => {
   if (m.tipo !== 'Despesa') return false
-  if (m.situacao === 'Pago') return true
-  if (m.situacao === 'Pendente' && m.numero_parcela === 'Parcela 1/1') return true
-  if (m.situacao === 'Faturado' && m.data_movimentacao && m.data_pagamento && m.data_movimentacao === m.data_pagamento) return true
+  const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
+
+  // Débito, PIX, Dinheiro, Boleto — Pago → gastou no mês
+  if (m.situacao === 'Pago' && !isCredito) return true
+
+  // Crédito à vista (Parcela 1/1) Pago → usou e pagou no mês
+  if (m.situacao === 'Pago' && isCredito && m.numero_parcela === 'Parcela 1/1') return true
+
+  // Faturado nunca entra — é gasto de ciclo anterior
   return false
 }
 
