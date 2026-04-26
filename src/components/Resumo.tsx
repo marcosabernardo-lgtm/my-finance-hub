@@ -68,10 +68,9 @@ const entraNoReal = (m: {
   // Débito, PIX, Dinheiro, Boleto — Pago → gastou no mês
   if (m.situacao === 'Pago' && !isCredito) return true
 
-  // Crédito à vista (Parcela 1/1) Pago → usou e pagou no mês
-  if (m.situacao === 'Pago' && isCredito && m.numero_parcela === 'Parcela 1/1') return true
+  // Crédito à vista (Parcela 1/1) Pendente → compra do mês ainda não faturada
+  if (m.situacao === 'Pendente' && isCredito && m.numero_parcela === 'Parcela 1/1') return true
 
-  // Faturado nunca entra — é gasto de ciclo anterior
   return false
 }
 
@@ -147,11 +146,11 @@ export default function Resumo() {
     [movimentacoes]
   )
 
-  // Despesas crédito à vista (Parcela 1/1) pagas no mês
+  // Despesas crédito à vista (Parcela 1/1) Pendente → compra do mês ainda não faturada
   const totalDespesasCredito = useMemo(() =>
     movimentacoes.filter(m =>
       m.tipo === 'Despesa' &&
-      m.situacao === 'Pago' &&
+      m.situacao === 'Pendente' &&
       (m.metodo_pagamento?.startsWith('Crédito') ?? false) &&
       m.numero_parcela === 'Parcela 1/1'
     ).reduce((s, m) => s + Number(m.valor), 0),
