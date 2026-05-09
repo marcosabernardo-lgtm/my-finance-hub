@@ -45,6 +45,12 @@
   --badge-neutral-bg:  #1e2d45;
   --badge-neutral-fg:  #94a3b8;
 
+  /* semantic text colors for colored card areas */
+  --text-danger:  #f87171;
+  --text-warning: #fbbf24;
+  --text-info:    #93c5fd;
+  --text-success: #6ee7b7;
+
   color-scheme: dark;
 }
 
@@ -83,6 +89,12 @@
   --badge-previsto-fg: #6b21a8;
   --badge-neutral-bg:  #f3f4f6;
   --badge-neutral-fg:  #374151;
+
+  /* semantic text colors for colored card areas */
+  --text-danger:  #991b1b;
+  --text-warning: #92400e;
+  --text-info:    #1e40af;
+  --text-success: #065f46;
 
   color-scheme: light;
 }

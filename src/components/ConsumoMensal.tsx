@@ -211,29 +211,29 @@ export default function ConsumoMensal() {
 
       {/* Cards resumo */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ background: '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #ef4444' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total {ano}</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#991b1b', margin: '6px 0 2px' }}>{fmt(totalGeral)}</div>
+        <div style={{ background: 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #ef4444' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total {ano}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-danger)', margin: '6px 0 2px' }}>{fmt(totalGeral)}</div>
         </div>
-        <div style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Média Mensal</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#92400e', margin: '6px 0 2px' }}>{mesesCorrente > 0 ? fmt(mediaGeral) : '—'}</div>
-          <div style={{ fontSize: '11px', color: '#92400e', opacity: 0.7 }}>Baseada em {mesesCorrente} meses</div>
+        <div style={{ background: 'var(--bg-warning-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-warning)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Média Mensal</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-warning)', margin: '6px 0 2px' }}>{mesesCorrente > 0 ? fmt(mediaGeral) : '—'}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-warning)', opacity: 0.7 }}>Baseada em {mesesCorrente} meses</div>
         </div>
-        <div style={{ background: '#eff6ff', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #3b82f6' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{MESES_CURTOS[mesAtual - 1]} {ano}</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#1e40af', margin: '6px 0 2px' }}>{fmt(totalMes(mesAtual))}</div>
-          <div style={{ fontSize: '11px', color: '#1e40af', opacity: 0.7 }}>Mês atual</div>
+        <div style={{ background: 'var(--bg-info-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #3b82f6' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-info)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{MESES_CURTOS[mesAtual - 1]} {ano}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-info)', margin: '6px 0 2px' }}>{fmt(totalMes(mesAtual))}</div>
+          <div style={{ fontSize: '11px', color: 'var(--text-info)', opacity: 0.7 }}>Mês atual</div>
         </div>
       </div>
 
       {/* Legenda */}
       <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px', color: 'var(--text-4)' }}>
         <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />Dentro do limite</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80%</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'inline-block' }} /><span style={{ color: '#1e40af' }}>Mês atual</span></span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--text-4)', display: 'inline-block' }} />Dentro do limite</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#f59e0b' }}>Acima de 80%</span></span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#ef4444' }}>Acima do limite</span></span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: 'var(--bg-info-soft)', border: '1px solid var(--border-info)', display: 'inline-block' }} /><span style={{ color: 'var(--text-info)' }}>Mês atual</span></span>
       </div>
 
       {/* Tabela */}
@@ -287,7 +287,7 @@ export default function ConsumoMensal() {
                         return (
                           <>
                             <tr key={linha.catId} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ ...tdFixo, color: '#374151', fontWeight: 500 }}>{linha.nome}</td>
+                              <td style={{ ...tdFixo, color: 'var(--text-4)', fontWeight: 500 }}>{linha.nome}</td>
                               <td style={{ ...tdNum, background: 'var(--bg-row)', color: 'var(--text-3)', fontSize: '11px' }}>
                                 {linha.limite > 0 ? fmt(linha.limite) : '—'}
                               </td>
@@ -305,7 +305,7 @@ export default function ConsumoMensal() {
                                   <td key={m}
                                     onClick={() => toggleDrill(linha.catId, m, v)}
                                     title={v > 0 ? 'Clique para ver lançamentos' : ''}
-                                    style={{ ...tdNum, color: corValor, fontWeight: v > 0 ? 600 : 400, background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : 'transparent', cursor: v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}>
+                                    style={{ ...tdNum, color: corValor, fontWeight: v > 0 ? 600 : 400, background: aberto ? 'var(--bg-warning-soft)' : isAtual ? 'var(--bg-info-soft)' : 'transparent', cursor: v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}>
                                     {v > 0
                                       ? <span style={{ textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}>{fmt(v)}</span>
                                       : <span style={{ color: 'var(--border)' }}>—</span>
@@ -321,7 +321,7 @@ export default function ConsumoMensal() {
                                   </div>
                                 )}
                               </td>
-                              <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: '#92400e', fontSize: '12px' }}>
+                              <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: 'var(--text-warning)', fontSize: '12px' }}>
                                 <div>{mesesCorrente > 0 ? fmt(mediaMes) : '—'}</div>
                                 {linha.limite > 0 && mesesCorrente > 0 && (
                                   <div style={{ fontSize: '10px', color: mediaMes > linha.limite ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
@@ -334,34 +334,34 @@ export default function ConsumoMensal() {
                             {/* Drill-down */}
                             {drill?.catId === linha.catId && drill !== null && (
                               <tr key={`drill-${linha.catId}-${drill.mes}`}>
-                                <td colSpan={16} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+                                <td colSpan={16} style={{ padding: 0, background: 'var(--bg-card)', borderBottom: '2px solid #f59e0b' }}>
                                   <div style={{ padding: '12px 16px 16px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                                      <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-warning)' }}>
                                         📋 {linha.nome} — {MESES_CURTOS[drill.mes - 1]}/{ano}
-                                        <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                                        <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                                           {drillMovs.length} lançamento{drillMovs.length !== 1 ? 's' : ''}
                                         </span>
                                       </div>
-                                      <button onClick={() => setDrill(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                                      <button onClick={() => setDrill(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--text-3)' }}>×</button>
                                     </div>
                                     {drillMovs.length === 0 ? (
-                                      <div style={{ color: '#9ca3af', fontSize: '13px' }}>Nenhum lançamento.</div>
+                                      <div style={{ color: 'var(--text-3)', fontSize: '13px' }}>Nenhum lançamento.</div>
                                     ) : (
                                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                         <thead>
-                                          <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
+                                          <tr style={{ background: 'var(--bg-row2)', borderBottom: '1px solid var(--border)' }}>
                                             {['Data','Descrição','Valor','Método','Parcela','Situação'].map(h => (
-                                              <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap' }}>{h}</th>
+                                              <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{h}</th>
                                             ))}
                                           </tr>
                                         </thead>
                                         <tbody>
                                           {drillMovs.map((m, idx) => (
-                                            <tr key={m.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                                            <tr key={m.id} style={{ background: idx % 2 === 0 ? 'var(--bg-row)' : 'var(--bg-card)', borderBottom: '1px solid var(--border)' }}>
                                               <td style={tdDrill}>{fmtDate(m.data_movimentacao)}</td>
                                               <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</td>
-                                              <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{fmt(Number(m.valor))}</td>
+                                              <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>{fmt(Number(m.valor))}</td>
                                               <td style={tdDrill}>{m.metodo_pagamento || '—'}</td>
                                               <td style={tdDrill}>{m.numero_parcela || '—'}</td>
                                               <td style={tdDrill}>
@@ -371,9 +371,9 @@ export default function ConsumoMensal() {
                                           ))}
                                         </tbody>
                                         <tfoot>
-                                          <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
-                                            <td colSpan={2} style={{ padding: '6px 10px', fontWeight: 700, color: '#92400e' }}>Total</td>
-                                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
+                                          <tr style={{ background: 'var(--bg-row2)', borderTop: '1px solid var(--border)' }}>
+                                            <td colSpan={2} style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--text-4)' }}>Total</td>
+                                            <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>
                                               {fmt(drillMovs.reduce((s, m) => s + Number(m.valor), 0))}
                                             </td>
                                             <td colSpan={3} />
@@ -396,7 +396,7 @@ export default function ConsumoMensal() {
                         {meses12.map(m => {
                           const v = totalClassifMes(m)
                           const isAtual = ano === hoje.getFullYear() && m === mesAtual
-                          return <td key={m} style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: isAtual ? '#eff6ff' : 'transparent' }}>{v > 0 ? fmt(v) : <span style={{ color: 'var(--border)' }}>—</span>}</td>
+                          return <td key={m} style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: isAtual ? 'var(--bg-info-soft)' : 'transparent' }}>{v > 0 ? fmt(v) : <span style={{ color: 'var(--border)' }}>—</span>}</td>
                         })}
                         <td style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: 'var(--bg-row2)' }}>{fmt(totalClassif)}</td>
                         <td style={{ ...tdNum, fontWeight: 700, color: '#92400e', background: 'var(--bg-warning-soft)', fontSize: '12px' }}>{mesesCorrente > 0 ? fmt(mediaClassif) : '—'}</td>
