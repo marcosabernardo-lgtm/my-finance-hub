@@ -50,6 +50,7 @@
   --text-warning: #fbbf24;
   --text-info:    #93c5fd;
   --text-success: #6ee7b7;
+  --text-purple:  #c4b5fd;
 
   color-scheme: dark;
 }
@@ -95,6 +96,7 @@
   --text-warning: #92400e;
   --text-info:    #1e40af;
   --text-success: #065f46;
+  --text-purple:  #6b21a8;
 
   color-scheme: light;
 }

@@ -225,10 +225,10 @@ export default function Resumo() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
-        <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='#065f46' bg='#d1fae5' borda='#6ee7b7'/>
-        <CardInfo label='Despesas Débito / PIX' valor={fmt(totalDespesasDebito)} sub='Pago no mês' cor='#991b1b' bg='#fee2e2' borda='#fca5a5'/>
-        <CardInfo label='Despesas Crédito' valor={fmt(totalDespesasCredito)} sub='Compras realizadas no mês' cor='#b45309' bg='#fef3c7' borda='#fbbf24'/>
-        <CardInfo label='Total Gasto' valor={fmt(totalDespesas)} sub='Débito + Crédito à Vista' cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}/>
+        <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='var(--text-success)' bg='var(--bg-success-soft)' borda='var(--text-success)'/>
+        <CardInfo label='Despesas Débito / PIX' valor={fmt(totalDespesasDebito)} sub='Pago no mês' cor='var(--text-danger)' bg='var(--bg-danger-soft)' borda='var(--text-danger)'/>
+        <CardInfo label='Despesas Crédito' valor={fmt(totalDespesasCredito)} sub='Compras realizadas no mês' cor='var(--text-warning)' bg='var(--bg-warning-soft)' borda='var(--text-warning)'/>
+        <CardInfo label='Total Gasto' valor={fmt(totalDespesas)} sub='Débito + Crédito à Vista' cor={saldo >= 0 ? 'var(--text-success)' : 'var(--text-danger)'} bg={saldo >= 0 ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)'} borda={saldo >= 0 ? 'var(--text-success)' : 'var(--text-danger)'}/>
       </div>
 
       {loading ? (
@@ -269,12 +269,12 @@ export default function Resumo() {
                       <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-4)' }}>{fmt(linha.previsto)}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctPrevisto)}</td>
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
-                        <span style={{ background: ultrapassou ? '#fee2e2' : linha.real > 0 ? '#d1fae5' : 'transparent', color: ultrapassou ? '#991b1b' : linha.real > 0 ? '#065f46' : '#9ca3af', padding: linha.real > 0 ? '2px 8px' : '0', borderRadius: '6px', display: 'inline-block' }}>
+                        <span style={{ background: ultrapassou ? 'var(--bg-danger-soft)' : linha.real > 0 ? 'var(--bg-success-soft)' : 'transparent', color: ultrapassou ? 'var(--text-danger)' : linha.real > 0 ? 'var(--text-success)' : 'var(--text-3)', padding: linha.real > 0 ? '2px 8px' : '0', borderRadius: '6px', display: 'inline-block' }}>
                           {fmt(linha.real)}
                         </span>
                       </td>
                       <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctReal)}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(linha.divergencia)}</td>
+                      <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: linha.divergencia >= 0 ? 'var(--text-success)' : 'var(--text-danger)' }}>{fmt(linha.divergencia)}</td>
                     </tr>
 
                     {aberta && (
@@ -282,7 +282,7 @@ export default function Resumo() {
                         <td colSpan={6} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
                           <div style={{ padding: '0 0 8px' }}>
                             <div style={{ background: 'var(--bg-warning-soft)', padding: '8px 16px', borderBottom: '1px solid var(--border-warning)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700, color: '#92400e' }}>📂 {linha.classif}</span>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-warning)' }}>📂 {linha.classif}</span>
                               <span style={{ fontSize: '11px', color: '#9ca3af' }}>{linha.categoriasDrill.length} categoria{linha.categoriasDrill.length !== 1 ? 's' : ''}</span>
                             </div>
                             {linha.categoriasDrill.length === 0 ? (
@@ -290,12 +290,12 @@ export default function Resumo() {
                             ) : (
                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                 <thead>
-                                  <tr style={{ background: '#fef9e7' }}>
-                                    <th style={{ padding: '6px 16px', textAlign: 'left', fontWeight: 600, color: '#92400e', width: '30%' }}>Categoria</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: '#92400e' }}>Previsto</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: '#92400e' }}>Real</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: '#92400e' }}>%</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: '#92400e' }}>Divergência</th>
+                                  <tr style={{ background: 'var(--bg-warning-soft)' }}>
+                                    <th style={{ padding: '6px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-warning)', width: '30%' }}>Categoria</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Previsto</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Real</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>%</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Divergência</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -304,7 +304,7 @@ export default function Resumo() {
                                     const ultrapassouCat = d.real > d.previsto && d.previsto > 0
                                     return (
                                       <>
-                                        <tr key={d.cat.id} style={{ background: ci % 2 === 0 ? '#fffdf5' : 'var(--bg-warning-soft)', borderBottom: '1px solid var(--border-warning)' }}>
+                                        <tr key={d.cat.id} style={{ background: ci % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-warning-soft)', borderBottom: '1px solid var(--border-warning)' }}>
                                           <td style={{ padding: '7px 16px', color: 'var(--text-4)', fontWeight: 500 }}>
                                             {d.cat.nome}
                                             {pctLimite !== null && (
@@ -314,20 +314,20 @@ export default function Resumo() {
                                             )}
                                           </td>
                                           <td style={{ padding: '7px 10px', textAlign: 'right', color: 'var(--text-2)' }}>{d.previsto > 0 ? fmt(d.previsto) : '—'}</td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: ultrapassouCat ? '#991b1b' : '#065f46' }}>{fmt(d.real)}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: ultrapassouCat ? 'var(--text-danger)' : 'var(--text-success)' }}>{fmt(d.real)}</td>
                                           <td style={{ padding: '7px 10px', textAlign: 'right', color: 'var(--text-3)' }}>{pctLimite !== null ? fmtPct(pctLimite) : '—'}</td>
-                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: d.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(d.divergencia)}</td>
+                                          <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 600, color: d.divergencia >= 0 ? 'var(--text-success)' : 'var(--text-danger)' }}>{fmt(d.divergencia)}</td>
                                         </tr>
                                         {d.movs.length > 0 && (
                                           <tr key={`movs-${d.cat.id}`}>
-                                            <td colSpan={5} style={{ padding: '0 0 0 32px', background: '#fffdf0' }}>
+                                            <td colSpan={5} style={{ padding: '0 0 0 32px', background: 'var(--bg-warning-soft)' }}>
                                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                                                 <tbody>
                                                   {d.movs.map(m => (
-                                                    <tr key={m.id} style={{ borderBottom: '1px solid #fef9e7' }}>
+                                                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border-warning)' }}>
                                                       <td style={{ padding: '4px 10px', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{fmtDate(m.data_movimentacao)}</td>
                                                       <td style={{ padding: '4px 10px', color: 'var(--text-4)', fontWeight: 500 }}>{m.descricao}</td>
-                                                      <td style={{ padding: '4px 10px', textAlign: 'right', color: '#991b1b', fontWeight: 600, whiteSpace: 'nowrap' }}>− {fmt(Number(m.valor))}</td>
+                                                      <td style={{ padding: '4px 10px', textAlign: 'right', color: 'var(--text-danger)', fontWeight: 600, whiteSpace: 'nowrap' }}>− {fmt(Number(m.valor))}</td>
                                                       <td style={{ padding: '4px 10px', whiteSpace: 'nowrap' }}>
                                                         <span style={{ ...corSituacaoStyle(m.situacao), padding: '1px 6px', borderRadius: '99px', fontSize: '10px', fontWeight: 600 }}>{m.situacao}</span>
                                                       </td>
@@ -343,12 +343,12 @@ export default function Resumo() {
                                   })}
                                 </tbody>
                                 <tfoot>
-                                  <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
-                                    <td style={{ padding: '7px 16px', fontWeight: 700, color: '#92400e' }}>Subtotal</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{fmt(linha.previsto)}</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: '#92400e' }}>{fmt(linha.real)}</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', color: '#9ca3af' }}>{totalReal > 0 ? fmtPct((linha.real / totalReal) * 100) : '—'}</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: linha.divergencia >= 0 ? '#065f46' : '#991b1b' }}>{fmt(linha.divergencia)}</td>
+                                  <tr style={{ background: 'var(--bg-warning-soft)', borderTop: '1px solid var(--border-warning)' }}>
+                                    <td style={{ padding: '7px 16px', fontWeight: 700, color: 'var(--text-warning)' }}>Subtotal</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-warning)' }}>{fmt(linha.previsto)}</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-warning)' }}>{fmt(linha.real)}</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', color: 'var(--text-3)' }}>{totalReal > 0 ? fmtPct((linha.real / totalReal) * 100) : '—'}</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: linha.divergencia >= 0 ? 'var(--text-success)' : 'var(--text-danger)' }}>{fmt(linha.divergencia)}</td>
                                   </tr>
                                 </tfoot>
                               </table>

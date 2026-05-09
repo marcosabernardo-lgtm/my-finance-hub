@@ -552,49 +552,49 @@ export default function DRE() {
 
       {/* Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-        <div style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div style={{ background: 'var(--bg-warning-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-warning)' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-warning)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Pendentes — {MESES_CURTOS[mesAtual - 1]}
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#92400e', margin: '6px 0 2px' }}>{fmt(totalPendentesMesAtual)}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-warning)', margin: '6px 0 2px' }}>{fmt(totalPendentesMesAtual)}</div>
         </div>
 
         {aba === 'mensal' && (
-          <div style={{ background: '#f3e8ff', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #8b5cf6' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Previstos Futuros</div>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: '#6b21a8', margin: '6px 0 2px' }}>{fmt(totalPrevistosFuturos)}</div>
-            <div style={{ fontSize: '11px', color: '#6b21a8', opacity: 0.7 }}>Despesas previstas após {MESES_CURTOS[mesAtual - 1]}</div>
+          <div style={{ background: 'var(--bg-purple-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-purple)' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-purple)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Previstos Futuros</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-purple)', margin: '6px 0 2px' }}>{fmt(totalPrevistosFuturos)}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-purple)', opacity: 0.7 }}>Despesas previstas após {MESES_CURTOS[mesAtual - 1]}</div>
           </div>
         )}
 
-        <div style={{ background: '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #ef4444' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Maior Despesa — {MESES_CURTOS[mesAtual - 1]}</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#991b1b', margin: '6px 0 2px' }}>
+        <div style={{ background: 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-danger)' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Maior Despesa — {MESES_CURTOS[mesAtual - 1]}</div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-danger)', margin: '6px 0 2px' }}>
             {maiorDespesaMes ? fmt(maiorDespesaMes.valor) : '—'}
           </div>
-          <div style={{ fontSize: '11px', color: '#991b1b', opacity: 0.7 }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-danger)', opacity: 0.7 }}>
             {maiorDespesaMes ? (categorias.find(c => c.id === maiorDespesaMes.categoria_id)?.nome ?? 'Sem categoria') : 'Nenhuma despesa'}
           </div>
         </div>
 
         {aba === 'mensal' && projecaoConservadora !== null && (
           <div onClick={() => { setFiltroMensal('conservadora'); setDrillAberto(null) }}
-            style={{ background: projecaoConservadora >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoConservadora >= 0 ? '#10b981' : '#ef4444'}`, cursor: 'pointer', outline: filtroMensal === 'conservadora' ? '2px solid #10b981' : 'none' }}>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Conservadora</div>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', margin: '6px 0 2px' }}>{fmt(projecaoConservadora)}</div>
-            <div style={{ fontSize: '11px', color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', opacity: 0.8 }}>Realizado + Pendente + Previsto já lançados</div>
-            <div style={{ fontSize: '10px', color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', opacity: 0.6, marginTop: '2px' }}>Clique para ver na tabela ↓</div>
+            style={{ background: projecaoConservadora >= 0 ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoConservadora >= 0 ? 'var(--text-success)' : 'var(--text-danger)'}`, cursor: 'pointer', outline: filtroMensal === 'conservadora' ? '2px solid #10b981' : 'none' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoConservadora >= 0 ? 'var(--text-success)' : 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Conservadora</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoConservadora >= 0 ? 'var(--text-success)' : 'var(--text-danger)', margin: '6px 0 2px' }}>{fmt(projecaoConservadora)}</div>
+            <div style={{ fontSize: '11px', color: projecaoConservadora >= 0 ? 'var(--text-success)' : 'var(--text-danger)', opacity: 0.8 }}>Realizado + Pendente + Previsto já lançados</div>
+            <div style={{ fontSize: '10px', color: projecaoConservadora >= 0 ? 'var(--text-success)' : 'var(--text-danger)', opacity: 0.6, marginTop: '2px' }}>Clique para ver na tabela ↓</div>
           </div>
         )}
 
         {aba === 'mensal' && projecaoInteligente !== null && (
           <div onClick={() => { setFiltroMensal('inteligente'); setDrillAberto(null) }}
-            style={{ background: projecaoInteligente >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoInteligente >= 0 ? '#10b981' : '#ef4444'}`, position: 'relative', cursor: 'pointer', outline: filtroMensal === 'inteligente' ? '2px solid #2563eb' : 'none' }}>
+            style={{ background: projecaoInteligente >= 0 ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoInteligente >= 0 ? 'var(--text-success)' : 'var(--text-danger)'}`, position: 'relative', cursor: 'pointer', outline: filtroMensal === 'inteligente' ? '2px solid #10b981' : 'none' }}>
             <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#2563eb', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '99px' }}>SMART</span>
-            <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Inteligente</div>
-            <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', margin: '6px 0 2px' }}>{fmt(projecaoInteligente)}</div>
-            <div style={{ fontSize: '11px', color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', opacity: 0.8 }}>Pendente/Previsto + média histórica onde não há lançamento</div>
-            <div style={{ fontSize: '10px', color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', opacity: 0.6, marginTop: '2px' }}>Clique para ver na tabela ↓</div>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoInteligente >= 0 ? 'var(--text-success)' : 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Inteligente</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoInteligente >= 0 ? 'var(--text-success)' : 'var(--text-danger)', margin: '6px 0 2px' }}>{fmt(projecaoInteligente)}</div>
+            <div style={{ fontSize: '11px', color: projecaoInteligente >= 0 ? 'var(--text-success)' : 'var(--text-danger)', opacity: 0.8 }}>Pendente/Previsto + média histórica onde não há lançamento</div>
+            <div style={{ fontSize: '10px', color: projecaoInteligente >= 0 ? 'var(--text-success)' : 'var(--text-danger)', opacity: 0.6, marginTop: '2px' }}>Clique para ver na tabela ↓</div>
           </div>
         )}
       </div>
@@ -645,15 +645,15 @@ export default function DRE() {
       {aba === 'mensal' && (
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
           <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />Dentro do limite</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80% do limite</span></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'inline-block' }} /><span style={{ color: '#1e40af' }}>Mês atual</span></span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#faf5ff', border: '1px solid #e9d5ff', display: 'inline-block' }} /><span style={{ color: '#6b21a8' }}>Meses futuros</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--text-4)', display: 'inline-block' }} />Dentro do limite</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: 'var(--text-warning)' }}>Acima de 80% do limite</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: 'var(--text-danger)' }}>Acima do limite</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: 'var(--bg-info-soft)', border: '1px solid var(--border-info)', display: 'inline-block' }} /><span style={{ color: 'var(--text-info)' }}>Mês atual</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: 'var(--bg-purple-soft)', border: '1px solid var(--border-purple)', display: 'inline-block' }} /><span style={{ color: 'var(--text-purple)' }}>Meses futuros</span></span>
           {filtroMensal === 'inteligente' && (
             <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ padding: '1px 6px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', fontSize: '10px', fontWeight: 600, fontStyle: 'italic' }}>valor itálico</span>
-              <span style={{ color: '#6b7280' }}>Média projetada (modo Inteligente)</span>
+              <span style={{ padding: '1px 6px', borderRadius: '4px', background: 'var(--bg-purple-soft)', color: 'var(--text-purple)', fontSize: '10px', fontWeight: 600, fontStyle: 'italic' }}>valor itálico</span>
+              <span style={{ color: 'var(--text-2)' }}>Média projetada (modo Inteligente)</span>
             </span>
           )}
         </div>
@@ -704,17 +704,17 @@ export default function DRE() {
               </thead>
 
               <tbody>
-                <GrupoHeader label='RECEITAS' colspan={colspan} cor='#065f46' bg='#d1fae5' />
+                <GrupoHeader label='RECEITAS' colspan={colspan} cor='var(--text-success)' bg='var(--bg-success-soft)' />
                 {receitasLin.map(linha => (
                   <LinhaComDrill key={linha.id} linha={linha} meses={mesesTabela} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita showLimite={showLimite} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={aba === 'mensal' && filtroMensal === 'inteligente' ? (mediasPorLinhaMensal[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
-                <SubtotalRow label='Total Receitas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='#065f46' bg='#d1fae5' mesesCorrente={mesesCorrente} showLimite={showLimite} />
+                <SubtotalRow label='Total Receitas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='var(--text-success)' bg='var(--bg-success-soft)' mesesCorrente={mesesCorrente} showLimite={showLimite} />
 
-                <GrupoHeader label='DESPESAS' colspan={colspan} cor='#991b1b' bg='#fee2e2' />
+                <GrupoHeader label='DESPESAS' colspan={colspan} cor='var(--text-danger)' bg='var(--bg-danger-soft)' />
                 {despesasLin.map(linha => (
                   <LinhaComDrill key={linha.id} linha={linha} meses={mesesTabela} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} showLimite={showLimite} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={aba === 'mensal' && filtroMensal === 'inteligente' ? (mediasPorLinhaMensal[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
-                <SubtotalRow label='Total Despesas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='#991b1b' bg='#fee2e2' mesesCorrente={mesesCorrente} showLimite={showLimite} />
+                <SubtotalRow label='Total Despesas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='var(--text-danger)' bg='var(--bg-danger-soft)' mesesCorrente={mesesCorrente} showLimite={showLimite} />
 
                 <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
                   <td style={{ ...tdFixo, fontWeight: 700, color: '#f9fafb', fontSize: '13px', background: '#111827' }}>RESULTADO</td>
@@ -830,7 +830,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
   mediaProjecao?: number
   onEditLancamento: (m: Movimentacao) => void
 }) {
-  const cor = isReceita ? '#065f46' : '#991b1b'
+  const cor = isReceita ? 'var(--text-success)' : 'var(--text-danger)'
   const drillEstaAberto = (mes: number) => drillAberto?.linhaId === linha.id && drillAberto?.mes === mes
 
   return (
@@ -867,7 +867,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
             <td key={m}
               onClick={() => !isMedia && onToggle(linha.id, m, v)}
               title={isMedia ? `Média projetada: ${fmt(mediaProjecao)}` : v > 0 ? 'Clique para ver lançamentos' : ''}
-              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? 'var(--bg-warning-soft)' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid var(--border-warning)' : 'none', transition: 'background 0.1s' }}>
+              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? 'var(--bg-warning-soft)' : isAtual ? 'var(--bg-info-soft)' : isFuturo ? 'var(--bg-purple-soft)' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid var(--border-warning)' : 'none', transition: 'background 0.1s' }}>
               {vExibir > 0
                 ? <span style={{ textDecoration: !isMedia ? 'underline dotted' : 'none', textUnderlineOffset: '3px', fontStyle: isMedia ? 'italic' : 'normal' }}>{fmt(vExibir)}</span>
                 : <span style={{ color: '#e5e7eb' }}>—</span>
@@ -885,7 +885,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
           )}
         </td>
 
-        <td style={{ ...tdNum, background: '#fffbeb', fontWeight: 600, color: '#92400e', fontSize: '12px' }}>
+        <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: 'var(--text-warning)', fontSize: '12px' }}>
           {mesesCorrente > 0 ? (() => {
             const soma = Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => linha.meses[meses[i]] || 0).reduce((s, v) => s + v, 0)
             const med = soma / Math.min(mesesCorrente, meses.length)
@@ -908,7 +908,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
           <td colSpan={meses.length + (showLimite ? 4 : 3)} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
             <div style={{ padding: '12px 16px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-warning)' }}>
                   📋 {linha.nome} — {MESES_CURTOS[drillAberto.mes - 1]}/{ano}
                   <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                     {lancamentosDrill.length} lançamento{lancamentosDrill.length !== 1 ? 's' : ''}
@@ -922,34 +922,34 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead>
-                    <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
+                    <tr style={{ background: 'var(--bg-warning-soft)', borderBottom: '1px solid var(--border-warning)' }}>
                       {['Dt. Movimentação','Dt. Pagamento','Descrição','Valor','Método','Parcela','Situação',''].map(h => (
-                        <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: 'var(--text-warning)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {lancamentosDrill.map((l, idx) => (
-                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                      <tr key={l.id} style={{ background: idx % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-warning-soft)', borderBottom: '1px solid var(--border-warning)' }}>
                         <td style={tdDrill}>{fmtDate(l.data_movimentacao)}</td>
                         <td style={tdDrill}>{fmtDate(l.data_pagamento)}</td>
                         <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.descricao}</td>
-                        <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{fmt(Number(l.valor))}</td>
+                        <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>{fmt(Number(l.valor))}</td>
                         <td style={tdDrill}>{l.metodo_pagamento || '—'}</td>
                         <td style={tdDrill}>{l.numero_parcela || '—'}</td>
                         <td style={tdDrill}>
                           <span style={{ ...corSituacao(l.situacao), padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 600 }}>{l.situacao}</span>
                         </td>
                         <td style={tdDrill}>
-                          <button onClick={e => { e.stopPropagation(); onEditLancamento(l) }} style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 11, color: '#1d4ed8', fontWeight: 600 }}>✏️ Editar</button>
+                          <button onClick={e => { e.stopPropagation(); onEditLancamento(l) }} style={{ background: 'var(--bg-info-soft)', border: '1px solid var(--border-info)', borderRadius: 4, padding: '2px 8px', cursor: 'pointer', fontSize: 11, color: 'var(--text-info)', fontWeight: 600 }}>✏️ Editar</button>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
-                    <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
-                      <td colSpan={3} style={{ padding: '6px 10px', fontWeight: 700, color: '#92400e', fontSize: '12px' }}>Total</td>
-                      <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
+                    <tr style={{ background: 'var(--bg-warning-soft)', borderTop: '1px solid var(--border-warning)' }}>
+                      <td colSpan={3} style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--text-warning)', fontSize: '12px' }}>Total</td>
+                      <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>
                         {fmt(lancamentosDrill.reduce((s, l) => s + Number(l.valor), 0))}
                       </td>
                       <td colSpan={4} />
@@ -992,7 +992,7 @@ function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total
         return <td key={m} style={{ ...tdNum, fontWeight: 700, color: cor, opacity: isFuturo && !isAtual ? 0.7 : 1 }}>{fmt(v)}</td>
       })}
       <td style={{ ...tdNum, fontWeight: 700, color: cor, background: bg }}>{fmt(total)}</td>
-      <td style={{ ...tdNum, fontWeight: 700, color: cor, background: '#fffbeb', fontSize: '12px' }}>
+      <td style={{ ...tdNum, fontWeight: 700, color: cor, background: 'var(--bg-warning-soft)', fontSize: '12px' }}>
         {mesesCorrente > 0 ? fmt(Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => valorMes(meses[i])).reduce((s, v) => s + v, 0) / Math.min(mesesCorrente, meses.length)) : '—'}
       </td>
     </tr>
