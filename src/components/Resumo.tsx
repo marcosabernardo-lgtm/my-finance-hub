@@ -66,7 +66,7 @@ const entraNoReal = (m: {
 
   const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
 
-  if (isCredito) return ['Pendente', 'Faturado'].includes(m.situacao)
+  if (isCredito) return m.situacao === 'Pendente'
 
   return m.situacao === 'Pago'
 }
@@ -143,11 +143,11 @@ export default function Resumo() {
     [movimentacoes]
   )
 
-  // Despesas crédito realizadas no mês (à vista ou parcelado)
+  // Despesas crédito realizadas no mês (à vista ou parcelado, situação Pendente)
   const totalDespesasCredito = useMemo(() =>
     movimentacoes.filter(m =>
       m.tipo === 'Despesa' &&
-      ['Pendente', 'Faturado'].includes(m.situacao) &&
+      m.situacao === 'Pendente' &&
       (m.metodo_pagamento?.startsWith('Crédito') ?? false)
     ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
@@ -377,7 +377,7 @@ export default function Resumo() {
       {!loading && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
-          <span>* Real = Pago Débito/PIX + Crédito (Pendente/Faturado) · Previsto = soma dos limites mensais</span>
+          <span>* Real = Pago Débito/PIX + Crédito Pendente (compras do mês) · Previsto = soma dos limites mensais</span>
         </div>
       )}
     </div>

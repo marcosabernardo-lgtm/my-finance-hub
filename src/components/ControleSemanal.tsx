@@ -68,7 +68,7 @@ const deveEntrar = (m: {
   const metodo = (m.metodo_pagamento || '').toLowerCase()
   const isCredito = metodo.startsWith('crédito') || metodo.startsWith('credito')
 
-  if (isCredito) return ['Pendente', 'Faturado'].includes(m.situacao)
+  if (isCredito) return m.situacao === 'Pendente'
 
   return m.situacao === 'Pago'
 }
@@ -461,7 +461,7 @@ export default function ControleSemanal() {
 
       {!loading && linhas.length > 0 && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', textAlign: 'right' }}>
-          * Inclui: Débito/PIX/Dinheiro (Pago) · Cartão à vista e parcelado (Pendente/Faturado) &nbsp;|&nbsp; Exclui: Previsto
+          * Inclui: Débito/PIX/Dinheiro (Pago) · Cartão à vista e parcelado (Pendente) &nbsp;|&nbsp; Exclui: Faturado · Previsto
         </div>
       )}
     </div>
