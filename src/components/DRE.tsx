@@ -27,6 +27,11 @@ interface Categoria {
   limite_gastos: number
 }
 
+interface Cartao {
+  id: number
+  nome: string
+}
+
 interface LinhaDRE {
   id: string
   catId: number | null
@@ -38,13 +43,6 @@ interface LinhaDRE {
   total: number
 }
 
-interface PagamentoFatura {
-  cartao_id: number
-  mes: number
-  valor: number
-}
-
-// Drill-down: categoria + mês selecionados para expandir
 interface DrillKey { linhaId: string; mes: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -63,13 +61,6 @@ const MESES_CURTOS = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out
 const getMes = (d: string) => Number(d.split('-')[1])
 const getAno = (d: string) => Number(d.split('-')[0])
 
-const isAvista = (fp: string | null) => {
-  const s = (fp || '').toLowerCase().trim()
-  return s.includes('vista') || s === 'a vista' || s === 'à vista'
-}
-
-type FiltroSituacao = 'realizado' | 'pendente' | 'so_pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
-
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
     case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
@@ -78,6 +69,38 @@ const corSituacao = (s: string): React.CSSProperties => {
     case 'Previsto': return { background: '#f3e8ff', color: '#6b21a8' }
     default:         return { background: '#f3f4f6', color: '#374151' }
   }
+}
+
+type Aba = 'caixa' | 'mensal'
+type FiltroSituacaoCaixa = 'realizado' | 'pendente'
+type FiltroSituacaoMensal = 'realizado' | 'pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
+
+function buildLinha(key: string, mesesValores: Record<number, number>, catMap: Record<string, Categoria>): LinhaDRE | null {
+  const total = Object.values(mesesValores).reduce((s, v) => s + v, 0)
+  if (total === 0) return null
+  const cat = catMap[key]
+  const isSemCat = key.startsWith('sem_cat')
+  if (!cat && !isSemCat) return null
+  return {
+    id: key,
+    catId: cat?.id ?? null,
+    nome: cat?.nome ?? (key.includes('Receita') ? 'Receita sem categoria' : 'Despesa sem categoria'),
+    classificacao: cat?.classificacao ?? '',
+    tipo: cat
+      ? (['Renda Ativa', 'Renda Passiva'].includes(cat.classificacao) ? 'receita' : 'despesa')
+      : (key.includes('Receita') ? 'receita' : 'despesa'),
+    limite: Number(cat?.limite_gastos) || 0,
+    meses: mesesValores,
+    total,
+  }
+}
+
+function sortLinhas(linhas: LinhaDRE[]): LinhaDRE[] {
+  return linhas.sort((a, b) => {
+    if (a.tipo !== b.tipo) return a.tipo === 'receita' ? -1 : 1
+    if (a.classificacao !== b.classificacao) return a.classificacao.localeCompare(b.classificacao)
+    return a.nome.localeCompare(b.nome)
+  })
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -89,11 +112,13 @@ export default function DRE() {
   const hoje = new Date()
   const mesAtual = hoje.getMonth() + 1
   const [ano, setAno] = useState(hoje.getFullYear())
-  const [filtroSituacao, setFiltroSituacao] = useState<FiltroSituacao>('todos')
+  const [aba, setAba] = useState<Aba>('caixa')
+  const [filtroCaixa, setFiltroCaixa] = useState<FiltroSituacaoCaixa>('realizado')
+  const [filtroMensal, setFiltroMensal] = useState<FiltroSituacaoMensal>('todos')
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([])
-  const [pagamentosFatura, setPagamentosFatura] = useState<PagamentoFatura[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
+  const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [loading, setLoading] = useState(false)
 
   const [drillAberto, setDrillAberto] = useState<DrillKey | null>(null)
@@ -133,11 +158,8 @@ export default function DRE() {
   }
 
   const handleSalvarDrill = () => {
-    if (editandoDrill?.grupo_id) {
-      setModalParcelasDrill(true)
-    } else {
-      salvarEditDrill('esta')
-    }
+    if (editandoDrill?.grupo_id) setModalParcelasDrill(true)
+    else salvarEditDrill('esta')
   }
 
   const anos = Array.from({ length: 5 }, (_, i) => hoje.getFullYear() - 2 + i)
@@ -153,192 +175,61 @@ export default function DRE() {
     supabase.from('categorias').select('id,nome,classificacao,limite_gastos')
       .eq('household_id', householdId).order('nome')
       .then(({ data }) => setCategorias(data || []))
+    supabase.from('cartoes').select('id,nome')
+      .eq('household_id', householdId)
+      .then(({ data }) => setCartoes(data || []))
   }, [householdId])
 
   const fetchDados = useCallback(async () => {
     if (!householdId) return
     setLoading(true)
     const dataInicio = `${ano}-01-01`
-    const dataFim = `${ano}-12-31`
+    const dataFim    = `${ano}-12-31`
+    const sel = 'id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id'
 
-    // Busca 1: movimentações do ano por data_movimentacao (receitas, despesas débito)
-    const { data: movsPorMov } = await supabase
-      .from('movimentacoes')
-      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
+    // 1. Receitas e Despesas não-crédito com data_movimentacao no ano
+    const { data: a } = await supabase.from('movimentacoes').select(sel)
       .eq('household_id', householdId)
       .in('tipo', ['Despesa', 'Receita'])
       .gte('data_movimentacao', dataInicio)
       .lte('data_movimentacao', dataFim)
 
-    // Busca 2: despesas Faturadas com data_pagamento no ano
-    // (compras de meses/anos anteriores que vencem neste ano)
-    const { data: movsFaturadosPgto } = await supabase
-      .from('movimentacoes')
-      .select('id,tipo,situacao,categoria_id,descricao,valor,metodo_pagamento,cartao_id,forma_pagamento,numero_parcela,data_movimentacao,data_pagamento,grupo_id')
+    // 2. Despesas crédito com data_pagamento no ano (compras de meses anteriores)
+    const { data: b } = await supabase.from('movimentacoes').select(sel)
       .eq('household_id', householdId)
       .eq('tipo', 'Despesa')
-      .eq('situacao', 'Faturado')
+      .in('situacao', ['Faturado', 'Pendente', 'Previsto'])
+      .ilike('metodo_pagamento', 'Crédito%')
       .gte('data_pagamento', dataInicio)
       .lte('data_pagamento', dataFim)
 
-    // Merge sem duplicatas (pelo id)
-    const idsVistos = new Set<number>()
-    const movsMerged: any[] = []
-    for (const m of [...(movsPorMov || []), ...(movsFaturadosPgto || [])]) {
-      if (!idsVistos.has(m.id)) {
-        idsVistos.add(m.id)
-        movsMerged.push(m)
-      }
-    }
-
-    setMovimentacoes(movsMerged)
-
-    const { data: faturas } = await supabase
-      .from('movimentacoes')
-      .select('cartao_id,valor,data_pagamento,mes_referencia')
+    // 3. Transferências (pagamentos de fatura) com data_pagamento no ano
+    const { data: c } = await supabase.from('movimentacoes').select(sel)
       .eq('household_id', householdId)
       .eq('tipo', 'Transferência')
-      .eq('situacao', 'Pago')
       .not('cartao_id', 'is', null)
-      .gte('data_pagamento', `${ano - 1}-11-01`)
-      .lte('data_pagamento', `${ano + 1}-02-28`)
+      .gte('data_pagamento', dataInicio)
+      .lte('data_pagamento', dataFim)
 
-    setPagamentosFatura(
-      (faturas || [])
-        .filter(f => f.cartao_id)
-        .map(f => {
-          const dataRef = (f as any).mes_referencia || f.data_pagamento!
-          return { cartao_id: f.cartao_id, mes: getMes(dataRef), valor: Number(f.valor), _anoRef: getAno(dataRef) }
-        })
-        .filter((f: any) => f._anoRef === ano)
-        .map(({ _anoRef, ...f }: any) => f)
-    )
+    const seen = new Set<number>()
+    const merged: Movimentacao[] = []
+    for (const m of [...(a || []), ...(b || []), ...(c || [])]) {
+      if (!seen.has(m.id)) { seen.add(m.id); merged.push(m) }
+    }
+    setMovimentacoes(merged)
     setLoading(false)
   }, [householdId, ano])
 
   useEffect(() => { fetchDados() }, [fetchDados])
 
-  const situacoesIncluidas = useMemo((): string[] => {
-    switch (filtroSituacao) {
-      case 'realizado':    return ['Pago', 'Faturado']
-      case 'pendente':     return ['Pago', 'Faturado', 'Pendente']
-      case 'so_pendente':  return ['Pendente']
-      case 'previsto':     return ['Pago', 'Faturado', 'Previsto']
-      case 'todos':        return ['Pago', 'Faturado', 'Pendente', 'Previsto']
-      case 'conservadora': return ['Pago', 'Faturado', 'Pendente', 'Previsto']
-      case 'inteligente':  return ['Pago', 'Faturado', 'Pendente', 'Previsto']
-    }
-  }, [filtroSituacao])
+  // ── Meses exibidos ────────────────────────────────────────────────────────────
 
-  // ── Processamento DRE ────────────────────────────────────────────────────────
-  const linhasDRE = useMemo(() => {
-    const acumulador: Record<string, Record<number, number>> = {}
+  const mesesCaixa = useMemo(() => {
+    const fim = ano < hoje.getFullYear() ? 12 : ano > hoje.getFullYear() ? 0 : mesAtual
+    return Array.from({ length: fim }, (_, i) => i + 1)
+  }, [ano, mesAtual])
 
-    const adicionar = (catId: number | null, tipo: string, mes: number, valor: number) => {
-      const key = catId ? String(catId) : `sem_cat_${tipo}`
-      if (!acumulador[key]) acumulador[key] = {}
-      acumulador[key][mes] = (acumulador[key][mes] || 0) + valor
-    }
-
-    const getMesRef = (m: Movimentacao): number | null => {
-      if (!m.data_pagamento) return null
-      if (getAno(m.data_pagamento) !== ano) return null
-      return getMes(m.data_pagamento)
-    }
-
-    for (const m of movimentacoes) {
-      if (!situacoesIncluidas.includes(m.situacao)) continue
-
-      if (m.tipo === 'Receita') {
-        if (m.metodo_pagamento === 'Transferência entre Contas') continue
-        const mr = getMesRef(m); if (!mr) continue
-        adicionar(m.categoria_id, 'Receita', mr, Number(m.valor)); continue
-      }
-
-      // ── CORREÇÃO: usar startsWith('Crédito') em vez de === 'Cartão de Crédito' ──
-      const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
-
-      if (isCredito && m.situacao === 'Faturado') {
-        if (!m.data_pagamento) continue
-        const mr = getMes(m.data_pagamento)
-        if (getAno(m.data_pagamento) !== ano) continue
-
-        // Total de todas as despesas faturadas desse cartão nesse mês
-        const totalFat = movimentacoes
-          .filter(x =>
-            x.metodo_pagamento?.startsWith('Crédito') &&
-            x.situacao === 'Faturado' &&
-            x.cartao_id === m.cartao_id &&
-            x.data_pagamento &&
-            getMes(x.data_pagamento) === mr &&
-            getAno(x.data_pagamento) === ano
-          )
-          .reduce((s, x) => s + Number(x.valor), 0)
-
-        // Valor pago da fatura desse cartão nesse mês
-        const pgto = pagamentosFatura
-          .filter(p => p.cartao_id === m.cartao_id && p.mes === mr)
-          .reduce((s, p) => s + p.valor, 0)
-
-        let pct: number
-        if (pgto <= 0) {
-          // Fatura ainda não paga — inclui 100% (aparece no DRE como pendente real)
-          pct = 1
-        } else if (pgto >= totalFat * 0.99) {
-          // Pagou 100% (tolerância de 1% para arredondamentos) — usa valor integral
-          pct = 1
-        } else {
-          // Pagamento parcial — rateio proporcional
-          pct = pgto / totalFat
-        }
-
-        const vr = Number(m.valor) * pct
-        if (vr > 0) adicionar(m.categoria_id, 'Despesa', mr, vr)
-        continue
-      }
-
-      if (isCredito && m.situacao === 'Pendente' && isAvista(m.forma_pagamento)) {
-        const mr = getMesRef(m); if (!mr) continue
-        adicionar(m.categoria_id, 'Despesa', mr, Number(m.valor)); continue
-      }
-
-      const mr = getMesRef(m); if (!mr) continue
-      adicionar(m.categoria_id, 'Despesa', mr, Number(m.valor))
-    }
-
-    const catMap = Object.fromEntries(categorias.map(c => [String(c.id), c]))
-    const linhas: LinhaDRE[] = []
-
-    for (const [key, mesesValores] of Object.entries(acumulador)) {
-      const cat = catMap[key]
-      const total = Object.values(mesesValores).reduce((s, v) => s + v, 0)
-      if (total === 0) continue
-      let nome = 'Sem categoria', classificacao = '', limite = 0
-      let tipo: LinhaDRE['tipo'] = 'despesa'
-      let catId: number | null = null
-      if (cat) {
-        nome = cat.nome; classificacao = cat.classificacao
-        limite = Number(cat.limite_gastos) || 0
-        tipo = ['Renda Ativa', 'Renda Passiva'].includes(cat.classificacao) ? 'receita' : 'despesa'
-        catId = cat.id
-      } else if (key.includes('Receita')) { tipo = 'receita'; nome = 'Receita sem categoria' }
-      linhas.push({ id: key, catId, nome, classificacao, tipo, limite, meses: mesesValores, total })
-    }
-
-    return linhas.sort((a, b) => {
-      if (a.tipo !== b.tipo) return a.tipo === 'receita' ? -1 : 1
-      if (a.classificacao !== b.classificacao) return a.classificacao.localeCompare(b.classificacao)
-      return a.nome.localeCompare(b.nome)
-    })
-  }, [movimentacoes, pagamentosFatura, categorias, situacoesIncluidas, ano])
-
-  const receitasLinhas = linhasDRE.filter(l => l.tipo === 'receita')
-  const despesasLinhas = linhasDRE.filter(l => l.tipo === 'despesa')
-  const totalMes = (tipo: 'receita' | 'despesa', m: number) => linhasDRE.filter(l => l.tipo === tipo).reduce((s, l) => s + (l.meses[m] || 0), 0)
-  const totalGeral = (tipo: 'receita' | 'despesa') => linhasDRE.filter(l => l.tipo === tipo).reduce((s, l) => s + l.total, 0)
-  const resultadoMes = (m: number) => totalMes('receita', m) - totalMes('despesa', m)
-  const resultadoTotal = totalGeral('receita') - totalGeral('despesa')
-  const meses = Array.from({ length: 12 }, (_, i) => i + 1)
+  const meses12 = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), [])
 
   const mesesCorrente = useMemo(() => {
     if (ano < hoje.getFullYear()) return 12
@@ -346,17 +237,189 @@ export default function DRE() {
     return mesAtual
   }, [ano, mesAtual])
 
-  const mediasPorLinha = useMemo(() => {
-    if (filtroSituacao !== 'inteligente' || mesesCorrente === 0) return {}
+  // ── DRE Caixa ─────────────────────────────────────────────────────────────────
+
+  const linhasDRECaixa = useMemo(() => {
+    const acc: Record<string, Record<number, number>> = {}
+    const add = (key: string, mes: number, valor: number) => {
+      if (!acc[key]) acc[key] = {}
+      acc[key][mes] = (acc[key][mes] || 0) + valor
+    }
+    const situOk = filtroCaixa === 'pendente' ? ['Pago', 'Pendente'] : ['Pago']
+
+    for (const m of movimentacoes) {
+      // Pagamentos de fatura (Transferência Pago com cartao_id) — sempre incluídos
+      if (m.tipo === 'Transferência' && m.cartao_id && m.situacao === 'Pago') {
+        if (!m.data_pagamento || getAno(m.data_pagamento) !== ano) continue
+        add(`fatura_${m.cartao_id}`, getMes(m.data_pagamento), Number(m.valor))
+        continue
+      }
+
+      if (!situOk.includes(m.situacao)) continue
+
+      if (m.tipo === 'Receita') {
+        if (m.metodo_pagamento === 'Transferência entre Contas') continue
+        if (!m.data_pagamento || getAno(m.data_pagamento) !== ano) continue
+        add(m.categoria_id ? String(m.categoria_id) : 'sem_cat_Receita', getMes(m.data_pagamento), Number(m.valor))
+        continue
+      }
+
+      if (m.tipo === 'Despesa') {
+        // Crédito não entra individualmente — entra como pagamento de fatura
+        if (m.metodo_pagamento?.startsWith('Crédito')) continue
+        if (!m.data_pagamento || getAno(m.data_pagamento) !== ano) continue
+        add(m.categoria_id ? String(m.categoria_id) : 'sem_cat_Despesa', getMes(m.data_pagamento), Number(m.valor))
+      }
+    }
+
+    const catMap = Object.fromEntries(categorias.map(c => [String(c.id), c]))
+    const cartaoMap = Object.fromEntries(cartoes.map(c => [String(c.id), c]))
+    const linhas: LinhaDRE[] = []
+
+    for (const [key, mesesValores] of Object.entries(acc)) {
+      const total = Object.values(mesesValores).reduce((s, v) => s + v, 0)
+      if (total === 0) continue
+
+      if (key.startsWith('fatura_')) {
+        const cId = key.replace('fatura_', '')
+        linhas.push({
+          id: key, catId: null,
+          nome: `Pag. Fatura ${cartaoMap[cId]?.nome ?? `Cartão ${cId}`}`,
+          classificacao: 'Pagamento de Fatura',
+          tipo: 'despesa', limite: 0,
+          meses: mesesValores, total,
+        })
+        continue
+      }
+
+      const linha = buildLinha(key, mesesValores, catMap)
+      if (linha) linhas.push(linha)
+    }
+
+    return sortLinhas(linhas)
+  }, [movimentacoes, categorias, cartoes, filtroCaixa, ano])
+
+  // ── Controle Mensal ───────────────────────────────────────────────────────────
+
+  const situacoesIncluidasMensal = useMemo((): string[] => {
+    switch (filtroMensal) {
+      case 'realizado':    return ['Pago', 'Faturado']
+      case 'pendente':     return ['Pago', 'Faturado', 'Pendente']
+      case 'previsto':     return ['Pago', 'Faturado', 'Previsto']
+      case 'todos':        return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+      case 'conservadora': return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+      case 'inteligente':  return ['Pago', 'Faturado', 'Pendente', 'Previsto']
+    }
+  }, [filtroMensal])
+
+  const linhasControleMensal = useMemo(() => {
+    const acc: Record<string, Record<number, number>> = {}
+    const add = (key: string, mes: number, valor: number) => {
+      if (!acc[key]) acc[key] = {}
+      acc[key][mes] = (acc[key][mes] || 0) + valor
+    }
+
+    for (const m of movimentacoes) {
+      if (m.tipo === 'Transferência') continue
+      if (!situacoesIncluidasMensal.includes(m.situacao)) continue
+
+      if (m.tipo === 'Receita') {
+        if (m.metodo_pagamento === 'Transferência entre Contas') continue
+        if (!m.data_pagamento || getAno(m.data_pagamento) !== ano) continue
+        add(m.categoria_id ? String(m.categoria_id) : 'sem_cat_Receita', getMes(m.data_pagamento), Number(m.valor))
+        continue
+      }
+
+      if (m.tipo === 'Despesa') {
+        const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
+        if (isCredito) {
+          // crédito: usa data_pagamento (vencimento de cada parcela)
+          if (!m.data_pagamento || getAno(m.data_pagamento) !== ano) continue
+          add(m.categoria_id ? String(m.categoria_id) : 'sem_cat_Despesa', getMes(m.data_pagamento), Number(m.valor))
+        } else {
+          // débito/pix/dinheiro: usa data_movimentacao
+          if (!m.data_movimentacao || getAno(m.data_movimentacao) !== ano) continue
+          add(m.categoria_id ? String(m.categoria_id) : 'sem_cat_Despesa', getMes(m.data_movimentacao), Number(m.valor))
+        }
+      }
+    }
+
+    const catMap = Object.fromEntries(categorias.map(c => [String(c.id), c]))
+    const linhas: LinhaDRE[] = []
+    for (const [key, mesesValores] of Object.entries(acc)) {
+      const linha = buildLinha(key, mesesValores, catMap)
+      if (linha) linhas.push(linha)
+    }
+    return sortLinhas(linhas)
+  }, [movimentacoes, categorias, situacoesIncluidasMensal, ano])
+
+  // ── Totalizadores ─────────────────────────────────────────────────────────────
+
+  const totalMesCaixa   = (tipo: 'receita' | 'despesa', m: number) => linhasDRECaixa.filter(l => l.tipo === tipo).reduce((s, l) => s + (l.meses[m] || 0), 0)
+  const totalGeralCaixa = (tipo: 'receita' | 'despesa') => linhasDRECaixa.filter(l => l.tipo === tipo).reduce((s, l) => s + l.total, 0)
+  const resultadoMesCaixa   = (m: number) => totalMesCaixa('receita', m) - totalMesCaixa('despesa', m)
+  const resultadoTotalCaixa = totalGeralCaixa('receita') - totalGeralCaixa('despesa')
+
+  const totalMesMensal   = (tipo: 'receita' | 'despesa', m: number) => linhasControleMensal.filter(l => l.tipo === tipo).reduce((s, l) => s + (l.meses[m] || 0), 0)
+  const totalGeralMensal = (tipo: 'receita' | 'despesa') => linhasControleMensal.filter(l => l.tipo === tipo).reduce((s, l) => s + l.total, 0)
+  const resultadoMesMensal   = (m: number) => totalMesMensal('receita', m) - totalMesMensal('despesa', m)
+  const resultadoTotalMensal = totalGeralMensal('receita') - totalGeralMensal('despesa')
+
+  // ── Projeção (Controle Mensal) ────────────────────────────────────────────────
+
+  const mediasPorLinhaMensal = useMemo(() => {
+    if (filtroMensal !== 'inteligente' || mesesCorrente === 0) return {}
     const result: Record<string, number> = {}
-    for (const linha of linhasDRE) {
+    for (const linha of linhasControleMensal) {
       if (linha.tipo === 'receita') continue
       const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
       const media = soma / mesesCorrente
       result[linha.id] = (linha.limite > 0 && media > linha.limite) ? linha.limite : media
     }
     return result
-  }, [linhasDRE, filtroSituacao, mesesCorrente])
+  }, [linhasControleMensal, filtroMensal, mesesCorrente])
+
+  const projecaoConservadora = useMemo(() => {
+    if (ano !== hoje.getFullYear()) return null
+    const futuros = Array.from({ length: 12 - mesAtual }, (_, i) => mesAtual + i + 1)
+    const realRec  = Array.from({ length: mesesCorrente }, (_, i) => totalMesMensal('receita',  i + 1)).reduce((s, v) => s + v, 0)
+    const realDesp = Array.from({ length: mesesCorrente }, (_, i) => totalMesMensal('despesa', i + 1)).reduce((s, v) => s + v, 0)
+    const futRec  = movimentacoes.filter(m => m.tipo === 'Receita'  && ['Pendente','Previsto'].includes(m.situacao) && m.data_pagamento && getAno(m.data_pagamento) === ano && futuros.includes(getMes(m.data_pagamento))).reduce((s, m) => s + Number(m.valor), 0)
+    const futDesp = movimentacoes.filter(m => m.tipo === 'Despesa'  && ['Pendente','Previsto'].includes(m.situacao) && m.data_pagamento && getAno(m.data_pagamento) === ano && futuros.includes(getMes(m.data_pagamento))).reduce((s, m) => s + Number(m.valor), 0)
+    return (realRec + futRec) - (realDesp + futDesp)
+  }, [linhasControleMensal, movimentacoes, mesesCorrente, mesAtual, ano])
+
+  const projecaoInteligente = useMemo(() => {
+    if (ano !== hoje.getFullYear()) return null
+    const futuros = Array.from({ length: 12 - mesAtual }, (_, i) => mesAtual + i + 1)
+    const realizado = Array.from({ length: mesesCorrente }, (_, i) => resultadoMesMensal(i + 1)).reduce((s, v) => s + v, 0)
+    let projecaoFutura = 0
+    for (const mesFut of futuros) {
+      for (const linha of linhasControleMensal) {
+        const temLancado = movimentacoes.some(m => {
+          const ck = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
+          return ck === linha.id && ['Pendente','Previsto'].includes(m.situacao) &&
+            m.data_pagamento && getMes(m.data_pagamento) === mesFut && getAno(m.data_pagamento) === ano
+        })
+        let val = 0
+        if (temLancado) {
+          val = movimentacoes.filter(m => {
+            const ck = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
+            return ck === linha.id && ['Pendente','Previsto'].includes(m.situacao) &&
+              m.data_pagamento && getMes(m.data_pagamento) === mesFut && getAno(m.data_pagamento) === ano
+          }).reduce((s, m) => s + Number(m.valor), 0)
+        } else if (mesesCorrente > 0 && linha.tipo === 'despesa') {
+          const soma = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
+          const media = soma / mesesCorrente
+          val = (linha.limite > 0 && media > linha.limite) ? linha.limite : media
+        }
+        projecaoFutura += linha.tipo === 'receita' ? val : -val
+      }
+    }
+    return realizado + projecaoFutura
+  }, [linhasControleMensal, movimentacoes, mesesCorrente, mesAtual, ano, resultadoMesMensal])
+
+  // ── Cards ─────────────────────────────────────────────────────────────────────
 
   const totalPendentesMesAtual = useMemo(() =>
     movimentacoes.filter(m =>
@@ -379,129 +442,89 @@ export default function DRE() {
 
   const maiorDespesaMes = useMemo(() => {
     const despMes = movimentacoes.filter(m =>
-      m.tipo === 'Despesa' && ['Pago', 'Faturado', 'Pendente'].includes(m.situacao) &&
+      m.tipo === 'Despesa' && ['Pago','Faturado','Pendente'].includes(m.situacao) &&
       m.data_pagamento && getMes(m.data_pagamento) === mesAtual && getAno(m.data_pagamento) === ano
     )
     if (!despMes.length) return null
-    const totaisPorCategoria: Record<string, { categoria_id: number | null; total: number }> = {}
+    const totais: Record<string, { categoria_id: number | null; total: number }> = {}
     for (const m of despMes) {
-      const key = String(m.categoria_id ?? 'sem_cat')
-      if (!totaisPorCategoria[key]) totaisPorCategoria[key] = { categoria_id: m.categoria_id, total: 0 }
-      totaisPorCategoria[key].total += Number(m.valor)
+      const k = String(m.categoria_id ?? 'sem_cat')
+      if (!totais[k]) totais[k] = { categoria_id: m.categoria_id, total: 0 }
+      totais[k].total += Number(m.valor)
     }
-    const maior = Object.values(totaisPorCategoria).reduce((max, c) => c.total > max.total ? c : max)
-    return { categoria_id: maior.categoria_id, valor: maior.total, descricao: '' }
+    const maior = Object.values(totais).reduce((max, c) => c.total > max.total ? c : max)
+    return { categoria_id: maior.categoria_id, valor: maior.total }
   }, [movimentacoes, mesAtual, ano])
 
-  const projecaoConservadora = useMemo(() => {
-    if (ano !== hoje.getFullYear()) return null
-    const mesesFuturos = Array.from({ length: 12 - mesAtual }, (_, i) => mesAtual + i + 1)
-
-    const realizadoReceita = Array.from({ length: mesesCorrente }, (_, i) => {
-      return linhasDRE.filter(l => l.tipo === 'receita').reduce((s, l) => s + (l.meses[i + 1] || 0), 0)
-    }).reduce((s, v) => s + v, 0)
-
-    const realizadoDespesa = Array.from({ length: mesesCorrente }, (_, i) => {
-      return linhasDRE.filter(l => l.tipo === 'despesa').reduce((s, l) => s + (l.meses[i + 1] || 0), 0)
-    }).reduce((s, v) => s + v, 0)
-
-    const futurosReceita = movimentacoes.filter(m =>
-      m.tipo === 'Receita' && ['Pendente', 'Previsto'].includes(m.situacao) &&
-      m.data_pagamento && getAno(m.data_pagamento) === ano &&
-      mesesFuturos.includes(getMes(m.data_pagamento))
-    ).reduce((s, m) => s + Number(m.valor), 0)
-
-    const futurosDespesa = movimentacoes.filter(m =>
-      m.tipo === 'Despesa' && ['Pendente', 'Previsto'].includes(m.situacao) &&
-      m.data_pagamento && getAno(m.data_pagamento) === ano &&
-      mesesFuturos.includes(getMes(m.data_pagamento))
-    ).reduce((s, m) => s + Number(m.valor), 0)
-
-    return (realizadoReceita + futurosReceita) - (realizadoDespesa + futurosDespesa)
-  }, [linhasDRE, movimentacoes, mesesCorrente, mesAtual, ano])
-
-  const projecaoInteligente = useMemo(() => {
-    if (ano !== hoje.getFullYear()) return null
-    const mesesFuturos = Array.from({ length: 12 - mesAtual }, (_, i) => mesAtual + i + 1)
-    const realizadoAteAgora = Array.from({ length: mesesCorrente }, (_, i) => resultadoMes(i + 1)).reduce((s, v) => s + v, 0)
-    let projecaoFutura = 0
-
-    for (const mesFut of mesesFuturos) {
-      for (const linha of linhasDRE) {
-        const temFuturoLancado = movimentacoes.some(m => {
-          const catKey = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
-          return catKey === linha.id &&
-            ['Pendente', 'Previsto'].includes(m.situacao) &&
-            m.data_pagamento &&
-            getMes(m.data_pagamento) === mesFut &&
-            getAno(m.data_pagamento) === ano
-        })
-
-        let valorMesFut = 0
-
-        if (temFuturoLancado) {
-          valorMesFut = movimentacoes
-            .filter(m => {
-              const catKey = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
-              return catKey === linha.id &&
-                ['Pendente', 'Previsto'].includes(m.situacao) &&
-                m.data_pagamento &&
-                getMes(m.data_pagamento) === mesFut &&
-                getAno(m.data_pagamento) === ano
-            })
-            .reduce((s, m) => s + Number(m.valor), 0)
-        } else if (mesesCorrente > 0 && linha.tipo === 'despesa') {
-          const somaHistorica = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
-          const mediaHist = somaHistorica / mesesCorrente
-          valorMesFut = (linha.limite > 0 && mediaHist > linha.limite) ? linha.limite : mediaHist
-        }
-
-        projecaoFutura += linha.tipo === 'receita' ? valorMesFut : -valorMesFut
-      }
-    }
-
-    return realizadoAteAgora + projecaoFutura
-  }, [linhasDRE, movimentacoes, mesesCorrente, mesAtual, ano, resultadoMes])
-
-  const lancamentosDrill = useMemo(() => {
-    if (!drillAberto) return []
-    const linha = linhasDRE.find(l => l.id === drillAberto.linhaId)
-    if (!linha) return []
-
-    return movimentacoes.filter(m => {
-      const catKey = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
-      if (catKey !== linha.id) return false
-      if (!m.data_pagamento) return false
-      if (getMes(m.data_pagamento) !== drillAberto.mes) return false
-      if (getAno(m.data_pagamento) !== ano) return false
-      return situacoesIncluidas.includes(m.situacao)
-    }).sort((a, b) => a.data_movimentacao.localeCompare(b.data_movimentacao))
-  }, [drillAberto, linhasDRE, movimentacoes, situacoesIncluidas, ano])
+  // ── Drill ─────────────────────────────────────────────────────────────────────
 
   const toggleDrill = (linhaId: string, mes: number, valor: number) => {
     if (valor === 0) return
-    setDrillAberto(prev =>
-      prev?.linhaId === linhaId && prev?.mes === mes ? null : { linhaId, mes }
-    )
+    setDrillAberto(prev => prev?.linhaId === linhaId && prev?.mes === mes ? null : { linhaId, mes })
   }
 
-  const filtros: { key: FiltroSituacao; label: string; desc: string; cor: string }[] = [
-    { key: 'realizado', label: 'Realizado',  desc: 'Pago + Faturado',                       cor: '#065f46' },
-    { key: 'pendente',  label: '+ Pendente', desc: 'Realizado + Pendente',                  cor: '#92400e' },
-    { key: 'previsto',  label: '+ Previsto', desc: 'Realizado + Previsto',                  cor: '#6b21a8' },
-    { key: 'todos',     label: 'Tudo',       desc: 'Pago + Faturado + Pendente + Previsto',  cor: '#1e40af' },
-  ]
+  const lancamentosDrillCaixa = useMemo(() => {
+    if (!drillAberto || aba !== 'caixa') return []
+    const { linhaId, mes } = drillAberto
+    const situOk = filtroCaixa === 'pendente' ? ['Pago', 'Pendente'] : ['Pago']
+
+    if (linhaId.startsWith('fatura_')) {
+      const cartaoId = Number(linhaId.replace('fatura_', ''))
+      return movimentacoes.filter(m =>
+        m.tipo === 'Transferência' && m.cartao_id === cartaoId && m.situacao === 'Pago' &&
+        m.data_pagamento && getMes(m.data_pagamento) === mes && getAno(m.data_pagamento) === ano
+      )
+    }
+
+    return movimentacoes.filter(m => {
+      if (m.tipo === 'Transferência') return false
+      if (m.metodo_pagamento?.startsWith('Crédito')) return false
+      const ck = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
+      if (ck !== linhaId) return false
+      if (!m.data_pagamento || getMes(m.data_pagamento) !== mes || getAno(m.data_pagamento) !== ano) return false
+      return situOk.includes(m.situacao)
+    }).sort((a, b) => a.data_movimentacao.localeCompare(b.data_movimentacao))
+  }, [drillAberto, aba, movimentacoes, filtroCaixa, ano])
+
+  const lancamentosDrillMensal = useMemo(() => {
+    if (!drillAberto || aba !== 'mensal') return []
+    const { linhaId, mes } = drillAberto
+
+    return movimentacoes.filter(m => {
+      if (m.tipo === 'Transferência') return false
+      if (!situacoesIncluidasMensal.includes(m.situacao)) return false
+      const ck = m.categoria_id ? String(m.categoria_id) : `sem_cat_${m.tipo}`
+      if (ck !== linhaId) return false
+      const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
+      if (isCredito) {
+        return m.data_pagamento && getMes(m.data_pagamento) === mes && getAno(m.data_pagamento) === ano
+      } else {
+        return m.data_movimentacao && getMes(m.data_movimentacao) === mes && getAno(m.data_movimentacao) === ano
+      }
+    }).sort((a, b) => a.data_movimentacao.localeCompare(b.data_movimentacao))
+  }, [drillAberto, aba, movimentacoes, situacoesIncluidasMensal, ano])
+
+  const lancamentosDrill = aba === 'caixa' ? lancamentosDrillCaixa : lancamentosDrillMensal
+
+  // ── Render ────────────────────────────────────────────────────────────────────
+
+  const mesesTabela   = aba === 'caixa' ? mesesCaixa : meses12
+  const linhasAtivas  = aba === 'caixa' ? linhasDRECaixa : linhasControleMensal
+  const receitasLin   = linhasAtivas.filter(l => l.tipo === 'receita')
+  const despesasLin   = linhasAtivas.filter(l => l.tipo === 'despesa')
+  const totalMes      = aba === 'caixa' ? totalMesCaixa   : totalMesMensal
+  const totalGeral    = aba === 'caixa' ? totalGeralCaixa : totalGeralMensal
+  const resultadoMes  = aba === 'caixa' ? resultadoMesCaixa   : resultadoMesMensal
+  const resultadoTotal = aba === 'caixa' ? resultadoTotalCaixa : resultadoTotalMensal
+  const showLimite    = aba === 'mensal'
+  const colspan       = mesesTabela.length + (showLimite ? 4 : 3)
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '100%', margin: '0 auto' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '100%' }}>
 
+      {/* Cabeçalho */}
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-        <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>DRE — Demonstrativo de Resultado</h1>
-          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
-            Regime de Caixa · <code style={{ fontSize: '12px', background: '#f3f4f6', padding: '1px 5px', borderRadius: '4px' }}>data_pagamento</code> · clique em qualquer célula para ver os lançamentos
-          </p>
-        </div>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>DRE — Demonstrativo de Resultado</h1>
         <div>
           <label style={labelStyle}>Ano</label>
           <select value={ano} onChange={e => { setAno(Number(e.target.value)); setDrillAberto(null) }} style={selectStyle}>
@@ -510,46 +533,53 @@ export default function DRE() {
         </div>
       </div>
 
+      {/* Abas */}
+      <div style={{ display: 'flex', gap: 0, marginBottom: '20px', borderBottom: '2px solid #e5e7eb' }}>
+        {([
+          { key: 'caixa'  as Aba, label: 'DRE — Fluxo de Caixa',   desc: 'O que entrou e saiu da conta' },
+          { key: 'mensal' as Aba, label: 'Controle Mensal',          desc: 'O que você consumiu por categoria' },
+        ]).map(tab => (
+          <button key={tab.key} onClick={() => { setAba(tab.key); setDrillAberto(null) }} style={{
+            padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+            borderBottom: aba === tab.key ? '3px solid #0d7280' : '3px solid transparent',
+            marginBottom: '-2px',
+          }}>
+            <div style={{ fontSize: '14px', fontWeight: 700, color: aba === tab.key ? '#0d7280' : '#6b7280' }}>{tab.label}</div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{tab.desc}</div>
+          </button>
+        ))}
+      </div>
+
       {/* Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
-
-        <div
-          onClick={() => { setFiltroSituacao(filtroSituacao === 'so_pendente' ? 'todos' : 'so_pendente'); setDrillAberto(null) }}
-          style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${filtroSituacao === 'so_pendente' ? '#ef4444' : '#f59e0b'}`, cursor: 'pointer', outline: filtroSituacao === 'so_pendente' ? '2px solid #f59e0b' : 'none' }}
-        >
+        <div style={{ background: '#fef3c7', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #f59e0b' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Pendentes — {MESES_CURTOS[mesAtual - 1]}
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#92400e', margin: '6px 0 2px' }}>
-            {fmt(totalPendentesMesAtual)}
-          </div>
-          <div style={{ fontSize: '11px', color: '#92400e', opacity: 0.7 }}>
-            {filtroSituacao === 'so_pendente' ? '✓ Filtrando pendentes — clique para limpar' : 'Clique para filtrar na tabela ↓'}
-          </div>
+          <div style={{ fontSize: '22px', fontWeight: 700, color: '#92400e', margin: '6px 0 2px' }}>{fmt(totalPendentesMesAtual)}</div>
         </div>
 
-        <div style={{ background: '#f3e8ff', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #8b5cf6' }}>
-          <div style={{ fontSize: '11px', fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Previstos Futuros</div>
-          <div style={{ fontSize: '22px', fontWeight: 700, color: '#6b21a8', margin: '6px 0 2px' }}>{fmt(totalPrevistosFuturos)}</div>
-          <div style={{ fontSize: '11px', color: '#6b21a8', opacity: 0.7 }}>Despesas previstas após {MESES_CURTOS[mesAtual - 1]}</div>
-        </div>
+        {aba === 'mensal' && (
+          <div style={{ background: '#f3e8ff', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #8b5cf6' }}>
+            <div style={{ fontSize: '11px', fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Previstos Futuros</div>
+            <div style={{ fontSize: '22px', fontWeight: 700, color: '#6b21a8', margin: '6px 0 2px' }}>{fmt(totalPrevistosFuturos)}</div>
+            <div style={{ fontSize: '11px', color: '#6b21a8', opacity: 0.7 }}>Despesas previstas após {MESES_CURTOS[mesAtual - 1]}</div>
+          </div>
+        )}
 
         <div style={{ background: '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid #ef4444' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Maior Despesa — {MESES_CURTOS[mesAtual - 1]}</div>
           <div style={{ fontSize: '22px', fontWeight: 700, color: '#991b1b', margin: '6px 0 2px' }}>
-            {maiorDespesaMes ? fmt(Number(maiorDespesaMes.valor)) : '—'}
+            {maiorDespesaMes ? fmt(maiorDespesaMes.valor) : '—'}
           </div>
-          <div style={{ fontSize: '11px', color: '#991b1b', opacity: 0.7, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            {maiorDespesaMes
-              ? (categorias.find(c => c.id === maiorDespesaMes.categoria_id)?.nome ?? maiorDespesaMes.descricao)
-              : 'Nenhuma despesa'}
+          <div style={{ fontSize: '11px', color: '#991b1b', opacity: 0.7 }}>
+            {maiorDespesaMes ? (categorias.find(c => c.id === maiorDespesaMes.categoria_id)?.nome ?? 'Sem categoria') : 'Nenhuma despesa'}
           </div>
         </div>
 
-        {projecaoConservadora !== null && (
-          <div
-            onClick={() => { setFiltroSituacao('conservadora'); setDrillAberto(null) }}
-            style={{ background: projecaoConservadora >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoConservadora >= 0 ? '#10b981' : '#ef4444'}`, cursor: 'pointer', outline: filtroSituacao === 'conservadora' ? '2px solid #10b981' : 'none' }}>
+        {aba === 'mensal' && projecaoConservadora !== null && (
+          <div onClick={() => { setFiltroMensal('conservadora'); setDrillAberto(null) }}
+            style={{ background: projecaoConservadora >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoConservadora >= 0 ? '#10b981' : '#ef4444'}`, cursor: 'pointer', outline: filtroMensal === 'conservadora' ? '2px solid #10b981' : 'none' }}>
             <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Conservadora</div>
             <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', margin: '6px 0 2px' }}>{fmt(projecaoConservadora)}</div>
             <div style={{ fontSize: '11px', color: projecaoConservadora >= 0 ? '#065f46' : '#991b1b', opacity: 0.8 }}>Realizado + Pendente + Previsto já lançados</div>
@@ -557,10 +587,9 @@ export default function DRE() {
           </div>
         )}
 
-        {projecaoInteligente !== null && (
-          <div
-            onClick={() => { setFiltroSituacao('inteligente'); setDrillAberto(null) }}
-            style={{ background: projecaoInteligente >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoInteligente >= 0 ? '#10b981' : '#ef4444'}`, position: 'relative', cursor: 'pointer', outline: filtroSituacao === 'inteligente' ? '2px solid #2563eb' : 'none' }}>
+        {aba === 'mensal' && projecaoInteligente !== null && (
+          <div onClick={() => { setFiltroMensal('inteligente'); setDrillAberto(null) }}
+            style={{ background: projecaoInteligente >= 0 ? '#d1fae5' : '#fee2e2', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${projecaoInteligente >= 0 ? '#10b981' : '#ef4444'}`, position: 'relative', cursor: 'pointer', outline: filtroMensal === 'inteligente' ? '2px solid #2563eb' : 'none' }}>
             <span style={{ position: 'absolute', top: '8px', right: '8px', background: '#2563eb', color: '#fff', fontSize: '9px', fontWeight: 700, padding: '2px 6px', borderRadius: '99px' }}>SMART</span>
             <div style={{ fontSize: '11px', fontWeight: 700, color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Projeção Inteligente</div>
             <div style={{ fontSize: '22px', fontWeight: 700, color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', margin: '6px 0 2px' }}>{fmt(projecaoInteligente)}</div>
@@ -568,37 +597,67 @@ export default function DRE() {
             <div style={{ fontSize: '10px', color: projecaoInteligente >= 0 ? '#065f46' : '#991b1b', opacity: 0.6, marginTop: '2px' }}>Clique para ver na tabela ↓</div>
           </div>
         )}
-
       </div>
 
-      {/* Filtros situação */}
+      {/* Filtros */}
       <div style={{ marginBottom: '20px' }}>
-        <label style={{ ...labelStyle, marginBottom: '8px' }}>O que incluir no DRE</label>
+        <label style={{ ...labelStyle, marginBottom: '8px' }}>
+          {aba === 'caixa' ? 'O que incluir no DRE' : 'O que incluir no Controle Mensal'}
+        </label>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          {filtros.map(f => (
-            <button key={f.key} onClick={() => { setFiltroSituacao(f.key); setDrillAberto(null) }} style={{
-              padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-              border: filtroSituacao === f.key ? 'none' : '1px solid #e5e7eb',
-              background: filtroSituacao === f.key ? f.cor : '#fff',
-              color: filtroSituacao === f.key ? '#fff' : '#374151',
-            }}>
-              {f.label}
-              <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
-            </button>
-          ))}
+          {aba === 'caixa' ? (
+            ([
+              { key: 'realizado' as FiltroSituacaoCaixa, label: 'Realizado', desc: 'Apenas Pago',      cor: '#065f46' },
+              { key: 'pendente'  as FiltroSituacaoCaixa, label: '+ Pendente', desc: 'Pago + Pendente', cor: '#92400e' },
+            ]).map(f => (
+              <button key={f.key} onClick={() => { setFiltroCaixa(f.key); setDrillAberto(null) }} style={{
+                padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                border: filtroCaixa === f.key ? 'none' : '1px solid #e5e7eb',
+                background: filtroCaixa === f.key ? f.cor : '#fff',
+                color: filtroCaixa === f.key ? '#fff' : '#374151',
+              }}>
+                {f.label}
+                <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
+              </button>
+            ))
+          ) : (
+            ([
+              { key: 'realizado'   as FiltroSituacaoMensal, label: 'Realizado',   desc: 'Pago + Faturado',                      cor: '#065f46' },
+              { key: 'pendente'    as FiltroSituacaoMensal, label: '+ Pendente',  desc: 'Realizado + Pendente',                  cor: '#92400e' },
+              { key: 'previsto'    as FiltroSituacaoMensal, label: '+ Previsto',  desc: 'Realizado + Previsto',                  cor: '#6b21a8' },
+              { key: 'todos'       as FiltroSituacaoMensal, label: 'Tudo',        desc: 'Pago + Faturado + Pendente + Previsto', cor: '#1e40af' },
+            ]).map(f => (
+              <button key={f.key} onClick={() => { setFiltroMensal(f.key); setDrillAberto(null) }} style={{
+                padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
+                border: filtroMensal === f.key ? 'none' : '1px solid #e5e7eb',
+                background: filtroMensal === f.key ? f.cor : '#fff',
+                color: filtroMensal === f.key ? '#fff' : '#374151',
+              }}>
+                {f.label}
+                <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
+              </button>
+            ))
+          )}
         </div>
       </div>
 
-      {/* Legenda */}
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
-        <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} /><span style={{ color: '#374151' }}>Dentro do limite</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80% do limite</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'inline-block' }} /><span style={{ color: '#1e40af' }}>Mês atual</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#faf5ff', border: '1px solid #e9d5ff', display: 'inline-block' }} /><span style={{ color: '#6b21a8' }}>Meses futuros</span></span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ padding: '1px 6px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', fontSize: '10px', fontWeight: 600, fontStyle: 'italic' }}>valor itálico</span><span style={{ color: '#6b7280' }}>Média projetada (modo Inteligente)</span></span>
-      </div>
+      {/* Legenda (apenas Controle Mensal) */}
+      {aba === 'mensal' && (
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
+          <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />Dentro do limite</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80% do limite</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#eff6ff', border: '1px solid #bfdbfe', display: 'inline-block' }} /><span style={{ color: '#1e40af' }}>Mês atual</span></span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 12, height: 12, borderRadius: '2px', background: '#faf5ff', border: '1px solid #e9d5ff', display: 'inline-block' }} /><span style={{ color: '#6b21a8' }}>Meses futuros</span></span>
+          {filtroMensal === 'inteligente' && (
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ padding: '1px 6px', borderRadius: '4px', background: '#faf5ff', color: '#9333ea', fontSize: '10px', fontWeight: 600, fontStyle: 'italic' }}>valor itálico</span>
+              <span style={{ color: '#6b7280' }}>Média projetada (modo Inteligente)</span>
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Tabela */}
       {loading ? (
@@ -608,29 +667,31 @@ export default function DRE() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
-                <tr style={{ background: '#1f2937' }}>
-                  <td style={{ ...thBase, textAlign: 'left', position: 'sticky', left: 0, background: '#1f2937', zIndex: 11, padding: '4px 12px', fontSize: '10px', color: '#6b7280' }}>
-                    ◀ passado · presente · futuro ▶
-                  </td>
-                  <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
-                  {meses.map(m => {
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
-                    return (
-                      <td key={m} style={{ padding: '3px 4px', textAlign: 'center', fontSize: '9px', fontWeight: 600, color: isAtual ? '#fbbf24' : isFuturo ? '#7c3aed' : '#4b5563', letterSpacing: '0.05em' }}>
-                        {isAtual ? '● ATUAL' : isFuturo ? '◆' : ''}
-                      </td>
-                    )
-                  })}
-                  <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
-                  <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
-                </tr>
+                {aba === 'mensal' && (
+                  <tr style={{ background: '#1f2937' }}>
+                    <td style={{ ...thBase, textAlign: 'left', position: 'sticky', left: 0, background: '#1f2937', zIndex: 11, padding: '4px 12px', fontSize: '10px', color: '#6b7280' }}>
+                      ◀ passado · presente · futuro ▶
+                    </td>
+                    <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
+                    {meses12.map(m => {
+                      const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
+                      const isAtual  = ano === hoje.getFullYear() && m === mesAtual
+                      return (
+                        <td key={m} style={{ padding: '3px 4px', textAlign: 'center', fontSize: '9px', fontWeight: 600, color: isAtual ? '#fbbf24' : isFuturo ? '#7c3aed' : '#4b5563' }}>
+                          {isAtual ? '● ATUAL' : isFuturo ? '◆' : ''}
+                        </td>
+                      )
+                    })}
+                    <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
+                    <td style={{ ...thBase, background: '#1f2937', padding: '4px' }} />
+                  </tr>
+                )}
                 <tr style={{ background: '#111827' }}>
                   <th style={{ ...thBase, textAlign: 'left', minWidth: '170px', position: 'sticky', left: 0, background: '#111827', zIndex: 11 }}>Categoria</th>
-                  <th style={{ ...thBase, minWidth: '85px', background: '#1f2937' }}>Limite/mês</th>
-                  {meses.map(m => {
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
+                  {showLimite && <th style={{ ...thBase, minWidth: '85px', background: '#1f2937' }}>Limite/mês</th>}
+                  {mesesTabela.map(m => {
+                    const isFuturo = aba === 'mensal' && (ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual))
+                    const isAtual  = ano === hoje.getFullYear() && m === mesAtual
                     return (
                       <th key={m} style={{ ...thBase, minWidth: '80px', background: isAtual ? '#1e3a5f' : isFuturo ? '#2d1b4e' : '#111827', color: isAtual ? '#fbbf24' : isFuturo ? '#c4b5fd' : '#f9fafb', borderBottom: isAtual ? '2px solid #fbbf24' : isFuturo ? '2px solid #7c3aed' : '2px solid #374151' }}>
                         {MESES_CURTOS[m - 1]}
@@ -643,25 +704,25 @@ export default function DRE() {
               </thead>
 
               <tbody>
-                <GrupoHeader label='RECEITAS' colspan={16} cor='#065f46' bg='#d1fae5' />
-                {receitasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
+                <GrupoHeader label='RECEITAS' colspan={colspan} cor='#065f46' bg='#d1fae5' />
+                {receitasLin.map(linha => (
+                  <LinhaComDrill key={linha.id} linha={linha} meses={mesesTabela} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita showLimite={showLimite} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={aba === 'mensal' && filtroMensal === 'inteligente' ? (mediasPorLinhaMensal[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
-                <SubtotalRow label='Total Receitas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='#065f46' bg='#d1fae5' mesesCorrente={mesesCorrente} />
+                <SubtotalRow label='Total Receitas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('receita', m)} total={totalGeral('receita')} cor='#065f46' bg='#d1fae5' mesesCorrente={mesesCorrente} showLimite={showLimite} />
 
-                <GrupoHeader label='DESPESAS' colspan={16} cor='#991b1b' bg='#fee2e2' />
-                {despesasLinhas.map(linha => (
-                  <LinhaComDrill key={linha.id} linha={linha} meses={meses} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={filtroSituacao === 'inteligente' ? (mediasPorLinha[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
+                <GrupoHeader label='DESPESAS' colspan={colspan} cor='#991b1b' bg='#fee2e2' />
+                {despesasLin.map(linha => (
+                  <LinhaComDrill key={linha.id} linha={linha} meses={mesesTabela} mesAtual={mesAtual} anoAtual={hoje.getFullYear()} ano={ano} isReceita={false} showLimite={showLimite} mesesCorrente={mesesCorrente} drillAberto={drillAberto} lancamentosDrill={lancamentosDrill} onToggle={toggleDrill} mediaProjecao={aba === 'mensal' && filtroMensal === 'inteligente' ? (mediasPorLinhaMensal[linha.id] || 0) : 0} onEditLancamento={setEditandoDrill} />
                 ))}
-                <SubtotalRow label='Total Despesas' meses={meses} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='#991b1b' bg='#fee2e2' mesesCorrente={mesesCorrente} />
+                <SubtotalRow label='Total Despesas' meses={mesesTabela} mesAtual={mesAtual} anoSel={ano} anoAtual={hoje.getFullYear()} valorMes={m => totalMes('despesa', m)} total={totalGeral('despesa')} cor='#991b1b' bg='#fee2e2' mesesCorrente={mesesCorrente} showLimite={showLimite} />
 
                 <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
                   <td style={{ ...tdFixo, fontWeight: 700, color: '#f9fafb', fontSize: '13px', background: '#111827' }}>RESULTADO</td>
-                  <td style={{ ...tdNum, background: '#1f2937', color: '#6b7280' }}>—</td>
-                  {meses.map(m => {
+                  {showLimite && <td style={{ ...tdNum, background: '#1f2937', color: '#6b7280' }}>—</td>}
+                  {mesesTabela.map(m => {
                     const v = resultadoMes(m)
-                    const isFuturo = ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual)
-                    const isAtual = ano === hoje.getFullYear() && m === mesAtual
+                    const isFuturo = aba === 'mensal' && (ano > hoje.getFullYear() || (ano === hoje.getFullYear() && m > mesAtual))
+                    const isAtual  = ano === hoje.getFullYear() && m === mesAtual
                     return (
                       <td key={m} style={{ ...tdNum, fontWeight: 700, fontSize: '13px', color: v >= 0 ? '#34d399' : '#f87171', background: isAtual ? '#1e3a5f' : isFuturo ? '#1a1035' : 'transparent', opacity: isFuturo && !isAtual ? 0.75 : 1 }}>
                         {v !== 0 ? fmt(v) : <span style={{ color: '#374151' }}>—</span>}
@@ -669,8 +730,8 @@ export default function DRE() {
                     )
                   })}
                   <td style={{ ...tdNum, background: '#1f2937', fontWeight: 700, fontSize: '13px', color: resultadoTotal >= 0 ? '#34d399' : '#f87171' }}>{fmt(resultadoTotal)}</td>
-                  <td style={{ ...tdNum, background: '#1f2937', fontWeight: 700, fontSize: '12px', color: (() => { const v = mesesCorrente > 0 ? (Array.from({ length: mesesCorrente }, (_, i) => resultadoMes(i + 1)).reduce((s, v) => s + v, 0) / mesesCorrente) : 0; return v >= 0 ? '#34d399' : '#f87171' })() }}>
-                    {mesesCorrente > 0 ? fmt(Array.from({ length: mesesCorrente }, (_, i) => resultadoMes(i + 1)).reduce((s, v) => s + v, 0) / mesesCorrente) : '—'}
+                  <td style={{ ...tdNum, background: '#1f2937', fontWeight: 700, fontSize: '12px', color: (() => { const v = mesesCorrente > 0 ? (Array.from({ length: Math.min(mesesCorrente, mesesTabela.length) }, (_, i) => resultadoMes(i + 1)).reduce((s, v) => s + v, 0) / Math.min(mesesCorrente, mesesTabela.length)) : 0; return v >= 0 ? '#34d399' : '#f87171' })() }}>
+                    {mesesCorrente > 0 ? fmt(Array.from({ length: Math.min(mesesCorrente, mesesTabela.length) }, (_, i) => resultadoMes(i + 1)).reduce((s, v) => s + v, 0) / Math.min(mesesCorrente, mesesTabela.length)) : '—'}
                   </td>
                 </tr>
               </tbody>
@@ -682,8 +743,8 @@ export default function DRE() {
       {!loading && (
         <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: '#9ca3af' }}>
           <span>💡 Clique em qualquer célula com valor para ver os lançamentos detalhados</span>
-          <span style={{ color: '#7c3aed' }}>◆ Meses futuros</span>
-          <span>* Cartão parcelado: rateio proporcional pelo % pago da fatura</span>
+          {aba === 'caixa'  && <span>* Crédito aparece como pagamento de fatura (não por categoria)</span>}
+          {aba === 'mensal' && <span>* Crédito: cada parcela distribuída no mês do seu vencimento</span>}
         </div>
       )}
 
@@ -696,25 +757,21 @@ export default function DRE() {
               <button onClick={() => setEditandoDrill(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af' }}>×</button>
             </div>
             {([
-              { label: 'Descrição', field: 'descricao', type: 'text' },
-              { label: 'Valor (R$)', field: 'valor', type: 'number' },
+              { label: 'Descrição',       field: 'descricao',        type: 'text'   },
+              { label: 'Valor (R$)',      field: 'valor',            type: 'number' },
               { label: 'Dt. Movimentação', field: 'data_movimentacao', type: 'date' },
-              { label: 'Dt. Pagamento', field: 'data_pagamento', type: 'date' },
+              { label: 'Dt. Pagamento',   field: 'data_pagamento',   type: 'date'   },
             ] as { label: string; field: keyof Movimentacao; type: string }[]).map(({ label, field, type }) => (
               <div key={field} style={{ marginBottom: 12 }}>
                 <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
-                <input
-                  type={type}
-                  value={String(editDrillForm[field] ?? '')}
-                  onChange={e => setEditDrillForm(f => ({ ...f, [field]: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const }}
-                />
+                <input type={type} value={String(editDrillForm[field] ?? '')} onChange={e => setEditDrillForm(f => ({ ...f, [field]: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const }} />
               </div>
             ))}
             <div style={{ marginBottom: 12 }}>
               <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Situação</label>
               <select value={editDrillForm.situacao ?? ''} onChange={e => setEditDrillForm(f => ({ ...f, situacao: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}>
-                {['Pago', 'Pendente', 'Previsto', 'Faturado'].map(s => <option key={s}>{s}</option>)}
+                {['Pago','Pendente','Previsto','Faturado'].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div style={{ marginBottom: 12 }}>
@@ -723,8 +780,8 @@ export default function DRE() {
                 <option value="">— Selecione —</option>
                 {categorias
                   .filter(c => editDrillForm.tipo === 'Receita'
-                    ? ['Renda Ativa', 'Renda Passiva'].includes(c.classificacao)
-                    : !['Renda Ativa', 'Renda Passiva'].includes(c.classificacao))
+                    ? ['Renda Ativa','Renda Passiva'].includes(c.classificacao)
+                    : !['Renda Ativa','Renda Passiva'].includes(c.classificacao))
                   .map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
@@ -758,13 +815,14 @@ export default function DRE() {
 
 // ─── LinhaComDrill ─────────────────────────────────────────────────────────────
 
-function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, mesesCorrente, drillAberto, lancamentosDrill, onToggle, mediaProjecao = 0, onEditLancamento }: {
+function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showLimite, mesesCorrente, drillAberto, lancamentosDrill, onToggle, mediaProjecao = 0, onEditLancamento }: {
   linha: LinhaDRE
   meses: number[]
   mesAtual: number
   anoAtual: number
   ano: number
   isReceita: boolean
+  showLimite: boolean
   mesesCorrente: number
   drillAberto: DrillKey | null
   lancamentosDrill: Movimentacao[]
@@ -782,16 +840,18 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           <div style={{ fontWeight: 500 }}>{linha.nome}</div>
           {linha.classificacao && <div style={{ fontSize: '10px', color: '#9ca3af' }}>{linha.classificacao}</div>}
         </td>
-        <td style={{ ...tdNum, background: '#ede8df', color: '#9ca3af', fontSize: '11px' }}>
-          {linha.limite > 0 ? fmt(linha.limite) : '—'}
-        </td>
+        {showLimite && (
+          <td style={{ ...tdNum, background: '#ede8df', color: '#9ca3af', fontSize: '11px' }}>
+            {linha.limite > 0 ? fmt(linha.limite) : '—'}
+          </td>
+        )}
 
         {meses.map(m => {
           const v = linha.meses[m] || 0
           const isFuturo = ano > anoAtual || (ano === anoAtual && m > mesAtual)
-          const isAtual = ano === anoAtual && m === mesAtual
-          const vExibir = (isFuturo && !isAtual && v === 0 && mediaProjecao > 0) ? mediaProjecao : v
-          const isMedia = isFuturo && !isAtual && v === 0 && mediaProjecao > 0
+          const isAtual  = ano === anoAtual && m === mesAtual
+          const vExibir  = (isFuturo && !isAtual && v === 0 && mediaProjecao > 0) ? mediaProjecao : v
+          const isMedia  = isFuturo && !isAtual && v === 0 && mediaProjecao > 0
           const pct = linha.limite > 0 ? vExibir / linha.limite : null
           const aberto = drillEstaAberto(m)
 
@@ -799,19 +859,15 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
           if (vExibir > 0) {
             if (isMedia) corValor = '#9333ea'
             else if (!isReceita && pct !== null) {
-              if (pct > 1) corValor = '#ef4444'
-              else if (pct >= 0.8) corValor = '#f59e0b'
-              else corValor = '#374151'
+              corValor = pct > 1 ? '#ef4444' : pct >= 0.8 ? '#f59e0b' : '#374151'
             } else corValor = cor
           }
 
           return (
-            <td
-              key={m}
+            <td key={m}
               onClick={() => !isMedia && onToggle(linha.id, m, v)}
               title={isMedia ? `Média projetada: ${fmt(mediaProjecao)}` : v > 0 ? 'Clique para ver lançamentos' : ''}
-              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}
-            >
+              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}>
               {vExibir > 0
                 ? <span style={{ textDecoration: !isMedia ? 'underline dotted' : 'none', textUnderlineOffset: '3px', fontStyle: isMedia ? 'italic' : 'normal' }}>{fmt(vExibir)}</span>
                 : <span style={{ color: '#e5e7eb' }}>—</span>
@@ -822,7 +878,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
 
         <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: cor }}>
           <div>{fmt(linha.total)}</div>
-          {linha.limite > 0 && (
+          {showLimite && linha.limite > 0 && (
             <div style={{ fontSize: '10px', color: linha.total > linha.limite * 12 ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
               {((linha.total / (linha.limite * 12)) * 100).toFixed(0)}% do limite anual
             </div>
@@ -831,12 +887,12 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
 
         <td style={{ ...tdNum, background: '#fffbeb', fontWeight: 600, color: '#92400e', fontSize: '12px' }}>
           {mesesCorrente > 0 ? (() => {
-            const somaAteAtual = Array.from({ length: mesesCorrente }, (_, i) => linha.meses[i + 1] || 0).reduce((s, v) => s + v, 0)
-            const med = somaAteAtual / mesesCorrente
+            const soma = Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => linha.meses[meses[i]] || 0).reduce((s, v) => s + v, 0)
+            const med = soma / Math.min(mesesCorrente, meses.length)
             return (
               <>
                 <div>{fmt(med)}</div>
-                {linha.limite > 0 && (
+                {showLimite && linha.limite > 0 && (
                   <div style={{ fontSize: '10px', color: med > linha.limite ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
                     {((med / linha.limite) * 100).toFixed(0)}% do limite
                   </div>
@@ -849,7 +905,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
 
       {drillAberto?.linhaId === linha.id && (
         <tr>
-          <td colSpan={16} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+          <td colSpan={meses.length + (showLimite ? 4 : 3)} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
             <div style={{ padding: '12px 16px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
@@ -896,7 +952,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, meses
                       <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
                         {fmt(lancamentosDrill.reduce((s, l) => s + Number(l.valor), 0))}
                       </td>
-                      <td colSpan={3} />
+                      <td colSpan={4} />
                     </tr>
                   </tfoot>
                 </table>
@@ -921,23 +977,23 @@ function GrupoHeader({ label, colspan, cor, bg }: { label: string; colspan: numb
   )
 }
 
-function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total, cor, bg, mesesCorrente }: {
+function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total, cor, bg, mesesCorrente, showLimite }: {
   label: string; meses: number[]; mesAtual: number; anoSel: number; anoAtual: number
-  valorMes: (m: number) => number; total: number; cor: string; bg: string; mesesCorrente: number
+  valorMes: (m: number) => number; total: number; cor: string; bg: string; mesesCorrente: number; showLimite: boolean
 }) {
   return (
     <tr style={{ background: bg, borderTop: '1px solid #e5e7eb', borderBottom: '2px solid #e5e7eb' }}>
       <td style={{ ...tdFixo, fontWeight: 700, color: cor, background: bg }}>{label}</td>
-      <td style={{ ...tdNum, color: '#9ca3af', background: bg }}>—</td>
+      {showLimite && <td style={{ ...tdNum, color: '#9ca3af', background: bg }}>—</td>}
       {meses.map(m => {
         const v = valorMes(m)
         const isFuturo = anoSel > anoAtual || (anoSel === anoAtual && m > mesAtual)
-        const isAtual = anoSel === anoAtual && m === mesAtual
+        const isAtual  = anoSel === anoAtual && m === mesAtual
         return <td key={m} style={{ ...tdNum, fontWeight: 700, color: cor, opacity: isFuturo && !isAtual ? 0.7 : 1 }}>{fmt(v)}</td>
       })}
       <td style={{ ...tdNum, fontWeight: 700, color: cor, background: bg }}>{fmt(total)}</td>
       <td style={{ ...tdNum, fontWeight: 700, color: cor, background: '#fffbeb', fontSize: '12px' }}>
-        {mesesCorrente > 0 ? fmt(Array.from({ length: mesesCorrente }, (_, i) => valorMes(i + 1)).reduce((s, v) => s + v, 0) / mesesCorrente) : '—'}
+        {mesesCorrente > 0 ? fmt(Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => valorMes(meses[i])).reduce((s, v) => s + v, 0) / Math.min(mesesCorrente, meses.length)) : '—'}
       </td>
     </tr>
   )
