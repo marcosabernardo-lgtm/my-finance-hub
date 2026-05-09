@@ -51,10 +51,11 @@ const corSituacao = (s: string): React.CSSProperties => {
   }
 }
 
-// ─── Regra corrigida ──────────────────────────────────────────────────────────
-// Crédito: só entra se Parcela 1/1 (à vista) — qualquer situação exceto Previsto
-// Débito / PIX / Dinheiro / Boleto: só entra se situacao === 'Pago'
-// Nunca entra: Previsto, is_recorrente
+// ─── Regra ────────────────────────────────────────────────────────────────────
+// Objetivo: identificar o que foi GASTO no mês, independente de forma de pagamento
+// Crédito (à vista ou parcelado): Pendente ou Faturado → compra realizada no mês
+// Débito / PIX / Dinheiro / Boleto: Pago → saiu do caixa no mês
+// Nunca entra: Previsto
 const deveEntrar = (m: {
   tipo: string
   situacao: string
@@ -67,12 +68,8 @@ const deveEntrar = (m: {
   const metodo = (m.metodo_pagamento || '').toLowerCase()
   const isCredito = metodo.startsWith('crédito') || metodo.startsWith('credito')
 
-  if (isCredito) {
-    // Crédito: só à vista (Parcela 1/1), qualquer situacao exceto Previsto
-    return m.numero_parcela === 'Parcela 1/1'
-  }
+  if (isCredito) return ['Pendente', 'Faturado'].includes(m.situacao)
 
-  // Débito / PIX / Dinheiro / Boleto: só Pago
   return m.situacao === 'Pago'
 }
 
@@ -234,7 +231,7 @@ export default function ControleSemanal() {
         <div>
           <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Controle Semanal</h1>
           <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
-            Clique em qualquer valor para ver os lançamentos · débito e PIX: somente Pago · cartão: somente à vista
+            Clique em qualquer valor para ver os lançamentos · débito e PIX: somente Pago · cartão: à vista e parcelado
           </p>
         </div>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
@@ -464,7 +461,7 @@ export default function ControleSemanal() {
 
       {!loading && linhas.length > 0 && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', textAlign: 'right' }}>
-          * Inclui: Débito (Pago) · PIX (Pago) · Dinheiro (Pago) · Boleto (Pago) · Cartão à vista &nbsp;|&nbsp; Exclui: Cartão parcelado · Pendente · Previsto
+          * Inclui: Débito/PIX/Dinheiro (Pago) · Cartão à vista e parcelado (Pendente/Faturado) &nbsp;|&nbsp; Exclui: Previsto
         </div>
       )}
     </div>

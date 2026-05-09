@@ -49,11 +49,10 @@ const corSituacaoStyle = (s: string): React.CSSProperties => {
 }
 
 // ── entraNoReal ────────────────────────────────────────────────────────────────
-// Regras:
-// 1. Pago → sempre entra
-// 2. Pendente Parcela 1/1 → entra (compra à vista ainda não paga)
-// 3. Faturado com data_movimentacao === data_pagamento → entra (assinatura recorrente: Vivo, Netflix etc)
-//    Faturado com datas diferentes → NÃO entra (compra parcelada/mês anterior, já entrou no mês certo)
+// Objetivo: identificar o que foi GASTO no mês, independente de forma de pagamento
+// Crédito (à vista ou parcelado): Pendente ou Faturado → compra realizada no mês
+// Débito / PIX / Dinheiro / Boleto: Pago → saiu do caixa no mês
+// Nunca entra: Previsto
 const entraNoReal = (m: {
   tipo: string
   situacao: string
@@ -63,15 +62,13 @@ const entraNoReal = (m: {
   data_pagamento?: string | null
 }) => {
   if (m.tipo !== 'Despesa') return false
+  if (m.situacao === 'Previsto') return false
+
   const isCredito = m.metodo_pagamento?.startsWith('Crédito') ?? false
 
-  // Débito, PIX, Dinheiro, Boleto — Pago → gastou no mês
-  if (m.situacao === 'Pago' && !isCredito) return true
+  if (isCredito) return ['Pendente', 'Faturado'].includes(m.situacao)
 
-  // Crédito à vista (Parcela 1/1) Pendente → compra do mês ainda não faturada
-  if (m.situacao === 'Pendente' && isCredito && m.numero_parcela === 'Parcela 1/1') return true
-
-  return false
+  return m.situacao === 'Pago'
 }
 
 export default function Resumo() {
@@ -146,13 +143,12 @@ export default function Resumo() {
     [movimentacoes]
   )
 
-  // Despesas crédito à vista (Parcela 1/1) Pendente → compra do mês ainda não faturada
+  // Despesas crédito realizadas no mês (à vista ou parcelado)
   const totalDespesasCredito = useMemo(() =>
     movimentacoes.filter(m =>
       m.tipo === 'Despesa' &&
-      m.situacao === 'Pendente' &&
-      (m.metodo_pagamento?.startsWith('Crédito') ?? false) &&
-      m.numero_parcela === 'Parcela 1/1'
+      ['Pendente', 'Faturado'].includes(m.situacao) &&
+      (m.metodo_pagamento?.startsWith('Crédito') ?? false)
     ).reduce((s, m) => s + Number(m.valor), 0),
     [movimentacoes]
   )
@@ -231,7 +227,7 @@ export default function Resumo() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
         <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='#065f46' bg='#d1fae5' borda='#6ee7b7'/>
         <CardInfo label='Despesas Débito / PIX' valor={fmt(totalDespesasDebito)} sub='Pago no mês' cor='#991b1b' bg='#fee2e2' borda='#fca5a5'/>
-        <CardInfo label='Despesas Crédito à Vista' valor={fmt(totalDespesasCredito)} sub='Parcela 1/1 pago no mês' cor='#b45309' bg='#fef3c7' borda='#fbbf24'/>
+        <CardInfo label='Despesas Crédito' valor={fmt(totalDespesasCredito)} sub='Compras realizadas no mês' cor='#b45309' bg='#fef3c7' borda='#fbbf24'/>
         <CardInfo label='Total Gasto' valor={fmt(totalDespesas)} sub='Débito + Crédito à Vista' cor={saldo >= 0 ? '#065f46' : '#991b1b'} bg={saldo >= 0 ? '#d1fae5' : '#fee2e2'} borda={saldo >= 0 ? '#6ee7b7' : '#fca5a5'}/>
       </div>
 
@@ -381,7 +377,7 @@ export default function Resumo() {
       {!loading && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
-          <span>* Real = Pago Débito/PIX + Crédito à Vista (Parcela 1/1) · Previsto = soma dos limites mensais</span>
+          <span>* Real = Pago Débito/PIX + Crédito (Pendente/Faturado) · Previsto = soma dos limites mensais</span>
         </div>
       )}
     </div>
