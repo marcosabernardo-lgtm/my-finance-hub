@@ -373,7 +373,7 @@ export default function ControleSemanal() {
                             <td colSpan={10} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
                               <div style={{ padding: '12px 16px 14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                                  <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-1)' }}>
                                     📋 {titulo}
                                     <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                                       {movsDrill.length} lançamento{movsDrill.length !== 1 ? 's' : ''}
@@ -389,12 +389,12 @@ export default function ControleSemanal() {
                                 ) : (
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                     <thead>
-                                      <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
+                                      <tr style={{ background: 'var(--bg-row2)', borderBottom: '1px solid var(--border)' }}>
                                         {['Data','Descrição','Valor','Situação','Método','Parcela'].map(h => (
                                           <th key={h} style={{
                                             padding: '5px 10px',
                                             textAlign: h === 'Valor' ? 'right' : 'left',
-                                            fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap'
+                                            fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap'
                                           }}>{h}</th>
                                         ))}
                                       </tr>
@@ -404,10 +404,10 @@ export default function ControleSemanal() {
                                         .slice()
                                         .sort((a, b) => a.data_movimentacao.localeCompare(b.data_movimentacao))
                                         .map((m, i) => (
-                                          <tr key={m.id} style={{ background: i % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                                          <tr key={m.id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                                             <td style={tdDrill}>{fmtDate(m.data_movimentacao)}</td>
                                             <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</td>
-                                            <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{fmt(Number(m.valor))}</td>
+                                            <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>{fmt(Number(m.valor))}</td>
                                             <td style={tdDrill}>
                                               <span style={{ ...corSituacao(m.situacao), padding: '2px 7px', borderRadius: '99px', fontSize: '11px', fontWeight: 600 }}>
                                                 {m.situacao}
@@ -419,9 +419,9 @@ export default function ControleSemanal() {
                                         ))}
                                     </tbody>
                                     <tfoot>
-                                      <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
-                                        <td colSpan={2} style={{ padding: '5px 10px', fontWeight: 700, color: '#92400e' }}>Total</td>
-                                        <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
+                                      <tr style={{ background: 'var(--bg-row2)', borderTop: '1px solid var(--border)' }}>
+                                        <td colSpan={2} style={{ padding: '5px 10px', fontWeight: 700, color: 'var(--text-2)' }}>Total</td>
+                                        <td style={{ padding: '5px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>
                                           {fmt(movsDrill.reduce((s, m) => s + Number(m.valor), 0))}
                                         </td>
                                         <td colSpan={3} />

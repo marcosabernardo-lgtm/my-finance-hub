@@ -279,23 +279,23 @@ export default function Resumo() {
 
                     {aberta && (
                       <tr key={`drill-${linha.classif}`}>
-                        <td colSpan={6} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
+                        <td colSpan={6} style={{ padding: 0, background: 'var(--bg-card)', borderBottom: '2px solid var(--border)' }}>
                           <div style={{ padding: '0 0 8px' }}>
-                            <div style={{ background: 'var(--bg-warning-soft)', padding: '8px 16px', borderBottom: '1px solid var(--border-warning)', display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-warning)' }}>📂 {linha.classif}</span>
-                              <span style={{ fontSize: '11px', color: '#9ca3af' }}>{linha.categoriasDrill.length} categoria{linha.categoriasDrill.length !== 1 ? 's' : ''}</span>
+                            <div style={{ background: 'var(--bg-row2)', padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-1)' }}>📂 {linha.classif}</span>
+                              <span style={{ fontSize: '11px', color: 'var(--text-3)' }}>{linha.categoriasDrill.length} categoria{linha.categoriasDrill.length !== 1 ? 's' : ''}</span>
                             </div>
                             {linha.categoriasDrill.length === 0 ? (
                               <div style={{ padding: '12px 16px', color: 'var(--text-3)', fontSize: '12px' }}>Nenhuma categoria com lançamentos neste mês.</div>
                             ) : (
                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                 <thead>
-                                  <tr style={{ background: 'var(--bg-warning-soft)' }}>
-                                    <th style={{ padding: '6px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-warning)', width: '30%' }}>Categoria</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Previsto</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Real</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>%</th>
-                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-warning)' }}>Divergência</th>
+                                  <tr style={{ background: 'var(--bg-row2)', borderBottom: '1px solid var(--border)' }}>
+                                    <th style={{ padding: '6px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--text-2)', width: '30%' }}>Categoria</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-2)' }}>Previsto</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-2)' }}>Real</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-2)' }}>%</th>
+                                    <th style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 600, color: 'var(--text-2)' }}>Divergência</th>
                                   </tr>
                                 </thead>
                                 <tbody>
@@ -304,7 +304,7 @@ export default function Resumo() {
                                     const ultrapassouCat = d.real > d.previsto && d.previsto > 0
                                     return (
                                       <>
-                                        <tr key={d.cat.id} style={{ background: ci % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-warning-soft)', borderBottom: '1px solid var(--border-warning)' }}>
+                                        <tr key={d.cat.id} style={{ background: ci % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                                           <td style={{ padding: '7px 16px', color: 'var(--text-4)', fontWeight: 500 }}>
                                             {d.cat.nome}
                                             {pctLimite !== null && (
@@ -320,11 +320,11 @@ export default function Resumo() {
                                         </tr>
                                         {d.movs.length > 0 && (
                                           <tr key={`movs-${d.cat.id}`}>
-                                            <td colSpan={5} style={{ padding: '0 0 0 32px', background: 'var(--bg-warning-soft)' }}>
+                                            <td colSpan={5} style={{ padding: '0 0 0 32px', background: 'var(--bg-row)' }}>
                                               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px' }}>
                                                 <tbody>
                                                   {d.movs.map(m => (
-                                                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border-warning)' }}>
+                                                    <tr key={m.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                                       <td style={{ padding: '4px 10px', color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{fmtDate(m.data_movimentacao)}</td>
                                                       <td style={{ padding: '4px 10px', color: 'var(--text-4)', fontWeight: 500 }}>{m.descricao}</td>
                                                       <td style={{ padding: '4px 10px', textAlign: 'right', color: 'var(--text-danger)', fontWeight: 600, whiteSpace: 'nowrap' }}>− {fmt(Number(m.valor))}</td>
@@ -343,10 +343,10 @@ export default function Resumo() {
                                   })}
                                 </tbody>
                                 <tfoot>
-                                  <tr style={{ background: 'var(--bg-warning-soft)', borderTop: '1px solid var(--border-warning)' }}>
-                                    <td style={{ padding: '7px 16px', fontWeight: 700, color: 'var(--text-warning)' }}>Subtotal</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-warning)' }}>{fmt(linha.previsto)}</td>
-                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-warning)' }}>{fmt(linha.real)}</td>
+                                  <tr style={{ background: 'var(--bg-row2)', borderTop: '1px solid var(--border)' }}>
+                                    <td style={{ padding: '7px 16px', fontWeight: 700, color: 'var(--text-2)' }}>Subtotal</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-2)' }}>{fmt(linha.previsto)}</td>
+                                    <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-2)' }}>{fmt(linha.real)}</td>
                                     <td style={{ padding: '7px 10px', textAlign: 'right', color: 'var(--text-3)' }}>{totalReal > 0 ? fmtPct((linha.real / totalReal) * 100) : '—'}</td>
                                     <td style={{ padding: '7px 10px', textAlign: 'right', fontWeight: 700, color: linha.divergencia >= 0 ? 'var(--text-success)' : 'var(--text-danger)' }}>{fmt(linha.divergencia)}</td>
                                   </tr>
