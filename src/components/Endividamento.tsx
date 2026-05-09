@@ -68,13 +68,13 @@ const CORES = {
   parcelamento:    '#9b59b6',
   previsto:        '#f59e0b',
   quitado:         '#52c878',
-  fundo:           '#f5f0e8',
+  fundo:           'var(--bg-page)',
   sidebar:         '#0d7280',
-  texto:           '#1a2332',
-  textoSecundario: '#6b7a8d',
-  borda:           '#e2e8f0',
-  card:            '#ffffff',
-  cardHover:       '#f0f9ff',
+  texto:           'var(--text-1)',
+  textoSecundario: 'var(--text-2)',
+  borda:           'var(--border)',
+  card:            'var(--bg-card)',
+  cardHover:       'var(--bg-info-soft)',
 };
 const COR_ABA: Record<AbaLista, string> = {
   credito: CORES.credito, debito: CORES.debito, parcelamento: CORES.parcelamento,
@@ -204,7 +204,7 @@ function DrillParcelas({
 }) {
   const ordenadas = [...parcelas].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
   return (
-    <div style={{ backgroundColor: '#ede8df', borderBottom: `1px solid ${CORES.borda}`, padding: '16px 20px 20px' }}>
+    <div style={{ backgroundColor: 'var(--bg-row)', borderBottom: `1px solid ${CORES.borda}`, padding: '16px 20px 20px' }}>
       <div style={{ fontSize: '13px', fontWeight: 700, color: CORES.texto, marginBottom: '4px' }}>
         Parcelas ({parcelas.length} no total)
       </div>
@@ -288,7 +288,7 @@ function TabelaDebito({
   );
   return (
     <div style={{ backgroundColor: CORES.card, border: `1px solid ${CORES.borda}`, borderRadius: '12px', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 70px', padding: '12px 20px', backgroundColor: '#f1f5f9', borderBottom: `1px solid ${CORES.borda}` }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 70px', padding: '12px 20px', backgroundColor: 'var(--bg-row2)', borderBottom: `1px solid ${CORES.borda}` }}>
         {['Descrição', 'Método', 'Parcelas', 'Restante', 'Quitação Prev.', ''].map((h) => (
           <div key={h} style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.5px', color: CORES.textoSecundario }}>{h}</div>
         ))}
@@ -325,7 +325,7 @@ function TabelaCredito({
             {/* Cabeçalho cartão */}
             <div
               onClick={() => { setCartaoAberto(aberto ? null : cg.cartao_nome); setDividaAberta(null); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : '#f5f0e8', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : 'var(--bg-row)', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: CORES.credito, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💳</div>
@@ -347,7 +347,7 @@ function TabelaCredito({
 
             {aberto && (
               <>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 70px', padding: '10px 20px', backgroundColor: '#fafafa', borderBottom: `1px solid ${CORES.borda}` }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr 70px', padding: '10px 20px', backgroundColor: 'var(--bg-row2)', borderBottom: `1px solid ${CORES.borda}` }}>
                   {['Descrição / Categoria', 'Parcelas', 'Vlr. Parcela', 'Restante', ''].map((h) => (
                     <div key={h} style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.5px', color: CORES.textoSecundario }}>{h}</div>
                   ))}
@@ -702,7 +702,7 @@ export default function Endividamento() {
               <div style={{ marginTop: '24px', overflowX: 'auto' as const }}>
                 <table style={{ width:'100%', borderCollapse:'collapse' as const, fontSize:'13px' }}>
                   <thead>
-                    <tr style={{ backgroundColor:'#f1f5f9' }}>
+                    <tr style={{ backgroundColor:'var(--bg-row2)' }}>
                       {['Mês','Pago','A Pagar','Total Mês'].map((col) => (
                         <th key={col} style={{ padding:'10px 16px', textAlign: col==='Mês' ? 'left' : 'right' as const, fontWeight:700, fontSize:'11px', textTransform:'uppercase' as const, letterSpacing:'0.5px', color: CORES.textoSecundario, borderBottom:`2px solid ${CORES.borda}` }}>{col}</th>
                       ))}
@@ -710,7 +710,7 @@ export default function Endividamento() {
                   </thead>
                   <tbody>
                     {evolucaoMensal.map((e,i) => (
-                      <tr key={e.mes} style={{ backgroundColor: i%2===0 ? CORES.card : '#ede8df', borderBottom:`1px solid ${CORES.borda}` }}>
+                      <tr key={e.mes} style={{ backgroundColor: i%2===0 ? CORES.card : 'var(--bg-row)', borderBottom:`1px solid ${CORES.borda}` }}>
                         <td style={{ padding:'10px 16px', fontWeight:600, color: CORES.texto }}>{e.mes}</td>
                         <td style={{ padding:'10px 16px', textAlign:'right' as const, color: CORES.quitado, fontWeight:600 }}>{fmt(e.pago)}</td>
                         <td style={{ padding:'10px 16px', textAlign:'right' as const, color: CORES.credito, fontWeight:600 }}>{fmt(e.restante)}</td>

@@ -63,7 +63,7 @@ function MiniGrafico({ dados, cor, meta }: { dados: { label: string; valor: numb
         return (
           <g key={i}>
             <rect x={i*36+6} y={H-h} width={24} height={h} fill={c} rx={3}/>
-            <text x={i*36+18} y={H+14} textAnchor="middle" fontSize={8} fill="#9ca3af">{d.label}</text>
+            <text x={i*36+18} y={H+14} textAnchor="middle" fontSize={8} fill="var(--text-3)">{d.label}</text>
           </g>
         )
       })}
@@ -314,22 +314,22 @@ export default function HomePanel() {
   const totalDivDebito  = dividas.filter(d=>!d.isCredito&&!d.isParc).reduce((s,d)=>s+d.valorRestante,0)
   const totalDivParc    = dividas.filter(d=>d.isParc).reduce((s,d)=>s+d.valorRestante,0)
   const cartaoNomeGraf  = cartoes.find(c=>c.id===cartaoGrafico)?.nome||"Cartão"
-  const S: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"18px 20px", border:"1px solid #e2e8f0" }
-  const SC: React.CSSProperties = { background:"#fff", borderRadius:12, padding:"12px 14px", border:"1px solid #e2e8f0" }
+  const S: React.CSSProperties = { background:"var(--bg-card)", borderRadius:12, padding:"18px 20px", border:"1px solid var(--border)" }
+  const SC: React.CSSProperties = { background:"var(--bg-card)", borderRadius:12, padding:"12px 14px", border:"1px solid var(--border)" }
 
   if (loading) return (
-    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#f5f0e8",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
-      <div style={{color:"#6b7280",fontSize:15}}>Carregando visão geral...</div>
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg-page)",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
+      <div style={{color:"var(--text-2)",fontSize:15}}>Carregando visão geral...</div>
     </div>
   )
 
   return (
-    <div style={{background:"#f5f0e8",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:"28px 32px"}}>
+    <div style={{background:"var(--bg-page)",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:"28px 32px"}}>
 
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
         <div>
-          <h1 style={{fontSize:26,fontWeight:800,color:"#1a2332",margin:0}}>Visão Geral</h1>
-          <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>{mesFormatado}</p>
+          <h1 style={{fontSize:26,fontWeight:800,color:"var(--text-1)",margin:0}}>Visão Geral</h1>
+          <p style={{color:"var(--text-2)",fontSize:13,margin:"4px 0 0"}}>{mesFormatado}</p>
         </div>
         <button onClick={fetchDados} style={{fontSize:13,color:"#0d7280",background:"none",border:"1px solid #0d7280",borderRadius:8,padding:"6px 14px",cursor:"pointer",fontWeight:600}}>
           ↻ Atualizar
@@ -339,44 +339,44 @@ export default function HomePanel() {
       {/* 6 Cards */}
       <div style={{display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:10,marginBottom:24}}>
         <div style={{...SC,borderLeft:"4px solid #6ee7b7"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Saldo em Contas</div>
           <div style={{fontSize:17,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"6px 0 2px"}}>{fmt(totalSaldo)}</div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>Contas correntes</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>Contas correntes</div>
         </div>
         <div style={{...SC,borderLeft:"4px solid #6ee7b7"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Receitas do Mês</div>
-          <div style={{fontSize:17,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Receitas do Mês</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--text-1)",margin:"6px 0 2px"}}>
             {fmt(totalReceitas)}<Variacao atual={totalReceitas} anterior={totalReceitasAnt} boaSeSubir={true}/>
           </div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
         </div>
         <div style={{...SC,borderLeft:"4px solid #fca5a5"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas do Mês</div>
-          <div style={{fontSize:17,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Despesas do Mês</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--text-1)",margin:"6px 0 2px"}}>
             {fmt(totalDespesas)}<Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}</div>
         </div>
         <div style={{...SC,borderLeft:"4px solid #fbbf24"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pag. Fatura</div>
-          <div style={{fontSize:17,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Pag. Fatura</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--text-1)",margin:"6px 0 2px"}}>
             {fmt(pagtoFaturaMes)}<Variacao atual={pagtoFaturaMes} anterior={pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)}</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)}</div>
         </div>
         <div style={{...SC,borderLeft:"4px solid #c4b5fd"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#6b7280",textTransform:"uppercase",letterSpacing:"0.05em"}}>Cartão do Mês</div>
-          <div style={{fontSize:17,fontWeight:700,color:"#111827",margin:"6px 0 2px"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Cartão do Mês</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--text-1)",margin:"6px 0 2px"}}>
             {fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
         </div>
         <div style={{...SC,borderLeft:"4px solid #ef4444",background:"#fff5f5"}}>
           <div style={{fontSize:10,fontWeight:700,color:"#991b1b",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total Gasto</div>
           <div style={{fontSize:17,fontWeight:700,color:"#991b1b",margin:"6px 0 2px"}}>
             {fmt(totalDespesas+pagtoFaturaMes)}<Variacao atual={totalDespesas+pagtoFaturaMes} anterior={totalDespesasAnt+pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
-          <div style={{fontSize:10,color:"#9ca3af"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt+pagtoFaturaAnt)}</div>
+          <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt+pagtoFaturaAnt)}</div>
         </div>
       </div>
 
@@ -395,27 +395,27 @@ export default function HomePanel() {
 
       {/* Endividamento */}
       <div style={{...S, marginBottom:24}}>
-        <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>💰 Endividamento</div>
+        <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)",marginBottom:16}}>💰 Endividamento</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-          <div style={{background:"#f5f0e8",border:"1px solid #e2e8f0",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>Total em Dívidas</div>
-            <div style={{fontSize:20,fontWeight:800,color:"#1a2332"}}>{fmt(totalDividas)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.length} parcelamento(s)</div>
+          <div style={{background:"var(--bg-row)",border:"1px solid var(--border)",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:6}}>Total em Dívidas</div>
+            <div style={{fontSize:20,fontWeight:800,color:"var(--text-1)"}}>{fmt(totalDividas)}</div>
+            <div style={{fontSize:11,color:"var(--text-3)"}}>{dividas.length} parcelamento(s)</div>
           </div>
-          <div style={{background:"#fff5f5",border:"1px solid #fecaca",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>💳 Crédito</div>
+          <div style={{background:"var(--bg-danger-soft)",border:"1px solid var(--border-danger)",borderLeft:"4px solid #e05252",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:6}}>💳 Crédito</div>
             <div style={{fontSize:20,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{[...new Set(dividas.filter(d=>d.isCredito).map(d=>d.cartaoNome))].length} cartão(ões) · {dividas.filter(d=>d.isCredito).length} item(s)</div>
+            <div style={{fontSize:11,color:"var(--text-3)"}}>{[...new Set(dividas.filter(d=>d.isCredito).map(d=>d.cartaoNome))].length} cartão(ões) · {dividas.filter(d=>d.isCredito).length} item(s)</div>
           </div>
-          <div style={{background:"#eff6ff",border:"1px solid #bfdbfe",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>🏦 Débito / PIX</div>
+          <div style={{background:"var(--bg-info-soft)",border:"1px solid var(--border-info)",borderLeft:"4px solid #4a9eff",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:6}}>🏦 Débito / PIX</div>
             <div style={{fontSize:20,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
+            <div style={{fontSize:11,color:"var(--text-3)"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
           </div>
-          <div style={{background:"#fdf4ff",border:"1px solid #e9d5ff",borderLeft:"4px solid #9b59b6",borderRadius:10,padding:"14px"}}>
-            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"#6b7280",marginBottom:6}}>📋 Parcelamento</div>
+          <div style={{background:"var(--bg-purple-soft)",border:"1px solid var(--border-purple)",borderLeft:"4px solid #9b59b6",borderRadius:10,padding:"14px"}}>
+            <div style={{fontSize:11,fontWeight:600,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:6}}>📋 Parcelamento</div>
             <div style={{fontSize:20,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
-            <div style={{fontSize:11,color:"#9ca3af"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
+            <div style={{fontSize:11,color:"var(--text-3)"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
           </div>
         </div>
       </div>
@@ -425,18 +425,18 @@ export default function HomePanel() {
         <div style={{display:"flex",flexDirection:"column" as const,gap:16}}>
           <div style={S}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-              <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>🏦 Contas Correntes</div>
+              <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)"}}>🏦 Contas Correntes</div>
               <div style={{fontSize:14,fontWeight:700,color:totalSaldo>=0?"#065f46":"#991b1b"}}>{fmt(totalSaldo)}</div>
             </div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
               {contas.filter(c=>c.tipo==="corrente").map(c=>{
                 const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
                 return (
-                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
+                  <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"var(--bg-row)",borderRadius:10,padding:"10px 12px"}}>
                     <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:12,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
-                      <div style={{fontSize:11,color:"#9ca3af"}}>Conta corrente</div>
+                      <div style={{fontSize:12,fontWeight:600,color:"var(--text-1)",wordBreak:"break-word"}}>{c.nome}</div>
+                      <div style={{fontSize:11,color:"var(--text-3)"}}>Conta corrente</div>
                     </div>
                     <div style={{fontSize:13,fontWeight:700,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
                   </div>
@@ -447,17 +447,17 @@ export default function HomePanel() {
           {contas.filter(c=>c.tipo==="investimento").length > 0 && (
             <div style={S}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>📈 Investimentos</div>
+                <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)"}}>📈 Investimentos</div>
                 <div style={{fontSize:14,fontWeight:700,color:"#065f46"}}>{fmt(totalSaldoInv)}</div>
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:10}}>
                 {contas.filter(c=>c.tipo==="investimento").map(c=>{
                   const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
                   return (
-                    <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"#f0fdf4",borderRadius:10,padding:"10px 12px",border:"1px solid #bbf7d0"}}>
+                    <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:"var(--bg-success-soft)",borderRadius:10,padding:"10px 12px",border:"1px solid var(--border-success)"}}>
                       <div style={{width:36,height:36,borderRadius:8,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                       <div style={{flex:1,minWidth:0}}>
-                        <div style={{fontSize:12,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
+                        <div style={{fontSize:12,fontWeight:600,color:"var(--text-1)",wordBreak:"break-word"}}>{c.nome}</div>
                         <div style={{fontSize:11,color:"#16a34a"}}>Investimento</div>
                       </div>
                       <div style={{fontSize:13,fontWeight:700,color:"#065f46",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
@@ -470,8 +470,8 @@ export default function HomePanel() {
         </div>
         <div style={S}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-            <div style={{fontSize:14,fontWeight:700,color:"#111827"}}>💳 Cartões de Crédito</div>
-            <div style={{fontSize:12,color:"#6b7280"}}>{cartoes.length} cartão(ões)</div>
+            <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)"}}>💳 Cartões de Crédito</div>
+            <div style={{fontSize:12,color:"var(--text-2)"}}>{cartoes.length} cartão(ões)</div>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:10}}>
             {cartoes.map(c=>{
@@ -480,19 +480,19 @@ export default function HomePanel() {
               const cor=pct>80?"#ef4444":pct>50?"#f59e0b":"#10b981"
               const logo=logoBanco(c.nome)
               return (
-                <div key={c.id} style={{background:"#f5f0e8",borderRadius:10,padding:"10px 12px"}}>
+                <div key={c.id} style={{background:"var(--bg-row)",borderRadius:10,padding:"10px 12px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
                     <div style={{width:32,height:32,borderRadius:7,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
                     <div style={{flex:1,minWidth:0}}>
-                      <div style={{fontSize:11,fontWeight:600,color:"#111827",wordBreak:"break-word"}}>{c.nome}</div>
-                      <div style={{fontSize:10,color:"#6b7280"}}>Vence dia {c.data_vencimento}</div>
+                      <div style={{fontSize:11,fontWeight:600,color:"var(--text-1)",wordBreak:"break-word"}}>{c.nome}</div>
+                      <div style={{fontSize:10,color:"var(--text-2)"}}>Vence dia {c.data_vencimento}</div>
                     </div>
                     <div style={{textAlign:"right" as const}}>
                       <div style={{fontSize:12,fontWeight:700,color:disp>=0?"#065f46":"#991b1b"}}>{fmt(disp)}</div>
-                      <div style={{fontSize:9,color:"#9ca3af"}}>disponível</div>
+                      <div style={{fontSize:9,color:"var(--text-3)"}}>disponível</div>
                     </div>
                   </div>
-                  <div style={{background:"#e2e8f0",borderRadius:99,height:5}}>
+                  <div style={{background:"var(--border)",borderRadius:99,height:5}}>
                     <div style={{background:cor,borderRadius:99,height:5,width:`${Math.min(pct,100)}%`}}/>
                   </div>
                   <div style={{fontSize:10,color:cor,fontWeight:700,marginTop:3}}>{pct.toFixed(0)}% usado · {fmt(usado)}</div>
@@ -506,25 +506,25 @@ export default function HomePanel() {
       {/* Gráficos */}
       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:16,marginBottom:24}}>
         <div style={S}>
-          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>📈 Receitas {anoAtual}</div>
-          <div style={{fontSize:11,color:"#9ca3af",margin:"2px 0 6px"}}>Mês a mês — Pago</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-1)"}}>📈 Receitas {anoAtual}</div>
+          <div style={{fontSize:11,color:"var(--text-3)",margin:"2px 0 6px"}}>Mês a mês — Pago</div>
           <MiniGrafico dados={dadosReceitas} cor="#16a34a"/>
         </div>
         <div style={S}>
-          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>📉 Despesas {anoAtual}</div>
-          <div style={{fontSize:11,color:"#9ca3af",margin:"2px 0 6px"}}>Mês a mês{metaDespesas>0?` · Meta ${fmt(metaDespesas)}`:""}</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-1)"}}>📉 Despesas {anoAtual}</div>
+          <div style={{fontSize:11,color:"var(--text-3)",margin:"2px 0 6px"}}>Mês a mês{metaDespesas>0?` · Meta ${fmt(metaDespesas)}`:""}</div>
           <MiniGrafico dados={dadosDespesas} cor="#ef4444" meta={metaDespesas||undefined}/>
         </div>
         <div style={S}>
-          <div style={{fontSize:13,fontWeight:700,color:"#111827"}}>💳 Cartão {anoAtual}</div>
+          <div style={{fontSize:13,fontWeight:700,color:"var(--text-1)"}}>💳 Cartão {anoAtual}</div>
           <div style={{display:"flex",gap:4,flexWrap:"wrap",margin:"4px 0"}}>
             {cartoes.map(c=>(
-              <button key={c.id} onClick={()=>setCartaoGrafico(c.id)} style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",border:"none",background:cartaoGrafico===c.id?"#7c3aed":"#f3f4f6",color:cartaoGrafico===c.id?"#fff":"#374151"}}>
+              <button key={c.id} onClick={()=>setCartaoGrafico(c.id)} style={{padding:"2px 8px",borderRadius:99,fontSize:10,fontWeight:600,cursor:"pointer",border:"none",background:cartaoGrafico===c.id?"#7c3aed":"var(--bg-row2)",color:cartaoGrafico===c.id?"#fff":"var(--text-4)"}}>
                 {c.nome}
               </button>
             ))}
           </div>
-          <div style={{fontSize:11,color:"#9ca3af",marginBottom:4}}>{cartaoNomeGraf}</div>
+          <div style={{fontSize:11,color:"var(--text-3)",marginBottom:4}}>{cartaoNomeGraf}</div>
           <MiniGrafico dados={dadosCartao} cor="#7c3aed"/>
         </div>
       </div>
@@ -532,24 +532,24 @@ export default function HomePanel() {
       {/* Limites por Categoria */}
       {limitesCats.length>0&&(
         <div style={{...S,marginBottom:24}}>
-          <div style={{fontSize:14,fontWeight:700,color:"#111827",marginBottom:16}}>
+          <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)",marginBottom:16}}>
             🏷️ Limites por Categoria — {MESES_CURTOS[mesAtual-1]}
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {limitesCats.map((c,i)=>{
               const cor=c.pct>100?"#ef4444":c.pct>80?"#f59e0b":"#10b981"
               return (
-                <div key={i} style={{background:"#f5f0e8",borderRadius:10,padding:"12px 14px",border:"1px solid #e2e8f0"}}>
+                <div key={i} style={{background:"var(--bg-row)",borderRadius:10,padding:"12px 14px",border:"1px solid var(--border)"}}>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <span style={{fontSize:13,fontWeight:600,color:"#374151"}}>{c.nome}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:"var(--text-4)"}}>{c.nome}</span>
                     <span style={{fontSize:12,color:cor,fontWeight:700,whiteSpace:"nowrap",marginLeft:8}}>{fmt(c.gasto)} / {fmt(c.limite)}</span>
                   </div>
-                  <div style={{background:"#e2e8f0",borderRadius:99,height:7}}>
+                  <div style={{background:"var(--border)",borderRadius:99,height:7}}>
                     <div style={{background:cor,borderRadius:99,height:7,width:`${Math.min(c.pct,100)}%`,transition:"width 0.4s"}}/>
                   </div>
                   <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
                     <span style={{fontSize:10,color:cor,fontWeight:700}}>{c.pct}% do limite</span>
-                    <span style={{fontSize:10,color:"#9ca3af"}}>{c.pct>100?`⚠️ ${fmt(c.gasto-c.limite)} acima`:`${fmt(c.limite-c.gasto)} restante`}</span>
+                    <span style={{fontSize:10,color:"var(--text-3)"}}>{c.pct>100?`⚠️ ${fmt(c.gasto-c.limite)} acima`:`${fmt(c.limite-c.gasto)} restante`}</span>
                   </div>
                 </div>
               )

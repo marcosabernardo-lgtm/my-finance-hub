@@ -381,11 +381,11 @@ export default function Movimentacoes() {
   // ── Helpers visuais ─────────────────────────────────────────────────────────
   const corSituacao = (s: string) => {
     switch (s) {
-      case 'Pago':     return { bg: '#d1fae5', color: '#065f46' }
-      case 'Pendente': return { bg: '#fef3c7', color: '#92400e' }
-      case 'Faturado': return { bg: '#dbeafe', color: '#1e40af' }
-      case 'Previsto': return { bg: '#f3e8ff', color: '#6b21a8' }
-      default:         return { bg: '#f3f4f6', color: '#374151' }
+      case 'Pago':     return { bg: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)' }
+      case 'Pendente': return { bg: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+      case 'Faturado': return { bg: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+      case 'Previsto': return { bg: 'var(--badge-previsto-bg)', color: 'var(--badge-previsto-fg)' }
+      default:         return { bg: 'var(--bg-row2)',           color: 'var(--text-4)' }
     }
   }
 
@@ -411,25 +411,25 @@ export default function Movimentacoes() {
 
       {/* Header */}
       <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Movimentações</h1>
-        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '14px' }}>Visualize, edite e gerencie todos os lançamentos</p>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Movimentações</h1>
+        <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '14px' }}>Visualize, edite e gerencie todos os lançamentos</p>
       </div>
 
       {/* Feedback */}
       {sucesso && (
-        <div style={{ background: '#d1fae5', border: '1px solid #6ee7b7', color: '#065f46', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+        <div style={{ background: 'var(--bg-success-soft)', border: '1px solid #6ee7b7', color: '#065f46', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
           ✓ {sucesso}
         </div>
       )}
       {erro && (
-        <div style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#991b1b', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
+        <div style={{ background: 'var(--bg-danger-soft)', border: '1px solid #fca5a5', color: '#991b1b', padding: '10px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '14px' }}>
           ✗ {erro}
         </div>
       )}
 
       {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
+        background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '12px',
         padding: '16px 20px', marginBottom: '20px',
         display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
       }}>
@@ -437,22 +437,22 @@ export default function Movimentacoes() {
         {/* Filtrar por */}
         <div>
           <label style={labelStyle}>Filtrar por</label>
-          <div style={{ display: 'flex', border: '1px solid #d1d5db', borderRadius: '8px', overflow: 'hidden', height: '38px' }}>
+          <div style={{ display: 'flex', border: '1px solid var(--border-input)', borderRadius: '8px', overflow: 'hidden', height: '38px' }}>
             <button
               onClick={() => setFiltroData('movimentacao')}
               style={{
                 padding: '0 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
-                background: filtroData === 'movimentacao' ? '#0d7280' : '#fff',
-                color: filtroData === 'movimentacao' ? '#fff' : '#374151',
+                background: filtroData === 'movimentacao' ? '#0d7280' : 'var(--bg-card)',
+                color: filtroData === 'movimentacao' ? '#fff' : 'var(--text-4)',
               }}
             >Dt. Movimento</button>
             <button
               onClick={() => setFiltroData('pagamento')}
               style={{
                 padding: '0 14px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none',
-                borderLeft: '1px solid #d1d5db',
-                background: filtroData === 'pagamento' ? '#0d7280' : '#fff',
-                color: filtroData === 'pagamento' ? '#fff' : '#374151',
+                borderLeft: '1px solid var(--border-input)',
+                background: filtroData === 'pagamento' ? '#0d7280' : 'var(--bg-card)',
+                color: filtroData === 'pagamento' ? '#fff' : 'var(--text-4)',
               }}
             >Dt. Pagamento</button>
           </div>
@@ -569,11 +569,11 @@ export default function Movimentacoes() {
       </div>
 
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
         ) : movimentacoesFiltradas.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>
             {temFiltroAtivo
               ? 'Nenhum lançamento encontrado com os filtros selecionados.'
               : 'Nenhum lançamento encontrado para o período.'}
@@ -582,15 +582,15 @@ export default function Movimentacoes() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                   {['Dt. Movimentação','Dt. Pagamento','Descrição','Tipo','Categoria','Valor','Método','Cartão / Conta','Parcela','Situação','Ações'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px' }}>{h}</th>
+                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 600, color: 'var(--text-4)', whiteSpace: 'nowrap', fontSize: '12px' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {movimentacoesFiltradas.map((m, idx) => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #f3f4f6', background: idx % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={m.id} style={{ borderBottom: '1px solid var(--border)', background: idx % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row2)' }}>
 
                     {/* Data Movimentação */}
                     <td style={tdStyle}>
@@ -599,14 +599,14 @@ export default function Movimentacoes() {
 
                     {/* Data Pagamento */}
                     <td style={tdStyle}>
-                      <span style={{ whiteSpace: 'nowrap', color: m.data_pagamento ? '#374151' : '#d1d5db' }}>
+                      <span style={{ whiteSpace: 'nowrap', color: m.data_pagamento ? 'var(--text-4)' : 'var(--border)' }}>
                         {formatDate(m.data_pagamento)}
                       </span>
                     </td>
 
                     {/* Descrição */}
                     <td style={{ ...tdStyle, maxWidth: '200px' }}>
-                      <div style={{ fontWeight: 500, color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div style={{ fontWeight: 500, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {/* Destaca o texto buscado */}
                         {filtroBusca
                           ? (() => {
@@ -683,7 +683,7 @@ export default function Movimentacoes() {
 
         {/* Rodapé da tabela */}
         {!loading && movimentacoesFiltradas.length > 0 && (
-          <div style={{ padding: '10px 16px', borderTop: '1px solid #f3f4f6', color: '#9ca3af', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ padding: '10px 16px', borderTop: '1px solid var(--border)', color: 'var(--text-3)', fontSize: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span>{movimentacoesFiltradas.length} lançamento{movimentacoesFiltradas.length !== 1 ? 's' : ''}</span>
             {movimentacoesFiltradas.length < todasMovimentacoes.length && (
               <span style={{ color: '#f59e0b', fontWeight: 500 }}>
@@ -773,7 +773,7 @@ export default function Movimentacoes() {
       {/* ── Modal Parcelas ────────────────────────────────────────────────────── */}
       {modalParcelas && (
         <Modal titulo='Lançamento Parcelado' onClose={() => setModalParcelas(null)}>
-          <p style={{ color: '#374151', fontSize: '14px', marginBottom: '20px' }}>
+          <p style={{ color: 'var(--text-4)', fontSize: '14px', marginBottom: '20px' }}>
             Este lançamento faz parte de um grupo de parcelas.<br />
             O que você deseja fazer?
           </p>
@@ -794,7 +794,7 @@ export default function Movimentacoes() {
             </button>
             <button
               onClick={() => setModalParcelas(null)}
-              style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: '13px' }}
+              style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: '13px' }}
             >
               Cancelar
             </button>
@@ -805,16 +805,16 @@ export default function Movimentacoes() {
       {/* ── Modal Confirmar Exclusão ──────────────────────────────────────────── */}
       {excluindo && (
         <Modal titulo='Confirmar Exclusão' onClose={() => setExcluindo(null)}>
-          <p style={{ color: '#374151', fontSize: '14px' }}>
+          <p style={{ color: 'var(--text-4)', fontSize: '14px' }}>
             Tem certeza que deseja excluir o lançamento:
           </p>
           <div style={{ background: '#fee2e2', borderRadius: '8px', padding: '12px', margin: '12px 0' }}>
             <strong style={{ color: '#991b1b' }}>{excluindo.descricao}</strong>
-            <div style={{ color: '#9ca3af', fontSize: '13px', marginTop: '4px' }}>
+            <div style={{ color: 'var(--text-3)', fontSize: '13px', marginTop: '4px' }}>
               {formatDate(excluindo.data_movimentacao)} · {formatCurrency(Number(excluindo.valor))}
             </div>
           </div>
-          <p style={{ color: '#9ca3af', fontSize: '12px' }}>Esta ação não pode ser desfeita.</p>
+          <p style={{ color: 'var(--text-3)', fontSize: '12px' }}>Esta ação não pode ser desfeita.</p>
           {excluindo.grupo_id && (
             <p style={{ color: '#92400e', fontSize: '12px', background: '#fef3c7', padding: '8px', borderRadius: '6px' }}>
               ⚠️ Este lançamento faz parte de um grupo parcelado. Escolha abaixo excluir só esta parcela ou todas as pendentes do grupo.
@@ -859,13 +859,13 @@ function Modal({ titulo, onClose, children }: { titulo: string; onClose: () => v
       zIndex: 1000, padding: '16px'
     }}>
       <div style={{
-        background: '#fff', borderRadius: '16px', padding: '24px',
+        background: 'var(--bg-card)', borderRadius: '16px', padding: '24px',
         width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto',
         boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#111827' }}>{titulo}</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9ca3af', lineHeight: 1 }}>×</button>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'var(--text-1)' }}>{titulo}</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-3)', lineHeight: 1 }}>×</button>
         </div>
         {children}
       </div>
@@ -885,23 +885,23 @@ function Campo({ label, children, style }: { label: string; children: React.Reac
 // ─── Shared styles ────────────────────────────────────────────────────────────
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280',
+  display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-2)',
   textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px'
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
+  border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px'
 }
 
 const inputStyle: React.CSSProperties = {
-  width: '100%', border: '1px solid #d1d5db', borderRadius: '8px',
-  padding: '8px 10px', fontSize: '13px', color: '#111827', background: '#fff',
+  width: '100%', border: '1px solid var(--border-input)', borderRadius: '8px',
+  padding: '8px 10px', fontSize: '13px', color: 'var(--text-1)', background: 'var(--bg-input)',
   boxSizing: 'border-box'
 }
 
 const tdStyle: React.CSSProperties = {
-  padding: '10px 12px', color: '#374151', verticalAlign: 'middle'
+  padding: '10px 12px', color: 'var(--text-4)', verticalAlign: 'middle'
 }
 
 const btnPrimario: React.CSSProperties = {
@@ -911,7 +911,7 @@ const btnPrimario: React.CSSProperties = {
 }
 
 const btnSecundario: React.CSSProperties = {
-  background: '#fff', color: '#374151', border: '1px solid #d1d5db',
+  background: 'var(--bg-card)', color: 'var(--text-4)', border: '1px solid var(--border-input)',
   borderRadius: '8px', padding: '9px 18px', fontSize: '13px', fontWeight: 600,
   cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px'
 }

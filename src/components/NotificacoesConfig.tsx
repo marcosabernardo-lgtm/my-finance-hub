@@ -15,18 +15,14 @@ export default function NotificacoesConfig() {
   const [salvando, setSalvando] = useState(false);
   const [testando, setTestando] = useState(false);
   const [mensagem, setMensagem] = useState<{ tipo: 'sucesso' | 'erro'; texto: string } | null>(null);
-  const [darkMode] = useState(() => localStorage.getItem('darkMode') === 'true');
 
   const cores = {
-    bg: darkMode ? '#1a1a2e' : '#f5f7fa',
-    card: darkMode ? '#16213e' : '#ffffff',
-    texto: darkMode ? '#e2e8f0' : '#1a202c',
-    subtexto: darkMode ? '#94a3b8' : '#718096',
-    borda: darkMode ? '#2d3748' : '#e2e8f0',
+    texto: 'var(--text-1)',
+    subtexto: 'var(--text-2)',
+    borda: 'var(--border)',
     primaria: '#667eea',
     sucesso: '#48bb78',
     erro: '#fc8181',
-    input: darkMode ? '#2d3748' : '#f7fafc',
   };
 
   useEffect(() => {
@@ -129,7 +125,7 @@ export default function NotificacoesConfig() {
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
-        <p style={{ color: cores.subtexto }}>Carregando...</p>
+        <p style={{ color: 'var(--text-2)' }}>Carregando...</p>
       </div>
     );
   }
@@ -138,20 +134,20 @@ export default function NotificacoesConfig() {
     <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto' }}>
       {/* Cabeçalho */}
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: cores.texto, margin: '0 0 8px 0' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text-1)', margin: '0 0 8px 0' }}>
           🔔 Notificações WhatsApp
         </h1>
-        <p style={{ color: cores.subtexto, margin: 0, fontSize: '14px' }}>
+        <p style={{ color: 'var(--text-2)', margin: 0, fontSize: '14px' }}>
           Receba um resumo diário com saldos e alertas todo dia às <strong>8h da manhã</strong>.
         </p>
       </div>
 
       {/* Card principal */}
       <div style={{
-        background: cores.card,
+        background: 'var(--bg-card)',
         borderRadius: '16px',
         padding: '28px',
-        border: `1px solid ${cores.borda}`,
+        border: '1px solid var(--border)',
         boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
       }}>
 
@@ -162,11 +158,11 @@ export default function NotificacoesConfig() {
           alignItems: 'center',
           marginBottom: '24px',
           paddingBottom: '24px',
-          borderBottom: `1px solid ${cores.borda}`,
+          borderBottom: '1px solid var(--border)',
         }}>
           <div>
-            <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: cores.texto }}>Notificações ativas</p>
-            <p style={{ margin: 0, fontSize: '13px', color: cores.subtexto }}>
+            <p style={{ margin: '0 0 4px 0', fontWeight: '600', color: 'var(--text-1)' }}>Notificações ativas</p>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-2)' }}>
               {config.ativo ? 'Você receberá mensagens diárias' : 'Notificações pausadas'}
             </p>
           </div>
@@ -178,7 +174,7 @@ export default function NotificacoesConfig() {
               borderRadius: '14px',
               border: 'none',
               cursor: 'pointer',
-              background: config.ativo ? cores.primaria : cores.borda,
+              background: config.ativo ? cores.primaria : 'var(--border)',
               position: 'relative',
               transition: 'background 0.2s',
             }}
@@ -204,7 +200,7 @@ export default function NotificacoesConfig() {
             marginBottom: '8px',
             fontWeight: '600',
             fontSize: '14px',
-            color: cores.texto,
+            color: 'var(--text-1)',
           }}>
             Número do WhatsApp
           </label>
@@ -218,23 +214,23 @@ export default function NotificacoesConfig() {
               width: '100%',
               padding: '12px 16px',
               borderRadius: '10px',
-              border: `1px solid ${cores.borda}`,
-              background: cores.input,
-              color: cores.texto,
+              border: '1px solid var(--border-input)',
+              background: 'var(--bg-input)',
+              color: 'var(--text-1)',
               fontSize: '16px',
               outline: 'none',
               boxSizing: 'border-box',
               fontFamily: 'monospace',
             }}
           />
-          <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: cores.subtexto }}>
+          <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: 'var(--text-2)' }}>
             Formato: <strong>55</strong> (país) + <strong>DDD</strong> + <strong>número</strong>. Ex: 5541999887766
           </p>
         </div>
 
         {/* Preview do que será enviado */}
         <div style={{
-          background: darkMode ? '#0d1b2a' : '#f0f4ff',
+          background: 'var(--bg-row)',
           borderRadius: '12px',
           padding: '16px',
           marginBottom: '24px',
@@ -245,7 +241,7 @@ export default function NotificacoesConfig() {
           <pre style={{
             margin: 0,
             fontSize: '12px',
-            color: cores.subtexto,
+            color: 'var(--text-2)',
             whiteSpace: 'pre-wrap',
             fontFamily: 'inherit',
             lineHeight: '1.6',
@@ -271,9 +267,7 @@ Enviado automaticamente pelo my-finance-hub 🚀`}</pre>
             padding: '12px 16px',
             borderRadius: '10px',
             marginBottom: '16px',
-            background: mensagem.tipo === 'sucesso'
-              ? (darkMode ? '#1a3a2a' : '#f0fff4')
-              : (darkMode ? '#3a1a1a' : '#fff5f5'),
+            background: mensagem.tipo === 'sucesso' ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)',
             border: `1px solid ${mensagem.tipo === 'sucesso' ? cores.sucesso : cores.erro}`,
             color: mensagem.tipo === 'sucesso' ? cores.sucesso : cores.erro,
             fontSize: '14px',
@@ -329,10 +323,10 @@ Enviado automaticamente pelo my-finance-hub 🚀`}</pre>
         marginTop: '20px',
         padding: '16px',
         borderRadius: '12px',
-        background: darkMode ? '#1a2744' : '#eff6ff',
-        border: `1px solid ${darkMode ? '#2d4a8a' : '#bfdbfe'}`,
+        background: 'var(--bg-info-soft)',
+        border: '1px solid #bfdbfe',
       }}>
-        <p style={{ margin: 0, fontSize: '13px', color: darkMode ? '#93c5fd' : '#3b82f6' }}>
+        <p style={{ margin: 0, fontSize: '13px', color: '#3b82f6' }}>
           🕗 A mensagem é enviada automaticamente todo dia às <strong>8h00 (horário de Brasília)</strong>.
           Use o botão "Testar agora" para receber uma prévia imediata.
         </p>

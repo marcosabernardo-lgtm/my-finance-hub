@@ -7,11 +7,11 @@ type Conta = { id: number; nome: string }
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#fff', border: '1px solid #d1d5db',
-  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
+  backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-input)',
+  color: 'var(--text-1)', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
 }
 const labelStyle: React.CSSProperties = {
-  color: '#374151', fontSize: 12, fontWeight: 600, display: 'block',
+  color: 'var(--text-4)', fontSize: 12, fontWeight: 600, display: 'block',
   marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
 }
 const btnPrimary: React.CSSProperties = {
@@ -229,7 +229,7 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
   )
 
   return (
-    <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+    <div style={{ background: 'var(--bg-card)', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
       {mensagem && (
         <div style={{
           color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
@@ -245,8 +245,8 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
         style={{
           display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16,
           cursor: 'pointer', userSelect: 'none',
-          background: isPrevisto ? '#fdf4ff' : '#f9fafb',
-          border: `1px solid ${isPrevisto ? '#e9d5ff' : '#e5e7eb'}`,
+          background: isPrevisto ? '#fdf4ff' : 'var(--bg-row2)',
+          border: `1px solid ${isPrevisto ? '#e9d5ff' : 'var(--border)'}`,
           borderRadius: 8, padding: '10px 14px',
         }}
       >
@@ -262,10 +262,10 @@ export default function LancamentoDespesa({ householdId, categorias, cartoes, co
           }} />
         </div>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 600, color: '#111827' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-1)' }}>
             {isPrevisto ? 'Previsao Futura (Recorrente)' : 'Lancamento Unico'}
           </div>
-          <div style={{ fontSize: 11, color: '#6b7280' }}>
+          <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
             {isPrevisto ? 'Lançamentos futuros como Previsto — marcados como recorrente' : 'Despesa realizada ou a vencer'}
           </div>
         </div>

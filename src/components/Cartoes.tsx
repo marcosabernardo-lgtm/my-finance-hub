@@ -67,11 +67,11 @@ const FILTROS: { key: FiltroSituacao; label: string; desc: string; cor: string; 
 
 const corSituacaoStyle = (s: string): React.CSSProperties => {
   switch (s) {
-    case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
-    case 'Pendente': return { background: '#fef3c7', color: '#92400e' }
-    case 'Faturado': return { background: '#dbeafe', color: '#1e40af' }
-    case 'Previsto': return { background: '#f3e8ff', color: '#6b21a8' }
-    default:         return { background: '#f3f4f6', color: '#374151' }
+    case 'Pago':     return { background: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)' }
+    case 'Pendente': return { background: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+    case 'Faturado': return { background: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+    case 'Previsto': return { background: 'var(--badge-previsto-bg)', color: 'var(--badge-previsto-fg)' }
+    default:         return { background: 'var(--bg-row2)',           color: 'var(--text-4)' }
   }
 }
 
@@ -250,8 +250,8 @@ export default function CartoesView() {
 
       {/* Header */}
       <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Cartões de Crédito</h1>
-        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Cartões de Crédito</h1>
+        <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
           Visão anual por cartão · clique em qualquer célula para ver os lançamentos
         </p>
       </div>
@@ -284,7 +284,7 @@ export default function CartoesView() {
       </div>
 
       {/* ── Filtros ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px' }}>
+      <div style={{ background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '12px', padding: '16px 20px', marginBottom: '20px' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '24px', alignItems: 'flex-end' }}>
 
           <div>
@@ -300,9 +300,9 @@ export default function CartoesView() {
               {FILTROS.map(f => (
                 <button key={f.key} onClick={() => { setFiltro(f.key); setDrillAberto(null) }} style={{
                   padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                  border: filtro === f.key ? 'none' : '1px solid #e5e7eb',
-                  background: filtro === f.key ? f.cor : '#fff',
-                  color: filtro === f.key ? '#fff' : '#374151',
+                  border: filtro === f.key ? 'none' : '1px solid var(--border)',
+                  background: filtro === f.key ? f.cor : 'var(--bg-card)',
+                  color: filtro === f.key ? '#fff' : 'var(--text-4)',
                 }}>
                   {f.label}
                   <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
@@ -316,9 +316,9 @@ export default function CartoesView() {
 
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
       {loading ? (
-        <div style={{ padding: '64px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
@@ -373,20 +373,20 @@ export default function CartoesView() {
 
                         {/* Cartão */}
                         <td style={{ ...tdFixo }}>
-                          <div style={{ fontWeight: 600, color: '#111827' }}>{linha.cartao.nome}</div>
-                          <div style={{ background: '#f3f4f6', borderRadius: '99px', height: '4px', marginTop: '4px', width: '120px' }}>
+                          <div style={{ fontWeight: 600, color: 'var(--text-1)' }}>{linha.cartao.nome}</div>
+                          <div style={{ background: 'var(--bg-row2)', borderRadius: '99px', height: '4px', marginTop: '4px', width: '120px' }}>
                             <div style={{ background: pct > 80 ? '#ef4444' : pct > 50 ? '#f59e0b' : '#10b981', borderRadius: '99px', height: '4px', width: `${Math.min(pct, 100)}%` }} />
                           </div>
-                          <div style={{ fontSize: '10px', color: '#9ca3af', marginTop: '2px' }}>{pct.toFixed(0)}% comprometido (Pendente)</div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-3)', marginTop: '2px' }}>{pct.toFixed(0)}% comprometido (Pendente)</div>
                         </td>
 
                         {/* Limite */}
-                        <td style={{ ...tdNum, background: '#ede8df', color: '#6b7280' }}>
+                        <td style={{ ...tdNum, background: 'var(--bg-row)', color: 'var(--text-2)' }}>
                           {fmt(linha.cartao.limite_total)}
                         </td>
 
                         {/* Vence/Fecha */}
-                        <td style={{ ...tdNum, background: '#ede8df', fontSize: '11px', color: '#9ca3af' }}>
+                        <td style={{ ...tdNum, background: 'var(--bg-row)', fontSize: '11px', color: 'var(--text-3)' }}>
                           <div>Vence {linha.cartao.data_vencimento}</div>
                           <div>Fecha {linha.cartao.data_fechamento}</div>
                         </td>
@@ -422,14 +422,14 @@ export default function CartoesView() {
                         })}
 
                         {/* Total */}
-                        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: '#1e40af' }}>
+                        <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: '#1e40af' }}>
                           {fmt(totalLinha)}
                         </td>
 
                         {/* Disponível — só Pendente */}
-                        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: linha.limiteDisponivel >= 0 ? '#065f46' : '#991b1b' }}>
+                        <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: linha.limiteDisponivel >= 0 ? '#065f46' : '#991b1b' }}>
                           <div>{fmt(linha.limiteDisponivel)}</div>
-                          <div style={{ fontSize: '10px', fontWeight: 400, color: '#9ca3af' }}>de {fmt(linha.cartao.limite_total)}</div>
+                          <div style={{ fontSize: '10px', fontWeight: 400, color: 'var(--text-3)' }}>de {fmt(linha.cartao.limite_total)}</div>
                         </td>
 
                       </tr>
@@ -442,15 +442,15 @@ export default function CartoesView() {
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                                 <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
                                   📋 {linha.cartao.nome} — {MESES_CURTOS[drillAberto.mes - 1]}/{ano}
-                                  <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                                  <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                                     {lancamentosDrill.length} lançamento{lancamentosDrill.length !== 1 ? 's' : ''}
                                   </span>
                                 </div>
-                                <button onClick={() => setDrillAberto(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                                <button onClick={() => setDrillAberto(null)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--text-3)' }}>×</button>
                               </div>
 
                               {lancamentosDrill.length === 0 ? (
-                                <div style={{ color: '#9ca3af', fontSize: '13px' }}>Nenhum lançamento encontrado.</div>
+                                <div style={{ color: 'var(--text-3)', fontSize: '13px' }}>Nenhum lançamento encontrado.</div>
                               ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                   <thead>
@@ -528,7 +528,7 @@ export default function CartoesView() {
 
       {/* Legenda */}
       {!loading && (
-        <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: '#9ca3af' }}>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-3)' }}>
           <span>💡 Clique em qualquer célula com valor para ver os lançamentos</span>
           <span style={{ color: '#7c3aed' }}>◆ Meses futuros</span>
           <span>🟢 &lt;50% · 🟡 50–80% · 🔴 &gt;80% do limite · Disponível calculado apenas sobre Pendentes</span>
@@ -555,9 +555,9 @@ function CardInfo({ label, valor, sub, cor, bg, borda }: {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const labelStyle: React.CSSProperties  = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
-const selectStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px' }
+const labelStyle: React.CSSProperties  = { display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
+const selectStyle: React.CSSProperties = { border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px' }
 const thBase: React.CSSProperties      = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
-const tdFixo: React.CSSProperties      = { padding: '10px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: '#fff', borderRight: '1px solid #f3f4f6', zIndex: 1, minWidth: '160px' }
+const tdFixo: React.CSSProperties      = { padding: '10px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', zIndex: 1, minWidth: '160px' }
 const tdNum: React.CSSProperties       = { padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }
-const tdDrill: React.CSSProperties     = { padding: '6px 10px', color: '#374151', verticalAlign: 'middle' }
+const tdDrill: React.CSSProperties     = { padding: '6px 10px', color: 'var(--text-4)', verticalAlign: 'middle' }

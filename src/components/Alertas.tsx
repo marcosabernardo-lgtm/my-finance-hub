@@ -82,20 +82,20 @@ function LinhaItem({ descricao, data, valor, parcela, diasRestantes, movId, isCa
     <div style={{
       display: 'flex', alignItems: 'center', gap: '10px',
       padding: '10px 12px',
-      background: atrasado ? '#fff5f5' : '#ede8df',
+      background: atrasado ? 'var(--bg-danger-soft)' : 'var(--bg-row)',
       borderRadius: '8px',
       borderLeft: `3px solid ${atrasado ? '#ef4444' : '#d6cfc4'}`
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: '13px', color: '#111827', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <div style={{ fontSize: '13px', color: 'var(--text-1)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {descricao}
           {parcela && parcela !== 'Parcela 1/1' && (
-            <span style={{ fontSize: '10px', color: '#9ca3af', marginLeft: '6px' }}>{parcela}</span>
+            <span style={{ fontSize: '10px', color: 'var(--text-3)', marginLeft: '6px' }}>{parcela}</span>
           )}
         </div>
-        <div style={{ fontSize: '11px', color: '#9ca3af' }}>{formatarData(data)}</div>
+        <div style={{ fontSize: '11px', color: 'var(--text-3)' }}>{formatarData(data)}</div>
       </div>
-      <div style={{ fontSize: '13px', fontWeight: 700, color: atrasado ? '#ef4444' : '#111827', whiteSpace: 'nowrap' }}>
+      <div style={{ fontSize: '13px', fontWeight: 700, color: atrasado ? '#ef4444' : 'var(--text-1)', whiteSpace: 'nowrap' }}>
         {fmt(valor)}
       </div>
       {movId && onPago && (
@@ -133,13 +133,13 @@ function BlocoExpandivel({ icone, titulo, total, cor, fundo, borda, badge, badge
     <div style={{ border: `1px solid ${borda}`, borderLeft: `4px solid ${cor}`, borderRadius: '10px', overflow: 'hidden', marginBottom: '8px' }}>
       <div onClick={() => setAberto(a => !a)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', background: fundo, cursor: 'pointer', userSelect: 'none' }}>
         <span style={{ fontSize: '18px' }}>{icone}</span>
-        <span style={{ fontSize: '13px', fontWeight: 600, color: '#111827', flex: 1 }}>{titulo}</span>
+        <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-1)', flex: 1 }}>{titulo}</span>
         {badge && <span style={{ fontSize: '10px', fontWeight: 700, background: badgeCor || cor, color: '#fff', borderRadius: '99px', padding: '2px 8px' }}>{badge}</span>}
         <span style={{ fontSize: '14px', fontWeight: 700, color: cor }}>{fmt(total)}</span>
-        <span style={{ fontSize: '12px', color: '#9ca3af', marginLeft: '4px' }}>{aberto ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-3)', marginLeft: '4px' }}>{aberto ? '▲' : '▼'}</span>
       </div>
       {aberto && (
-        <div style={{ padding: '10px 12px', background: '#f5f0e8', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ padding: '10px 12px', background: 'var(--bg-page)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {children}
         </div>
       )}
@@ -155,14 +155,14 @@ function Secao({ titulo, icone, cor, count, children, defaultAberto = true }: {
     <div style={{ marginBottom: '28px' }}>
       <div onClick={() => setAberto(a => !a)} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', cursor: 'pointer', userSelect: 'none' }}>
         <span style={{ fontSize: '18px' }}>{icone}</span>
-        <span style={{ fontSize: '15px', fontWeight: 700, color: '#111827', flex: 1 }}>{titulo}</span>
+        <span style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-1)', flex: 1 }}>{titulo}</span>
         {count > 0 && <span style={{ fontSize: '11px', fontWeight: 700, background: cor, color: '#fff', borderRadius: '99px', padding: '2px 10px' }}>{count}</span>}
-        <span style={{ fontSize: '12px', color: '#9ca3af' }}>{aberto ? '▲' : '▼'}</span>
+        <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>{aberto ? '▲' : '▼'}</span>
       </div>
       {aberto && (
         <div>
           {count === 0
-            ? <div style={{ fontSize: '13px', color: '#9ca3af', padding: '12px 16px', background: '#ede8df', borderRadius: '8px', textAlign: 'center' }}>✅ Nenhum alerta nesta categoria</div>
+            ? <div style={{ fontSize: '13px', color: 'var(--text-3)', padding: '12px 16px', background: 'var(--bg-row)', borderRadius: '8px', textAlign: 'center' }}>✅ Nenhum alerta nesta categoria</div>
             : children}
         </div>
       )}
@@ -370,24 +370,24 @@ export default function Alertas() {
   }
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '960px', margin: '0 auto', background: '#f5f0e8', minHeight: '100vh' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '960px', margin: '0 auto', background: 'var(--bg-page)', minHeight: '100vh' }}>
 
       <div style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <h1 style={{ fontSize: '26px', fontWeight: 700, color: '#111827', margin: 0 }}>🔔 Alertas</h1>
+          <h1 style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>🔔 Alertas</h1>
           {totalAlertas > 0 && (
             <span style={{ fontSize: '13px', fontWeight: 700, background: '#ef4444', color: '#fff', borderRadius: '99px', padding: '3px 12px' }}>
               {totalAlertas} ativos
             </span>
           )}
         </div>
-        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
+        <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
           Monitoramento financeiro — {hoje.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
         </p>
       </div>
 
       {loading ? (
-        <div style={{ padding: '80px', textAlign: 'center', color: '#9ca3af' }}>Carregando alertas...</div>
+        <div style={{ padding: '80px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando alertas...</div>
       ) : (
         <>
           {/* 3 Cards */}
@@ -424,7 +424,7 @@ export default function Alertas() {
           <Secao titulo="Limite de Gastos Estourado" icone="💸" cor="#7c3aed" count={categoriasEstouradas.length}>
             {categoriasEstouradas.map(c => (
               <BlocoExpandivel key={c.id} icone="⚠️" titulo={c.nome} total={c.gasto} cor="#7c3aed" fundo="#fdf4ff" borda="#e9d5ff" badge={`${c.pct}% do limite`} badgeCor="#7c3aed">
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b7280', padding: '4px 8px', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-2)', padding: '4px 8px', marginBottom: '4px' }}>
                   <span>Limite: {fmt(c.limite_gastos || 0)}</span>
                   <span style={{ color: '#7c3aed', fontWeight: 600 }}>Excedeu {fmt(c.excesso)}</span>
                 </div>
@@ -438,8 +438,8 @@ export default function Alertas() {
 
           <Secao titulo="Maior Consumo do Mês" icone="📊" cor="#0891b2" count={maiorConsumo.length}>
             {maiorConsumo.map((c, i) => (
-              <BlocoExpandivel key={c.id} icone={`#${i+1}`} titulo={c.nome} total={c.gasto} cor={cores[i]||'#6b7280'} fundo="#f5f0e8" borda="#e2e8f0" badge={`${c.pct}% do total`} badgeCor={cores[i]||'#6b7280'}>
-                <div style={{ fontSize: '11px', color: '#9ca3af', padding: '2px 8px 8px' }}>
+              <BlocoExpandivel key={c.id} icone={`#${i+1}`} titulo={c.nome} total={c.gasto} cor={cores[i]||'#6b7280'} fundo="var(--bg-page)" borda="var(--border)" badge={`${c.pct}% do total`} badgeCor={cores[i]||'#6b7280'}>
+                <div style={{ fontSize: '11px', color: 'var(--text-3)', padding: '2px 8px 8px' }}>
                   {c.classificacao}{c.limite_gastos ? ` · Limite: ${fmt(c.limite_gastos)} (usando ${Math.round(c.gasto/c.limite_gastos*100)}%)` : ''}
                 </div>
                 {c.itens.map(m => <LinhaItem key={m.id} descricao={m.descricao} data={m.data_movimentacao} valor={Number(m.valor)} parcela={m.numero_parcela}/>)}
@@ -454,7 +454,7 @@ export default function Alertas() {
                   <div style={{ background: '#fed7aa', borderRadius: '99px', height: '6px', marginBottom: '6px' }}>
                     <div style={{ background: '#ea580c', width: `${Math.min(c.pctProjecao,100)}%`, height: '6px', borderRadius: '99px' }}/>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#6b7280', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-2)', marginBottom: '8px' }}>
                     <span>Hoje: {fmt(c.gastoAtual)} ({c.pctAtual}%)</span>
                     <span>Limite: {fmt(c.limite_gastos||0)}</span>
                   </div>

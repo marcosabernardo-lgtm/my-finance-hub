@@ -8,11 +8,11 @@ type FaturaAberta = {
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  backgroundColor: '#fff', border: '1px solid #d1d5db',
-  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
+  backgroundColor: 'var(--bg-input)', border: '1px solid var(--border-input)',
+  color: 'var(--text-1)', boxSizing: 'border-box' as const, marginBottom: 10, fontSize: 13,
 }
 const labelStyle: React.CSSProperties = {
-  color: '#374151', fontSize: 12, fontWeight: 600, display: 'block',
+  color: 'var(--text-4)', fontSize: 12, fontWeight: 600, display: 'block',
   marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
 }
 
@@ -108,7 +108,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
   const formatarValor = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 
   return (
-    <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
+    <div style={{ background: 'var(--bg-card)', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
       {mensagem && (
         <div style={{
           color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
@@ -125,7 +125,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
       </select>
 
       {cartaoId && faturas.length === 0 && (
-        <p style={{ color: '#9ca3af', padding: 16, textAlign: 'center', background: '#ede8df', borderRadius: 8, border: '1px solid #e5e7eb' }}>
+        <p style={{ color: 'var(--text-3)', padding: 16, textAlign: 'center', background: 'var(--bg-row)', borderRadius: 8, border: '1px solid var(--border)' }}>
           Nenhuma fatura em aberto para este cartão.
         </p>
       )}
@@ -137,13 +137,13 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
             {faturas.map(f => (
               <div key={f.data_vencimento} onClick={() => selecionarFatura(f)} style={{
                 padding: '12px 16px', borderRadius: 8, cursor: 'pointer',
-                background: faturaSelecionada?.data_vencimento === f.data_vencimento ? '#eff6ff' : '#f9fafb',
-                border: `2px solid ${faturaSelecionada?.data_vencimento === f.data_vencimento ? '#2563eb' : '#e5e7eb'}`,
+                background: faturaSelecionada?.data_vencimento === f.data_vencimento ? '#eff6ff' : 'var(--bg-row2)',
+                border: `2px solid ${faturaSelecionada?.data_vencimento === f.data_vencimento ? '#2563eb' : 'var(--border)'}`,
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center'
               }}>
                 <div>
-                  <span style={{ color: '#111827', fontWeight: 600, fontSize: 14 }}>{formatarData(f.data_vencimento)}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 12, marginLeft: 8 }}>{f.quantidade} lançamento(s)</span>
+                  <span style={{ color: 'var(--text-1)', fontWeight: 600, fontSize: 14 }}>{formatarData(f.data_vencimento)}</span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 12, marginLeft: 8 }}>{f.quantidade} lançamento(s)</span>
                 </div>
                 <span style={{ color: '#d97706', fontWeight: 700, fontSize: 15 }}>{formatarValor(f.total)}</span>
               </div>
@@ -155,7 +155,7 @@ export default function LancamentoFatura({ householdId, cartoes, contas }: Props
       {faturaSelecionada && (
         <>
           <div style={{ background: '#eff6ff', padding: 14, borderRadius: 8, marginBottom: 16, border: '1px solid #bfdbfe' }}>
-            <p style={{ color: '#6b7280', fontSize: 12, margin: 0 }}>Fatura selecionada</p>
+            <p style={{ color: 'var(--text-2)', fontSize: 12, margin: 0 }}>Fatura selecionada</p>
             <p style={{ color: '#1e40af', fontWeight: 600, margin: '4px 0 0', fontSize: 14 }}>
               {faturaSelecionada.cartao_nome} — {formatarData(faturaSelecionada.data_vencimento)}
             </p>

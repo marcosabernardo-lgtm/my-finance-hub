@@ -1,4 +1,4 @@
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./components/Login";
 import Resumo from "./components/Resumo";
@@ -26,12 +26,12 @@ import {
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  TrendingDown, ShoppingCart,
+  TrendingDown, ShoppingCart, Sun, Moon,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
 
-type Theme = "dark"
+type Theme = "dark" | "light"
 
 interface ThemeTokens {
   sidebarBg: string
@@ -40,6 +40,7 @@ interface ThemeTokens {
   sidebarItemHover: string
   sidebarText: string
   sidebarSubtext: string
+  sidebarAccent: string
   contentBg: string
   homeBg: string
   homeCardBg: string
@@ -55,24 +56,47 @@ interface ThemeTokens {
 }
 
 const DARK: ThemeTokens = {
-  sidebarBg: "#0d7280",
-  sidebarBorder: "#0a5f6b",
-  sidebarGroupLabel: "#a8d8de",
-  sidebarItemHover: "#0a5f6b",
-  sidebarText: "#e2f4f6",
-  sidebarSubtext: "#a8d8de",
-  contentBg: "#f5f0e8",
-  homeBg: "#0b1120",
-  homeCardBg: "#0d1526",
-  homeCardBorder: "#1e2d45",
-  homeCardText: "white",
-  homeCardDesc: "#475569",
-  homeTopbarBg: "#0d1526",
-  homeHeroBorder: "#1e2d45",
-  homeTagBg: "#1e2d45",
-  homeTagBorder: "#2a3f5f",
-  homeTagText: "#94a3b8",
-  homeGroupLabel: "#475569",
+  sidebarBg:         "#141b2d",
+  sidebarBorder:     "#1e2d45",
+  sidebarGroupLabel: "#475569",
+  sidebarItemHover:  "#1e2d45",
+  sidebarText:       "#94a3b8",
+  sidebarSubtext:    "#64748b",
+  sidebarAccent:     "#667eea",
+  contentBg:         "#0b1120",
+  homeBg:            "#0b1120",
+  homeCardBg:        "#0d1526",
+  homeCardBorder:    "#1e2d45",
+  homeCardText:      "#f1f5f9",
+  homeCardDesc:      "#475569",
+  homeTopbarBg:      "#0d1526",
+  homeHeroBorder:    "#1e2d45",
+  homeTagBg:         "#1e2d45",
+  homeTagBorder:     "#2a3f5f",
+  homeTagText:       "#94a3b8",
+  homeGroupLabel:    "#475569",
+}
+
+const LIGHT: ThemeTokens = {
+  sidebarBg:         "#1e293b",
+  sidebarBorder:     "#334155",
+  sidebarGroupLabel: "#64748b",
+  sidebarItemHover:  "#334155",
+  sidebarText:       "#cbd5e1",
+  sidebarSubtext:    "#94a3b8",
+  sidebarAccent:     "#667eea",
+  contentBg:         "#f5f0e8",
+  homeBg:            "#f5f0e8",
+  homeCardBg:        "#ffffff",
+  homeCardBorder:    "#e2e8f0",
+  homeCardText:      "#111827",
+  homeCardDesc:      "#64748b",
+  homeTopbarBg:      "#ffffff",
+  homeHeroBorder:    "#e2e8f0",
+  homeTagBg:         "#f1f5f9",
+  homeTagBorder:     "#e2e8f0",
+  homeTagText:       "#64748b",
+  homeGroupLabel:    "#94a3b8",
 }
 
 const ThemeCtx = createContext<{ theme: Theme; tokens: ThemeTokens; toggle: () => void }>({
@@ -142,7 +166,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
   pagina: Pagina; setPagina: (p: Pagina) => void; signOut: () => void
   email: string; recolhida: boolean; setRecolhida: (v: boolean) => void
 }) {
-  const { tokens } = useTheme()
+  const { tokens, theme, toggle } = useTheme()
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, height: "100vh",
@@ -155,7 +179,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
       <div style={{ display: "flex", alignItems: "center", justifyContent: recolhida ? "center" : "space-between", padding: recolhida ? "14px 0" : "14px 14px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
         {!recolhida && (
           <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPagina("home")}>
-            <div style={{ width: 28, height: 28, background: "#0d7280", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div style={{ width: 28, height: 28, background: tokens.sidebarAccent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Layers size={14} color="white" />
             </div>
             <div>
@@ -165,7 +189,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
           </div>
         )}
         {recolhida && (
-          <div style={{ width: 28, height: 28, background: "#0d7280", borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("home")}>
+          <div style={{ width: 28, height: 28, background: tokens.sidebarAccent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("home")}>
             <Layers size={14} color="white" />
           </div>
         )}
@@ -186,6 +210,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
             {email}
           </div>
         )}
+        <SidebarItem icon={theme === "dark" ? Sun : Moon} label={theme === "dark" ? "Modo Claro" : "Modo Escuro"} ativa={false} recolhida={recolhida} onClick={toggle} />
         <SidebarItem icon={LogOut} label="Sair" ativa={false} recolhida={recolhida} onClick={signOut} accent="#ef4444" />
       </div>
     </div>
@@ -231,7 +256,7 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
 }) {
   const [hovered, setHovered] = useState(false)
   const { tokens } = useTheme()
-  const cor = accent || "#67c4cf"
+  const cor = accent || tokens.sidebarAccent
   return (
     <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)}
       title={recolhida ? label : undefined}
@@ -293,7 +318,17 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
 
 export default function App() {
   const { user, loading, signOut } = useAuth()
-  const [theme] = useState<Theme>("dark")
+  const [theme, setTheme] = useState<Theme>(
+    () => (localStorage.getItem("theme") as Theme) || "dark"
+  )
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme)
+    localStorage.setItem("theme", theme)
+  }, [theme])
+
+  const toggle = () => setTheme(t => t === "dark" ? "light" : "dark")
+  const tokens = theme === "dark" ? DARK : LIGHT
 
   if (loading) return (
     <div style={{ color: "white", backgroundColor: "#0b1120", width: "100vw", height: "100vh", display: "flex", justifyContent: "center", alignItems: "center", fontSize: 18 }}>
@@ -305,7 +340,7 @@ export default function App() {
   if (!user || isRecovery) return <Login />
 
   return (
-    <ThemeCtx.Provider value={{ theme, tokens: DARK, toggle: () => {} }}>
+    <ThemeCtx.Provider value={{ theme, tokens, toggle }}>
       <AppContent signOut={signOut} email={user.email ?? ""} />
     </ThemeCtx.Provider>
   )

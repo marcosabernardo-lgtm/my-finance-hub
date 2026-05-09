@@ -48,10 +48,10 @@ const CLASSIFICACOES = ['Despesas Essenciais','Despesas Não Essenciais','Metas 
 
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
-    case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
-    case 'Pendente': return { background: '#fef3c7', color: '#92400e' }
-    case 'Faturado': return { background: '#dbeafe', color: '#1e40af' }
-    default:         return { background: '#f3f4f6', color: '#374151' }
+    case 'Pago':     return { background: 'var(--badge-pago-bg)', color: 'var(--badge-pago-fg)' }
+    case 'Pendente': return { background: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+    case 'Faturado': return { background: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+    default:         return { background: 'var(--bg-row2)', color: 'var(--text-4)' }
   }
 }
 
@@ -196,8 +196,8 @@ export default function ConsumoMensal() {
       {/* Cabeçalho */}
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Consumo Mensal</h1>
-          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Consumo Mensal</h1>
+          <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
             O que foi comprado/gasto por mês — crédito pelo mês da compra, não do pagamento da fatura
           </p>
         </div>
@@ -228,8 +228,8 @@ export default function ConsumoMensal() {
       </div>
 
       {/* Legenda */}
-      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
-        <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
+      <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px', color: 'var(--text-4)' }}>
+        <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />Dentro do limite</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80%</span></span>
         <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
@@ -238,9 +238,9 @@ export default function ConsumoMensal() {
 
       {/* Tabela */}
       {loading ? (
-        <div style={{ padding: '64px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
@@ -274,7 +274,7 @@ export default function ConsumoMensal() {
                     <>
                       {/* Header classificação */}
                       <tr key={`head-${classif}`}>
-                        <td colSpan={16} style={{ padding: '6px 12px', background: '#f3f4f6', fontSize: '11px', fontWeight: 700, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '2px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+                        <td colSpan={16} style={{ padding: '6px 12px', background: 'var(--bg-row2)', fontSize: '11px', fontWeight: 700, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '2px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
                           {classif}
                         </td>
                       </tr>
@@ -286,9 +286,9 @@ export default function ConsumoMensal() {
                           : 0
                         return (
                           <>
-                            <tr key={linha.catId} style={{ borderBottom: '1px solid #f3f4f6' }}>
+                            <tr key={linha.catId} style={{ borderBottom: '1px solid var(--border)' }}>
                               <td style={{ ...tdFixo, color: '#374151', fontWeight: 500 }}>{linha.nome}</td>
-                              <td style={{ ...tdNum, background: '#ede8df', color: '#9ca3af', fontSize: '11px' }}>
+                              <td style={{ ...tdNum, background: 'var(--bg-row)', color: 'var(--text-3)', fontSize: '11px' }}>
                                 {linha.limite > 0 ? fmt(linha.limite) : '—'}
                               </td>
                               {meses12.map(m => {
@@ -296,10 +296,10 @@ export default function ConsumoMensal() {
                                 const isAtual = ano === hoje.getFullYear() && m === mesAtual
                                 const aberto  = drill?.catId === linha.catId && drill?.mes === m
                                 const pct     = linha.limite > 0 ? v / linha.limite : null
-                                let corValor  = '#d1d5db'
+                                let corValor  = 'var(--border-input)'
                                 if (v > 0) {
-                                  if (pct !== null) corValor = pct > 1 ? '#ef4444' : pct >= 0.8 ? '#f59e0b' : '#374151'
-                                  else corValor = '#374151'
+                                  if (pct !== null) corValor = pct > 1 ? '#ef4444' : pct >= 0.8 ? '#f59e0b' : 'var(--text-4)'
+                                  else corValor = 'var(--text-4)'
                                 }
                                 return (
                                   <td key={m}
@@ -308,12 +308,12 @@ export default function ConsumoMensal() {
                                     style={{ ...tdNum, color: corValor, fontWeight: v > 0 ? 600 : 400, background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : 'transparent', cursor: v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}>
                                     {v > 0
                                       ? <span style={{ textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}>{fmt(v)}</span>
-                                      : <span style={{ color: '#e5e7eb' }}>—</span>
+                                      : <span style={{ color: 'var(--border)' }}>—</span>
                                     }
                                   </td>
                                 )
                               })}
-                              <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: '#991b1b' }}>
+                              <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: '#991b1b' }}>
                                 <div>{fmt(linha.total)}</div>
                                 {linha.limite > 0 && (
                                   <div style={{ fontSize: '10px', color: linha.total > linha.limite * 12 ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
@@ -321,7 +321,7 @@ export default function ConsumoMensal() {
                                   </div>
                                 )}
                               </td>
-                              <td style={{ ...tdNum, background: '#fffbeb', fontWeight: 600, color: '#92400e', fontSize: '12px' }}>
+                              <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: '#92400e', fontSize: '12px' }}>
                                 <div>{mesesCorrente > 0 ? fmt(mediaMes) : '—'}</div>
                                 {linha.limite > 0 && mesesCorrente > 0 && (
                                   <div style={{ fontSize: '10px', color: mediaMes > linha.limite ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
@@ -390,16 +390,16 @@ export default function ConsumoMensal() {
                       })}
 
                       {/* Subtotal classificação */}
-                      <tr key={`sub-${classif}`} style={{ background: '#f9fafb', borderTop: '1px solid #e5e7eb', borderBottom: '2px solid #e5e7eb' }}>
-                        <td style={{ ...tdFixo, fontWeight: 700, color: '#374151', background: '#f9fafb', fontSize: '11px' }}>Subtotal {classif.replace('Despesas ', '')}</td>
-                        <td style={{ ...tdNum, color: '#9ca3af', background: '#f9fafb' }}>—</td>
+                      <tr key={`sub-${classif}`} style={{ background: 'var(--bg-row2)', borderTop: '1px solid var(--border)', borderBottom: '2px solid var(--border)' }}>
+                        <td style={{ ...tdFixo, fontWeight: 700, color: 'var(--text-4)', background: 'var(--bg-row2)', fontSize: '11px' }}>Subtotal {classif.replace('Despesas ', '')}</td>
+                        <td style={{ ...tdNum, color: 'var(--text-3)', background: 'var(--bg-row2)' }}>—</td>
                         {meses12.map(m => {
                           const v = totalClassifMes(m)
                           const isAtual = ano === hoje.getFullYear() && m === mesAtual
-                          return <td key={m} style={{ ...tdNum, fontWeight: 700, color: '#374151', background: isAtual ? '#eff6ff' : 'transparent' }}>{v > 0 ? fmt(v) : <span style={{ color: '#e5e7eb' }}>—</span>}</td>
+                          return <td key={m} style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: isAtual ? '#eff6ff' : 'transparent' }}>{v > 0 ? fmt(v) : <span style={{ color: 'var(--border)' }}>—</span>}</td>
                         })}
-                        <td style={{ ...tdNum, fontWeight: 700, color: '#374151', background: '#f9fafb' }}>{fmt(totalClassif)}</td>
-                        <td style={{ ...tdNum, fontWeight: 700, color: '#92400e', background: '#fffbeb', fontSize: '12px' }}>{mesesCorrente > 0 ? fmt(mediaClassif) : '—'}</td>
+                        <td style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: 'var(--bg-row2)' }}>{fmt(totalClassif)}</td>
+                        <td style={{ ...tdNum, fontWeight: 700, color: '#92400e', background: 'var(--bg-warning-soft)', fontSize: '12px' }}>{mesesCorrente > 0 ? fmt(mediaClassif) : '—'}</td>
                       </tr>
                     </>
                   )
@@ -428,7 +428,7 @@ export default function ConsumoMensal() {
       )}
 
       {!loading && (
-        <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+        <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-3)', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em qualquer célula com valor para ver os lançamentos</span>
           <span>* Crédito: entra no mês da compra (Pendente = fatura a pagar · Faturado = fatura já paga)</span>
           <span>* Débito/PIX/Dinheiro: entra quando Pago</span>
@@ -440,9 +440,9 @@ export default function ConsumoMensal() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
-const selectStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px' }
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
+const selectStyle: React.CSSProperties = { border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px' }
 const thBase: React.CSSProperties = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
-const tdFixo: React.CSSProperties = { padding: '8px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: '#fff', borderRight: '1px solid #f3f4f6', whiteSpace: 'nowrap', zIndex: 1 }
+const tdFixo: React.CSSProperties = { padding: '8px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap', zIndex: 1 }
 const tdNum: React.CSSProperties  = { padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }
-const tdDrill: React.CSSProperties = { padding: '6px 10px', color: '#374151', verticalAlign: 'middle' }
+const tdDrill: React.CSSProperties = { padding: '6px 10px', color: 'var(--text-4)', verticalAlign: 'middle' }

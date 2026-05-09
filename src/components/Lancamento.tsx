@@ -56,8 +56,8 @@ export default function Lancamento() {
   return (
     <div style={{ maxWidth: 600, margin: '0 auto', padding: '24px 24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Lançamentos</h1>
-        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferências</p>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>Lançamentos</h1>
+        <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferências</p>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -66,9 +66,9 @@ export default function Lancamento() {
           return (
             <button key={a.key} onClick={() => setAba(a.key)} style={{
               padding: '8px 18px',
-              backgroundColor: ativa ? a.color : '#f9fafb',
-              color: ativa ? 'white' : '#374151',
-              border: `1px solid ${ativa ? a.color : '#e5e7eb'}`,
+              backgroundColor: ativa ? a.color : 'var(--bg-row2)',
+              color: ativa ? 'white' : 'var(--text-4)',
+              border: `1px solid ${ativa ? a.color : 'var(--border)'}`,
               borderRadius: 6, cursor: 'pointer',
               fontWeight: ativa ? 600 : 400,
               fontSize: 13, transition: 'all 0.15s'
@@ -80,7 +80,7 @@ export default function Lancamento() {
       </div>
 
       {!householdId ? (
-        <p style={{ color: '#6b7280', fontSize: 13 }}>Carregando dados...</p>
+        <p style={{ color: 'var(--text-2)', fontSize: 13 }}>Carregando dados...</p>
       ) : (
         <>
           {aba === 'despesa'       && <LancamentoDespesa       householdId={householdId} categorias={categorias} cartoes={cartoes} contas={contas} />}

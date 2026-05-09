@@ -7,8 +7,8 @@ const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
 const MESES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
 
 const CORES = {
-  fundo:   '#f5f0e8', sidebar: '#0d7280', texto: '#1a2332', sub: '#6b7a8d',
-  borda:   '#e2e8f0', card: '#ffffff',    sepia: '#ede8df',
+  fundo:   'var(--bg-page)', sidebar: '#0d7280', texto: 'var(--text-1)', sub: 'var(--text-2)',
+  borda:   'var(--border)', card: 'var(--bg-card)',    sepia: 'var(--bg-row)',
   receita: '#16a34a', debito: '#e05252',  credito: '#ea580c', hoje: '#0d7280',
 }
 
@@ -208,7 +208,7 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
         }}
       >
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:5 }}>
-          <div style={{ width:26, height:26, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, background: isHoje ? 'rgba(255,255,255,0.2)' : 'transparent', color: isHoje ? '#fff' : isMesAtual ? CORES.texto : '#c0c4cc' }}>
+          <div style={{ width:26, height:26, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, background: isHoje ? 'rgba(255,255,255,0.2)' : 'transparent', color: isHoje ? '#fff' : isMesAtual ? CORES.texto : 'var(--text-3)' }}>
             {dia}
           </div>
           {isMesAtual && (
@@ -466,7 +466,7 @@ export default function Calendario() {
         </div>
 
         {loading ? (
-          <div style={{ padding:60, textAlign:'center' as const, color:'#9ca3af', fontSize:15 }}>Carregando...</div>
+          <div style={{ padding:60, textAlign:'center' as const, color:'var(--text-3)', fontSize:15 }}>Carregando...</div>
         ) : (
           semanas.map((semana, si) => (
             <div key={si} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', borderBottom:si<semanas.length-1?`1px solid ${CORES.borda}`:'none' }}>
@@ -478,7 +478,7 @@ export default function Calendario() {
                   ? (modo === 'movimentacoes' ? movsPorDia[cel.dia] || [] : movsPendPorDia[cel.dia] || [])
                   : []
                 return (
-                  <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding:5, background:isWeekend&&isMesAtual?'#faf8f5':'transparent' }}>
+                  <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding:5, background:isWeekend&&isMesAtual?'var(--bg-row2)':'transparent' }}>
                     <CelulaDia
                       dia={cel.dia}
                       movs={movsCell}
@@ -516,7 +516,7 @@ export default function Calendario() {
             ))}
           </>
         )}
-        <div style={{ fontSize:12, color:'#b0b8c4' }}>S = semana do mês</div>
+        <div style={{ fontSize:12, color:'var(--text-3)' }}>S = semana do mês</div>
       </div>
     </div>
   )

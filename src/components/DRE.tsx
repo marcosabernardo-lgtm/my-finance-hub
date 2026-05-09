@@ -63,11 +63,11 @@ const getAno = (d: string) => Number(d.split('-')[0])
 
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
-    case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
-    case 'Pendente': return { background: '#fef3c7', color: '#92400e' }
-    case 'Faturado': return { background: '#dbeafe', color: '#1e40af' }
-    case 'Previsto': return { background: '#f3e8ff', color: '#6b21a8' }
-    default:         return { background: '#f3f4f6', color: '#374151' }
+    case 'Pago':     return { background: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)' }
+    case 'Pendente': return { background: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+    case 'Faturado': return { background: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+    case 'Previsto': return { background: 'var(--badge-previsto-bg)', color: 'var(--badge-previsto-fg)' }
+    default:         return { background: 'var(--bg-row2)',           color: 'var(--text-4)' }
   }
 }
 
@@ -524,7 +524,7 @@ export default function DRE() {
 
       {/* Cabeçalho */}
       <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>DRE — Demonstrativo de Resultado</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>DRE — Demonstrativo de Resultado</h1>
         <div>
           <label style={labelStyle}>Ano</label>
           <select value={ano} onChange={e => { setAno(Number(e.target.value)); setDrillAberto(null) }} style={selectStyle}>
@@ -534,7 +534,7 @@ export default function DRE() {
       </div>
 
       {/* Abas */}
-      <div style={{ display: 'flex', gap: 0, marginBottom: '20px', borderBottom: '2px solid #e5e7eb' }}>
+      <div style={{ display: 'flex', gap: 0, marginBottom: '20px', borderBottom: '2px solid var(--border)' }}>
         {([
           { key: 'caixa'  as Aba, label: 'DRE — Fluxo de Caixa',   desc: 'O que entrou e saiu da conta' },
           { key: 'mensal' as Aba, label: 'Controle Mensal',          desc: 'O que você consumiu por categoria' },
@@ -545,7 +545,7 @@ export default function DRE() {
             marginBottom: '-2px',
           }}>
             <div style={{ fontSize: '14px', fontWeight: 700, color: aba === tab.key ? '#0d7280' : '#6b7280' }}>{tab.label}</div>
-            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>{tab.desc}</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{tab.desc}</div>
           </button>
         ))}
       </div>
@@ -612,9 +612,9 @@ export default function DRE() {
             ]).map(f => (
               <button key={f.key} onClick={() => { setFiltroCaixa(f.key); setDrillAberto(null) }} style={{
                 padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                border: filtroCaixa === f.key ? 'none' : '1px solid #e5e7eb',
-                background: filtroCaixa === f.key ? f.cor : '#fff',
-                color: filtroCaixa === f.key ? '#fff' : '#374151',
+                border: filtroCaixa === f.key ? 'none' : '1px solid var(--border)',
+                background: filtroCaixa === f.key ? f.cor : 'var(--bg-card)',
+                color: filtroCaixa === f.key ? '#fff' : 'var(--text-4)',
               }}>
                 {f.label}
                 <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
@@ -629,9 +629,9 @@ export default function DRE() {
             ]).map(f => (
               <button key={f.key} onClick={() => { setFiltroMensal(f.key); setDrillAberto(null) }} style={{
                 padding: '8px 16px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
-                border: filtroMensal === f.key ? 'none' : '1px solid #e5e7eb',
-                background: filtroMensal === f.key ? f.cor : '#fff',
-                color: filtroMensal === f.key ? '#fff' : '#374151',
+                border: filtroMensal === f.key ? 'none' : '1px solid var(--border)',
+                background: filtroMensal === f.key ? f.cor : 'var(--bg-card)',
+                color: filtroMensal === f.key ? '#fff' : 'var(--text-4)',
               }}>
                 {f.label}
                 <span style={{ display: 'block', fontSize: '10px', fontWeight: 400, opacity: 0.8, marginTop: '1px' }}>{f.desc}</span>
@@ -643,8 +643,8 @@ export default function DRE() {
 
       {/* Legenda (apenas Controle Mensal) */}
       {aba === 'mensal' && (
-        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
-          <span style={{ color: '#6b7280', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
+          <span style={{ color: 'var(--text-2)', fontWeight: 600, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Legenda:</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#374151', display: 'inline-block' }} />Dentro do limite</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} /><span style={{ color: '#92400e' }}>Acima de 80% do limite</span></span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><span style={{ width: 10, height: 10, borderRadius: '50%', background: '#ef4444', display: 'inline-block' }} /><span style={{ color: '#991b1b' }}>Acima do limite</span></span>
@@ -661,9 +661,9 @@ export default function DRE() {
 
       {/* Tabela */}
       {loading ? (
-        <div style={{ padding: '64px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+        <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
-        <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+        <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
               <thead>
@@ -741,7 +741,7 @@ export default function DRE() {
       )}
 
       {!loading && (
-        <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: '#9ca3af' }}>
+        <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-3)' }}>
           <span>💡 Clique em qualquer célula com valor para ver os lançamentos detalhados</span>
           {aba === 'caixa'  && <span>* Crédito aparece como pagamento de fatura (não por categoria)</span>}
           {aba === 'mensal' && <span>* Crédito: cada parcela distribuída no mês do seu vencimento</span>}
@@ -751,10 +751,10 @@ export default function DRE() {
       {/* Modal Edição */}
       {editandoDrill && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 400, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: 24, width: 400, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#111827' }}>Editar Lançamento</h3>
-              <button onClick={() => setEditandoDrill(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: '#9ca3af' }}>×</button>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text-1)' }}>Editar Lançamento</h3>
+              <button onClick={() => setEditandoDrill(null)} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--text-3)' }}>×</button>
             </div>
             {([
               { label: 'Descrição',       field: 'descricao',        type: 'text'   },
@@ -763,20 +763,20 @@ export default function DRE() {
               { label: 'Dt. Pagamento',   field: 'data_pagamento',   type: 'date'   },
             ] as { label: string; field: keyof Movimentacao; type: string }[]).map(({ label, field, type }) => (
               <div key={field} style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-4)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</label>
                 <input type={type} value={String(editDrillForm[field] ?? '')} onChange={e => setEditDrillForm(f => ({ ...f, [field]: e.target.value }))}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13, boxSizing: 'border-box' as const }} />
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border-input)', background: 'var(--bg-input)', color: 'var(--text-1)', fontSize: 13, boxSizing: 'border-box' as const }} />
               </div>
             ))}
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Situação</label>
-              <select value={editDrillForm.situacao ?? ''} onChange={e => setEditDrillForm(f => ({ ...f, situacao: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-4)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Situação</label>
+              <select value={editDrillForm.situacao ?? ''} onChange={e => setEditDrillForm(f => ({ ...f, situacao: e.target.value }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border-input)', background: 'var(--bg-input)', color: 'var(--text-1)', fontSize: 13 }}>
                 {['Pago','Pendente','Previsto','Faturado'].map(s => <option key={s}>{s}</option>)}
               </select>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 11, fontWeight: 600, color: '#374151', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Categoria</label>
-              <select value={editDrillForm.categoria_id ?? ''} onChange={e => setEditDrillForm(f => ({ ...f, categoria_id: Number(e.target.value) || null }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid #d1d5db', fontSize: 13 }}>
+              <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-4)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Categoria</label>
+              <select value={editDrillForm.categoria_id ?? ''} onChange={e => setEditDrillForm(f => ({ ...f, categoria_id: Number(e.target.value) || null }))} style={{ width: '100%', padding: '8px 10px', borderRadius: 6, border: '1px solid var(--border-input)', background: 'var(--bg-input)', color: 'var(--text-1)', fontSize: 13 }}>
                 <option value="">— Selecione —</option>
                 {categorias
                   .filter(c => editDrillForm.tipo === 'Receita'
@@ -786,7 +786,7 @@ export default function DRE() {
               </select>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16 }}>
-              <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#ede8df', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+              <button onClick={() => setEditandoDrill(null)} style={{ padding: '8px 16px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-row)', cursor: 'pointer', fontSize: 13, color: 'var(--text-4)' }}>Cancelar</button>
               <button onClick={handleSalvarDrill} disabled={salvandoDrill} style={{ padding: '8px 16px', borderRadius: 6, border: 'none', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                 {salvandoDrill ? 'Salvando...' : 'Salvar'}
               </button>
@@ -798,13 +798,13 @@ export default function DRE() {
       {/* Modal Parcelas */}
       {modalParcelasDrill && editandoDrill && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 3000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-            <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: '#111827' }}>Lançamento Parcelado</h3>
-            <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 20 }}>Este lançamento faz parte de um grupo. O que deseja fazer?</p>
+          <div style={{ background: 'var(--bg-card)', borderRadius: 12, padding: 24, width: 360, maxWidth: '90vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>Lançamento Parcelado</h3>
+            <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 20 }}>Este lançamento faz parte de um grupo. O que deseja fazer?</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <button onClick={() => salvarEditDrill('esta')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#2563eb', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13, textAlign: 'left' }}>✏️ Editar somente esta parcela</button>
-              <button onClick={() => salvarEditDrill('proximas')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid #e5e7eb', background: '#ede8df', color: '#374151', cursor: 'pointer', fontSize: 13, textAlign: 'left' }}>⏩ Editar esta e todas as próximas</button>
-              <button onClick={() => setModalParcelasDrill(false)} style={{ background: 'none', border: 'none', color: '#9ca3af', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: 13 }}>Cancelar</button>
+              <button onClick={() => salvarEditDrill('proximas')} style={{ padding: '10px 16px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg-row)', color: 'var(--text-4)', cursor: 'pointer', fontSize: 13, textAlign: 'left' }}>⏩ Editar esta e todas as próximas</button>
+              <button onClick={() => setModalParcelasDrill(false)} style={{ background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', padding: '8px', textAlign: 'center', fontSize: 13 }}>Cancelar</button>
             </div>
           </div>
         </div>
@@ -836,12 +836,12 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
   return (
     <>
       <tr style={{ borderBottom: '1px solid #f3f4f6', cursor: 'pointer' }}>
-        <td style={{ ...tdFixo, color: '#374151' }}>
+        <td style={{ ...tdFixo, color: 'var(--text-4)' }}>
           <div style={{ fontWeight: 500 }}>{linha.nome}</div>
-          {linha.classificacao && <div style={{ fontSize: '10px', color: '#9ca3af' }}>{linha.classificacao}</div>}
+          {linha.classificacao && <div style={{ fontSize: '10px', color: 'var(--text-3)' }}>{linha.classificacao}</div>}
         </td>
         {showLimite && (
-          <td style={{ ...tdNum, background: '#ede8df', color: '#9ca3af', fontSize: '11px' }}>
+          <td style={{ ...tdNum, background: 'var(--bg-row)', color: 'var(--text-3)', fontSize: '11px' }}>
             {linha.limite > 0 ? fmt(linha.limite) : '—'}
           </td>
         )}
@@ -867,7 +867,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
             <td key={m}
               onClick={() => !isMedia && onToggle(linha.id, m, v)}
               title={isMedia ? `Média projetada: ${fmt(mediaProjecao)}` : v > 0 ? 'Clique para ver lançamentos' : ''}
-              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid #f59e0b' : 'none', transition: 'background 0.1s' }}>
+              style={{ ...tdNum, color: corValor, fontWeight: vExibir > 0 ? 600 : 400, background: aberto ? 'var(--bg-warning-soft)' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent', opacity: isFuturo && !isAtual ? 0.85 : 1, cursor: isMedia ? 'default' : v > 0 ? 'pointer' : 'default', borderBottom: aberto ? '2px solid var(--border-warning)' : 'none', transition: 'background 0.1s' }}>
               {vExibir > 0
                 ? <span style={{ textDecoration: !isMedia ? 'underline dotted' : 'none', textUnderlineOffset: '3px', fontStyle: isMedia ? 'italic' : 'normal' }}>{fmt(vExibir)}</span>
                 : <span style={{ color: '#e5e7eb' }}>—</span>
@@ -876,10 +876,10 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
           )
         })}
 
-        <td style={{ ...tdNum, background: '#ede8df', fontWeight: 700, color: cor }}>
+        <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: cor }}>
           <div>{fmt(linha.total)}</div>
           {showLimite && linha.limite > 0 && (
-            <div style={{ fontSize: '10px', color: linha.total > linha.limite * 12 ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
+            <div style={{ fontSize: '10px', color: linha.total > linha.limite * 12 ? '#ef4444' : 'var(--text-3)', fontWeight: 400 }}>
               {((linha.total / (linha.limite * 12)) * 100).toFixed(0)}% do limite anual
             </div>
           )}
@@ -893,7 +893,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
               <>
                 <div>{fmt(med)}</div>
                 {showLimite && linha.limite > 0 && (
-                  <div style={{ fontSize: '10px', color: med > linha.limite ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
+                  <div style={{ fontSize: '10px', color: med > linha.limite ? '#ef4444' : 'var(--text-3)', fontWeight: 400 }}>
                     {((med / linha.limite) * 100).toFixed(0)}% do limite
                   </div>
                 )}
@@ -905,20 +905,20 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
 
       {drillAberto?.linhaId === linha.id && (
         <tr>
-          <td colSpan={meses.length + (showLimite ? 4 : 3)} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+          <td colSpan={meses.length + (showLimite ? 4 : 3)} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
             <div style={{ padding: '12px 16px 16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                 <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
                   📋 {linha.nome} — {MESES_CURTOS[drillAberto.mes - 1]}/{ano}
-                  <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                  <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                     {lancamentosDrill.length} lançamento{lancamentosDrill.length !== 1 ? 's' : ''}
                   </span>
                 </div>
-                <button onClick={() => onToggle(linha.id, drillAberto.mes, 1)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af' }}>×</button>
+                <button onClick={() => onToggle(linha.id, drillAberto.mes, 1)} style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--text-3)' }}>×</button>
               </div>
 
               {lancamentosDrill.length === 0 ? (
-                <div style={{ color: '#9ca3af', fontSize: '13px' }}>Nenhum lançamento encontrado com os filtros ativos.</div>
+                <div style={{ color: 'var(--text-3)', fontSize: '13px' }}>Nenhum lançamento encontrado com os filtros ativos.</div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                   <thead>
@@ -970,7 +970,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
 function GrupoHeader({ label, colspan, cor, bg }: { label: string; colspan: number; cor: string; bg: string }) {
   return (
     <tr>
-      <td colSpan={colspan} style={{ padding: '6px 12px', background: bg, fontSize: '11px', fontWeight: 700, color: cor, textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '2px solid #e5e7eb', borderBottom: '1px solid #e5e7eb' }}>
+      <td colSpan={colspan} style={{ padding: '6px 12px', background: bg, fontSize: '11px', fontWeight: 700, color: cor, textTransform: 'uppercase', letterSpacing: '0.06em', borderTop: '2px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
         {label}
       </td>
     </tr>
@@ -982,9 +982,9 @@ function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total
   valorMes: (m: number) => number; total: number; cor: string; bg: string; mesesCorrente: number; showLimite: boolean
 }) {
   return (
-    <tr style={{ background: bg, borderTop: '1px solid #e5e7eb', borderBottom: '2px solid #e5e7eb' }}>
+    <tr style={{ background: bg, borderTop: '1px solid var(--border)', borderBottom: '2px solid var(--border)' }}>
       <td style={{ ...tdFixo, fontWeight: 700, color: cor, background: bg }}>{label}</td>
-      {showLimite && <td style={{ ...tdNum, color: '#9ca3af', background: bg }}>—</td>}
+      {showLimite && <td style={{ ...tdNum, color: 'var(--text-3)', background: bg }}>—</td>}
       {meses.map(m => {
         const v = valorMes(m)
         const isFuturo = anoSel > anoAtual || (anoSel === anoAtual && m > mesAtual)
@@ -1001,9 +1001,9 @@ function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
-const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
-const selectStyle: React.CSSProperties = { border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px' }
+const labelStyle: React.CSSProperties = { display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-2)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }
+const selectStyle: React.CSSProperties = { border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px', fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px' }
 const thBase: React.CSSProperties = { padding: '10px 10px', textAlign: 'right', fontWeight: 600, color: '#f9fafb', fontSize: '12px', borderBottom: '2px solid #374151', whiteSpace: 'nowrap' }
-const tdFixo: React.CSSProperties = { padding: '8px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: '#fff', borderRight: '1px solid #f3f4f6', whiteSpace: 'nowrap', zIndex: 1 }
+const tdFixo: React.CSSProperties = { padding: '8px 12px', verticalAlign: 'middle', position: 'sticky', left: 0, background: 'var(--bg-card)', borderRight: '1px solid var(--border)', whiteSpace: 'nowrap', zIndex: 1 }
 const tdNum: React.CSSProperties = { padding: '8px 10px', textAlign: 'right', verticalAlign: 'middle', whiteSpace: 'nowrap' }
-const tdDrill: React.CSSProperties = { padding: '6px 10px', color: '#374151', verticalAlign: 'middle' }
+const tdDrill: React.CSSProperties = { padding: '6px 10px', color: 'var(--text-4)', verticalAlign: 'middle' }

@@ -8,12 +8,12 @@ type Conta = { id: number; nome: string; saldo_inicial: number; data_inicial: st
 
 const inputStyle = {
   width: '100%', padding: '8px 10px', borderRadius: 6,
-  background: '#fff', border: '1px solid #d1d5db',
-  color: '#111827', boxSizing: 'border-box' as const, marginBottom: 10,
+  background: 'var(--bg-input)', border: '1px solid var(--border-input)',
+  color: 'var(--text-1)', boxSizing: 'border-box' as const, marginBottom: 10,
   fontSize: 13,
 }
 const labelStyle: React.CSSProperties = {
-  color: '#374151', fontSize: 12, fontWeight: 600,
+  color: 'var(--text-4)', fontSize: 12, fontWeight: 600,
   display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em'
 }
 const btnStyle: React.CSSProperties = {
@@ -244,12 +244,12 @@ export default function Cadastros() {
   }) => (
     <div style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      background: '#ede8df', padding: '8px 12px', borderRadius: 6,
-      border: '1px solid #f3f4f6',
+      background: 'var(--bg-row)', padding: '8px 12px', borderRadius: 6,
+      border: '1px solid var(--border)',
     }}>
       <div style={{ flex: 1 }}>
-        <span style={{ color: '#111827', fontWeight: 600, fontSize: 13 }}>{nome}</span>
-        {detalhe && <span style={{ color: '#9ca3af', fontSize: 11, marginLeft: 8 }}>{detalhe}</span>}
+        <span style={{ color: 'var(--text-1)', fontWeight: 600, fontSize: 13 }}>{nome}</span>
+        {detalhe && <span style={{ color: 'var(--text-3)', fontSize: 11, marginLeft: 8 }}>{detalhe}</span>}
       </div>
       <div style={{ display: 'flex', gap: 6 }}>
         <button onClick={onEdit} style={{
@@ -283,8 +283,8 @@ export default function Cadastros() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Cadastros</h1>
-        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>Gerencie categorias, cartões e contas</p>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>Cadastros</h1>
+        <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 4 }}>Gerencie categorias, cartões e contas</p>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
@@ -293,9 +293,9 @@ export default function Cadastros() {
           return (
             <button key={a.key} onClick={() => { setAba(a.key); cancelarEdicao() }} style={{
               padding: '8px 16px',
-              backgroundColor: ativa ? '#2563eb' : '#f9fafb',
-              color: ativa ? 'white' : '#374151',
-              border: `1px solid ${ativa ? '#2563eb' : '#e5e7eb'}`,
+              backgroundColor: ativa ? '#2563eb' : 'var(--bg-row2)',
+              color: ativa ? 'white' : 'var(--text-4)',
+              border: `1px solid ${ativa ? '#2563eb' : 'var(--border)'}`,
               borderRadius: 6, cursor: 'pointer',
               fontWeight: ativa ? 600 : 400, fontSize: 13,
             }}>
@@ -318,11 +318,11 @@ export default function Cadastros() {
 
         {/* FORMULÁRIO */}
         <div style={{
-          background: '#fff', padding: 24, borderRadius: 12,
-          border: `1px solid ${isEditando ? '#fde68a' : '#e5e7eb'}`,
+          background: 'var(--bg-card)', padding: 24, borderRadius: 12,
+          border: `1px solid ${isEditando ? '#fde68a' : 'var(--border)'}`,
           boxShadow: isEditando ? '0 0 0 2px #fef3c7' : 'none'
         }}>
-          <h3 style={{ color: isEditando ? '#92400e' : '#111827', marginBottom: 20, fontSize: 15, fontWeight: 600 }}>
+          <h3 style={{ color: isEditando ? '#92400e' : 'var(--text-1)', marginBottom: 20, fontSize: 15, fontWeight: 600 }}>
             {titulosForm[aba]}
           </h3>
 
@@ -425,7 +425,7 @@ export default function Cadastros() {
               <label style={labelStyle}>Data Inicial</label>
               <input style={inputStyle} type="date" value={dataInicial}
                 onChange={e => setDataInicial(e.target.value)} />
-              <p style={{ color: '#6b7280', fontSize: 11, marginBottom: 10, marginTop: -6 }}>
+              <p style={{ color: 'var(--text-2)', fontSize: 11, marginBottom: 10, marginTop: -6 }}>
                 Data a partir da qual os cálculos de saldo serão feitos
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -443,8 +443,8 @@ export default function Cadastros() {
         </div>
 
         {/* LISTA */}
-        <div style={{ background: '#fff', padding: 24, borderRadius: 12, border: '1px solid #e5e7eb' }}>
-          <h3 style={{ color: '#111827', marginBottom: 16, fontSize: 15, fontWeight: 600 }}>
+        <div style={{ background: 'var(--bg-card)', padding: 24, borderRadius: 12, border: '1px solid var(--border)' }}>
+          <h3 style={{ color: 'var(--text-1)', marginBottom: 16, fontSize: 15, fontWeight: 600 }}>
             {aba === 'cat-despesa' && `Categorias Despesas (${categoriasDespesa.length})`}
             {aba === 'cat-receita' && `Categorias Receitas (${categoriasReceita.length})`}
             {aba === 'cartoes'     && `Cartões (${cartoes.length})`}
@@ -453,7 +453,7 @@ export default function Cadastros() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 450, overflowY: 'auto' }}>
 
             {aba === 'cat-despesa' && (categoriasDespesa.length === 0
-              ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
+              ? <p style={{ color: 'var(--text-3)' }}>Nenhuma categoria cadastrada.</p>
               : categoriasDespesa.map(c => (
                 <ItemRow
                   key={c.id}
@@ -467,7 +467,7 @@ export default function Cadastros() {
             )}
 
             {aba === 'cat-receita' && (categoriasReceita.length === 0
-              ? <p style={{ color: '#9ca3af' }}>Nenhuma categoria cadastrada.</p>
+              ? <p style={{ color: 'var(--text-3)' }}>Nenhuma categoria cadastrada.</p>
               : categoriasReceita.map(c => (
                 <ItemRow
                   key={c.id}
@@ -481,7 +481,7 @@ export default function Cadastros() {
             )}
 
             {aba === 'cartoes' && (cartoes.length === 0
-              ? <p style={{ color: '#9ca3af' }}>Nenhum cartão cadastrado.</p>
+              ? <p style={{ color: 'var(--text-3)' }}>Nenhum cartão cadastrado.</p>
               : cartoes.map(c => (
                 <ItemRow
                   key={c.id}
@@ -495,7 +495,7 @@ export default function Cadastros() {
             )}
 
             {aba === 'contas' && (contas.length === 0
-              ? <p style={{ color: '#9ca3af' }}>Nenhuma conta cadastrada.</p>
+              ? <p style={{ color: 'var(--text-3)' }}>Nenhuma conta cadastrada.</p>
               : contas.map(c => (
                 <ItemRow
                   key={c.id}

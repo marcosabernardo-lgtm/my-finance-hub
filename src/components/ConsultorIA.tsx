@@ -202,18 +202,12 @@ type CardAnalise = {
 }
 
 function CardAnaliseComponent({ card, carregando }: { card: CardAnalise | null; carregando: boolean }) {
-  const darkMode = localStorage.getItem('fh_theme') === 'dark'
-  const bg = darkMode ? '#16213e' : '#ffffff'
-  const border = darkMode ? '#1e2d45' : '#e2e8f0'
-  const texto = darkMode ? '#e2e8f0' : '#1a202c'
-  const subtexto = darkMode ? '#94a3b8' : '#64748b'
-
   if (carregando) {
     return (
-      <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 16, padding: 24, minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, minHeight: 140, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 24, marginBottom: 8 }}>⏳</div>
-          <p style={{ color: subtexto, fontSize: 13, margin: 0 }}>Analisando...</p>
+          <p style={{ color: 'var(--text-2)', fontSize: 13, margin: 0 }}>Analisando...</p>
         </div>
       </div>
     )
@@ -223,8 +217,8 @@ function CardAnaliseComponent({ card, carregando }: { card: CardAnalise | null; 
 
   return (
     <div style={{
-      background: bg,
-      border: `1px solid ${border}`,
+      background: 'var(--bg-card)',
+      border: '1px solid var(--border)',
       borderRadius: 16,
       padding: 24,
       borderTop: `3px solid ${card.cor}`,
@@ -233,28 +227,20 @@ function CardAnaliseComponent({ card, carregando }: { card: CardAnalise | null; 
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
         <span style={{ fontSize: 22 }}>{card.emoji}</span>
-        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: texto }}>{card.titulo}</h3>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text-1)' }}>{card.titulo}</h3>
       </div>
-      <p style={{ margin: 0, fontSize: 13, color: subtexto, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{card.conteudo}</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-2)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{card.conteudo}</p>
     </div>
   )
 }
 
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
-function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: boolean }) {
+function Chat({ systemPrompt }: { systemPrompt: string }) {
   const [mensagens, setMensagens] = useState<Mensagem[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const chatRef = useRef<HTMLDivElement>(null)
-
-  const bg = darkMode ? '#16213e' : '#ffffff'
-  const bgUser = darkMode ? '#1e3a6e' : '#eff6ff'
-  const bgAssistant = darkMode ? '#1a2744' : '#f5f0e8'
-  const border = darkMode ? '#1e2d45' : '#e2e8f0'
-  const texto = darkMode ? '#e2e8f0' : '#1a202c'
-  const subtexto = darkMode ? '#94a3b8' : '#64748b'
-  const inputBg = darkMode ? '#0d1526' : '#f7fafc'
 
   useEffect(() => {
     chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' })
@@ -285,13 +271,13 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
   ]
 
   return (
-    <div style={{ background: bg, border: `1px solid ${border}`, borderRadius: 16, overflow: 'hidden' }}>
+    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, #667eea, #764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🤖</div>
         <div>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: texto }}>Chat com o Consultor</p>
-          <p style={{ margin: 0, fontSize: 12, color: subtexto }}>Pergunte qualquer coisa sobre suas finanças</p>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: 'var(--text-1)' }}>Chat com o Consultor</p>
+          <p style={{ margin: 0, fontSize: 12, color: 'var(--text-2)' }}>Pergunte qualquer coisa sobre suas finanças</p>
         </div>
       </div>
 
@@ -299,15 +285,15 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
       <div ref={chatRef} style={{ height: 340, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
         {mensagens.length === 0 && (
           <div style={{ textAlign: 'center', padding: '20px 0' }}>
-            <p style={{ color: subtexto, fontSize: 13, marginBottom: 16 }}>Sugestões de perguntas:</p>
+            <p style={{ color: 'var(--text-2)', fontSize: 13, marginBottom: 16 }}>Sugestões de perguntas:</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {sugestoes.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => setInput(s)}
                   style={{
-                    padding: '10px 16px', background: inputBg, border: `1px solid ${border}`,
-                    borderRadius: 10, cursor: 'pointer', color: subtexto, fontSize: 13,
+                    padding: '10px 16px', background: 'var(--bg-input)', border: '1px solid var(--border)',
+                    borderRadius: 10, cursor: 'pointer', color: 'var(--text-2)', fontSize: 13,
                     textAlign: 'left', transition: 'all 0.15s',
                   }}
                 >
@@ -322,12 +308,12 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
           <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
             <div style={{
               maxWidth: '80%',
-              background: m.role === 'user' ? bgUser : bgAssistant,
-              border: `1px solid ${border}`,
+              background: m.role === 'user' ? 'var(--bg-info-soft)' : 'var(--bg-row)',
+              border: '1px solid var(--border)',
               borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
               padding: '10px 14px',
               fontSize: 13,
-              color: texto,
+              color: 'var(--text-1)',
               lineHeight: 1.6,
               whiteSpace: 'pre-wrap',
             }}>
@@ -338,7 +324,7 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
 
         {loading && (
           <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-            <div style={{ background: bgAssistant, border: `1px solid ${border}`, borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
+            <div style={{ background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '16px 16px 16px 4px', padding: '12px 16px' }}>
               <div style={{ display: 'flex', gap: 4 }}>
                 {[0, 1, 2].map(i => (
                   <div key={i} style={{
@@ -354,15 +340,15 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
       </div>
 
       {/* Input */}
-      <div style={{ padding: '12px 16px', borderTop: `1px solid ${border}`, display: 'flex', gap: 10 }}>
+      <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', display: 'flex', gap: 10 }}>
         <input
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviar()}
           placeholder="Pergunte sobre suas finanças..."
           style={{
-            flex: 1, padding: '10px 14px', background: inputBg, border: `1px solid ${border}`,
-            borderRadius: 10, color: texto, fontSize: 13, outline: 'none',
+            flex: 1, padding: '10px 14px', background: 'var(--bg-input)', border: '1px solid var(--border)',
+            borderRadius: 10, color: 'var(--text-1)', fontSize: 13, outline: 'none',
           }}
         />
         <button
@@ -384,19 +370,12 @@ function Chat({ systemPrompt, darkMode }: { systemPrompt: string; darkMode: bool
 // ─── Principal ───────────────────────────────────────────────────────────────
 
 export default function ConsultorIA() {
-  const darkMode = localStorage.getItem('fh_theme') === 'dark'
   const [dados, setDados] = useState<DadosFinanceiros | null>(null)
   const [cards, setCards] = useState<(CardAnalise | null)[]>([null, null, null])
   const [carregandoCards, setCarregandoCards] = useState(false)
   const [carregandoDados, setCarregandoDados] = useState(true)
   const [systemPrompt, setSystemPrompt] = useState('')
   const [erro, setErro] = useState('')
-
-  const bg = darkMode ? '#0b1120' : '#f0f4f8'
-  const texto = darkMode ? '#e2e8f0' : '#1a202c'
-  const subtexto = darkMode ? '#94a3b8' : '#64748b'
-  const border = darkMode ? '#1e2d45' : '#e2e8f0'
-  const cardBg = darkMode ? '#16213e' : '#ffffff'
 
   useEffect(() => { inicializar() }, [])
 
@@ -448,11 +427,11 @@ export default function ConsultorIA() {
 
   if (carregandoDados) {
     return (
-      <div style={{ background: bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg-page)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 48, marginBottom: 16 }}>🤖</div>
-          <p style={{ color: texto, fontSize: 16, fontWeight: 600 }}>Carregando seus dados...</p>
-          <p style={{ color: subtexto, fontSize: 13 }}>Buscando informações financeiras</p>
+          <p style={{ color: 'var(--text-1)', fontSize: 16, fontWeight: 600 }}>Carregando seus dados...</p>
+          <p style={{ color: 'var(--text-2)', fontSize: 13 }}>Buscando informações financeiras</p>
         </div>
       </div>
     )
@@ -460,7 +439,7 @@ export default function ConsultorIA() {
 
   if (erro) {
     return (
-      <div style={{ background: bg, minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ background: 'var(--bg-page)', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div style={{ textAlign: 'center' }}>
           <p style={{ color: '#ef4444' }}>{erro}</p>
           <button onClick={inicializar} style={{ marginTop: 12, padding: '10px 20px', background: '#667eea', border: 'none', borderRadius: 8, color: 'white', cursor: 'pointer' }}>Tentar novamente</button>
@@ -470,7 +449,7 @@ export default function ConsultorIA() {
   }
 
   return (
-    <div style={{ background: bg, minHeight: '100vh', padding: '24px' }}>
+    <div style={{ background: 'var(--bg-page)', minHeight: '100vh', padding: '24px' }}>
       <style>{`@keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(0.8); } 50% { opacity: 1; transform: scale(1); } }`}</style>
 
       {/* Header */}
@@ -479,14 +458,14 @@ export default function ConsultorIA() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
             <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg, #667eea, #764ba2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>🤖</div>
             <div>
-              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: texto }}>Consultor IA</h1>
-              <p style={{ margin: 0, fontSize: 13, color: subtexto }}>Análise personalizada baseada nos seus dados reais</p>
+              <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: 'var(--text-1)' }}>Consultor IA</h1>
+              <p style={{ margin: 0, fontSize: 13, color: 'var(--text-2)' }}>Análise personalizada baseada nos seus dados reais</p>
             </div>
           </div>
         </div>
         <button
           onClick={inicializar}
-          style={{ padding: '9px 18px', background: cardBg, border: `1px solid ${border}`, borderRadius: 10, color: subtexto, fontSize: 13, cursor: 'pointer', fontWeight: 600 }}
+          style={{ padding: '9px 18px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 10, color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', fontWeight: 600 }}
         >
           🔄 Atualizar análise
         </button>
@@ -500,8 +479,8 @@ export default function ConsultorIA() {
             { label: 'Despesa do Mês', valor: dados.despesaMes, cor: '#ef4444', emoji: '📤' },
             { label: 'Saldo do Mês', valor: dados.saldoMes, cor: dados.saldoMes >= 0 ? '#22c55e' : '#ef4444', emoji: dados.saldoMes >= 0 ? '✅' : '⚠️' },
           ].map((item, i) => (
-            <div key={i} style={{ background: cardBg, border: `1px solid ${border}`, borderRadius: 14, padding: '16px 20px', borderLeft: `3px solid ${item.cor}` }}>
-              <p style={{ margin: '0 0 6px', fontSize: 12, color: subtexto }}>{item.emoji} {item.label}</p>
+            <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: '16px 20px', borderLeft: `3px solid ${item.cor}` }}>
+              <p style={{ margin: '0 0 6px', fontSize: 12, color: 'var(--text-2)' }}>{item.emoji} {item.label}</p>
               <p style={{ margin: 0, fontSize: 18, fontWeight: 700, color: item.cor }}>{formatMoney(item.valor)}</p>
             </div>
           ))}
@@ -516,7 +495,7 @@ export default function ConsultorIA() {
       </div>
 
       {/* Chat */}
-      {systemPrompt && <Chat systemPrompt={systemPrompt} darkMode={darkMode} />}
+      {systemPrompt && <Chat systemPrompt={systemPrompt} />}
     </div>
   )
 }

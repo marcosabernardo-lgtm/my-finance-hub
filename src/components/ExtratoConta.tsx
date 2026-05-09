@@ -210,8 +210,8 @@ export default function ExtratoConta() {
 
   const corSituacao = (s: string) =>
     s === 'Pago'
-      ? { bg: '#d1fae5', color: '#065f46' }
-      : { bg: '#fef3c7', color: '#92400e' }
+      ? { background: 'var(--badge-pago-bg)', color: 'var(--badge-pago-fg)' }
+      : { background: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -220,15 +220,15 @@ export default function ExtratoConta() {
 
       {/* Header */}
       <div style={{ marginBottom: '20px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Extrato da Conta</h1>
-        <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Extrato da Conta</h1>
+        <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
           Movimentações por conta bancária — entradas, saídas e saldo do período
         </p>
       </div>
 
       {/* ── Filtros ─────────────────────────────────────────────────────────── */}
       <div style={{
-        background: '#ede8df', border: '1px solid #e5e7eb', borderRadius: '12px',
+        background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '12px',
         padding: '16px 20px', marginBottom: '20px',
         display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-end'
       }}>
@@ -264,11 +264,11 @@ export default function ExtratoConta() {
                 style={{
                   padding: '0 14px', borderRadius: '6px', fontSize: '13px',
                   fontWeight: 600, cursor: 'pointer', height: '38px',
-                  border: filtroTipo === t ? 'none' : '1px solid #d1d5db',
+                  border: filtroTipo === t ? 'none' : '1px solid var(--border-input)',
                   background: filtroTipo === t
                     ? t === '' ? '#2563eb' : t === 'Receita' ? '#065f46' : t === 'Despesa' ? '#991b1b' : '#92400e'
-                    : '#fff',
-                  color: filtroTipo === t ? '#fff' : '#374151',
+                    : 'var(--bg-card)',
+                  color: filtroTipo === t ? '#fff' : 'var(--text-4)',
                 }}
               >
                 {t === '' ? 'Todos' : t}
@@ -330,13 +330,13 @@ export default function ExtratoConta() {
       )}
 
       {/* ── Tabela ──────────────────────────────────────────────────────────── */}
-      <div style={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
 
         <div style={{
-          padding: '12px 16px', borderBottom: '1px solid #f3f4f6', background: '#ede8df',
+          padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-row)',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center'
         }}>
-          <span style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+          <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-4)' }}>
             Lançamentos — {MESES[filtroMes - 1]} {filtroAno}
           </span>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -348,16 +348,16 @@ export default function ExtratoConta() {
                 ✅ {conferidos.size} conferido{conferidos.size !== 1 ? 's' : ''} — {fmt(Math.abs(totalConferido))}
               </span>
             )}
-            <span style={{ fontSize: '12px', color: '#9ca3af' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-3)' }}>
               Filtrado por data de movimentação
             </span>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
         ) : lancamentosFiltrados.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>
             {!contaId
               ? 'Selecione uma conta para ver o extrato.'
               : `Nenhum lançamento encontrado para ${MESES[filtroMes - 1]} ${filtroAno}.`}
@@ -366,15 +366,15 @@ export default function ExtratoConta() {
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
-                <tr style={{ background: '#ede8df', borderBottom: '1px solid #e5e7eb' }}>
+                <tr style={{ background: 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                   {/* Coluna do check */}
                   <th style={{ padding: '10px 12px', width: '40px' }}>
-                    <span title="Conferir lançamentos" style={{ fontSize: '12px', color: '#9ca3af' }}>✓</span>
+                    <span title="Conferir lançamentos" style={{ fontSize: '12px', color: 'var(--text-3)' }}>✓</span>
                   </th>
                   {['Data','Categoria','Descrição','Tipo','Valor','Situação'].map(h => (
                     <th key={h} style={{
                       padding: '10px 12px', textAlign: h === 'Valor' ? 'right' : 'left',
-                      fontWeight: 600, color: '#374151', whiteSpace: 'nowrap', fontSize: '12px'
+                      fontWeight: 600, color: 'var(--text-4)', whiteSpace: 'nowrap', fontSize: '12px'
                     }}>
                       {h}
                     </th>
@@ -388,10 +388,10 @@ export default function ExtratoConta() {
                     <tr
                       key={l.id}
                       style={{
-                        borderBottom: '1px solid #f3f4f6',
+                        borderBottom: '1px solid var(--border)',
                         background: conferido
                           ? '#f0fdf4'
-                          : idx % 2 === 0 ? '#fff' : '#fafafa',
+                          : idx % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row2)',
                         transition: 'background 0.2s',
                         opacity: conferido ? 0.75 : 1,
                       }}
@@ -403,8 +403,8 @@ export default function ExtratoConta() {
                           title={conferido ? 'Desmarcar' : 'Marcar como conferido'}
                           style={{
                             width: '20px', height: '20px', borderRadius: '5px', cursor: 'pointer',
-                            border: `2px solid ${conferido ? '#16a34a' : '#d1d5db'}`,
-                            background: conferido ? '#16a34a' : '#fff',
+                            border: `2px solid ${conferido ? '#16a34a' : 'var(--border-input)'}`,
+                            background: conferido ? '#16a34a' : 'var(--bg-card)',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                             margin: '0 auto', transition: 'all 0.15s',
                           }}
@@ -414,11 +414,11 @@ export default function ExtratoConta() {
                       </td>
 
                       <td style={tdStyle}>{fmtDate(l.data_movimentacao)}</td>
-                      <td style={{ ...tdStyle, color: '#6b7280' }}>{catNome(l.categoria_id)}</td>
+                      <td style={{ ...tdStyle, color: 'var(--text-2)' }}>{catNome(l.categoria_id)}</td>
                       <td style={{ ...tdStyle, maxWidth: '260px' }}>
                         <div style={{
                           fontWeight: 500,
-                          color: conferido ? '#6b7280' : '#111827',
+                          color: conferido ? 'var(--text-2)' : 'var(--text-1)',
                           overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           textDecoration: conferido ? 'line-through' : 'none',
                         }}>
@@ -437,7 +437,7 @@ export default function ExtratoConta() {
                       </td>
                       <td style={{
                         ...tdStyle, textAlign: 'right', fontWeight: 700, whiteSpace: 'nowrap',
-                        color: conferido ? '#6b7280' : l.tipo === 'Receita' ? '#065f46' : '#991b1b'
+                        color: conferido ? 'var(--text-2)' : l.tipo === 'Receita' ? '#065f46' : '#991b1b'
                       }}>
                         {l.tipo === 'Receita' ? '+' : '−'} {fmt(Number(l.valor))}
                       </td>
@@ -455,11 +455,11 @@ export default function ExtratoConta() {
                 })}
               </tbody>
               <tfoot>
-                <tr style={{ background: '#ede8df', borderTop: '2px solid #e5e7eb' }}>
+                <tr style={{ background: 'var(--bg-row)', borderTop: '2px solid var(--border)' }}>
                   <td />
-                  <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: '#374151', fontSize: '13px' }}>
+                  <td colSpan={3} style={{ padding: '10px 12px', fontWeight: 700, color: 'var(--text-4)', fontSize: '13px' }}>
                     Total {filtroTipo ? `(${filtroTipo})` : '(Todos)'}
-                    <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                    <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                       {lancamentosFiltrados.length} lançamento{lancamentosFiltrados.length !== 1 ? 's' : ''}
                     </span>
                   </td>
@@ -530,15 +530,15 @@ function CardInfo({ label, valor, sub, corValor, bg, destaque }: {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const labelStyle: React.CSSProperties = {
-  display: 'block', fontSize: '11px', fontWeight: 600, color: '#6b7280',
+  display: 'block', fontSize: '11px', fontWeight: 600, color: 'var(--text-2)',
   textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px'
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
+  border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px'
 }
 
 const tdStyle: React.CSSProperties = {
-  padding: '10px 12px', color: '#374151', verticalAlign: 'middle'
+  padding: '10px 12px', color: 'var(--text-4)', verticalAlign: 'middle'
 }

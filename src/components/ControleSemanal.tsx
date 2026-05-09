@@ -43,11 +43,11 @@ const MESES = [
 
 const corSituacao = (s: string): React.CSSProperties => {
   switch (s) {
-    case 'Pago':     return { background: '#d1fae5', color: '#065f46' }
-    case 'Pendente': return { background: '#fef3c7', color: '#92400e' }
-    case 'Faturado': return { background: '#dbeafe', color: '#1e40af' }
-    case 'Previsto': return { background: '#f3e8ff', color: '#6b21a8' }
-    default:         return { background: '#f3f4f6', color: '#374151' }
+    case 'Pago':     return { background: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)' }
+    case 'Pendente': return { background: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+    case 'Faturado': return { background: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+    case 'Previsto': return { background: 'var(--badge-previsto-bg)', color: 'var(--badge-previsto-fg)' }
+    default:         return { background: 'var(--bg-row2)',           color: 'var(--text-4)' }
   }
 }
 
@@ -229,8 +229,8 @@ export default function ControleSemanal() {
 
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: 700, color: '#111827', margin: 0 }}>Controle Semanal</h1>
-          <p style={{ color: '#6b7280', marginTop: '4px', fontSize: '13px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Controle Semanal</h1>
+          <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
             Clique em qualquer valor para ver os lançamentos · débito e PIX: somente Pago · cartão: à vista e parcelado
           </p>
         </div>
@@ -251,21 +251,21 @@ export default function ControleSemanal() {
           { cor: '#EF4444', label: 'Ultrapassou (> 100%)' },
           { cor: '#9CA3AF', label: 'Sem gasto' },
         ].map(l => (
-          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#6b7280' }}>
+          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-2)' }}>
             <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: l.cor, display: 'inline-block' }} />
             {l.label}
           </div>
         ))}
-        <div style={{ fontSize: '12px', color: '#9ca3af', marginLeft: 'auto' }}>
+        <div style={{ fontSize: '12px', color: 'var(--text-3)', marginLeft: 'auto' }}>
           💡 Clique em qualquer valor para ver os lançamentos
         </div>
       </div>
 
-      <div style={{ border: '1px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden' }}>
+      <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
         {loading ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>Carregando...</div>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
         ) : linhas.length === 0 ? (
-          <div style={{ padding: '48px', textAlign: 'center', color: '#9ca3af' }}>
+          <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>
             Nenhuma despesa encontrada para {MESES[filtroMes - 1]} {filtroAno}.
           </div>
         ) : (
@@ -292,11 +292,11 @@ export default function ControleSemanal() {
                     separador = (
                       <tr key={`sep-${linha.classificacao}`}>
                         <td colSpan={10} style={{
-                          padding: '6px 10px', background: '#f3f4f6',
-                          fontSize: '11px', fontWeight: 700, color: '#6b7280',
+                          padding: '6px 10px', background: 'var(--bg-row2)',
+                          fontSize: '11px', fontWeight: 700, color: 'var(--text-2)',
                           textTransform: 'uppercase', letterSpacing: '0.06em',
-                          borderTop: idx > 0 ? '2px solid #e5e7eb' : 'none',
-                          borderBottom: '1px solid #e5e7eb'
+                          borderTop: idx > 0 ? '2px solid var(--border)' : 'none',
+                          borderBottom: '1px solid var(--border)'
                         }}>
                           {linha.classificacao}
                         </td>
@@ -305,16 +305,16 @@ export default function ControleSemanal() {
                   }
 
                   const drillRealAberto = drill?.categoriaId === linha.categoriaId && drill?.semana === 0
-                  const rowBg = idx % 2 === 0 ? '#fff' : '#fafafa'
+                  const rowBg = idx % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row2)'
 
                   return (
                     <React.Fragment key={linha.categoriaId}>
                       {separador}
-                      <tr style={{ background: drillRealAberto ? '#fffbeb' : rowBg, borderBottom: '1px solid #f3f4f6' }}>
-                        <td style={{ ...tdBase, fontWeight: 500, color: '#111827', whiteSpace: 'nowrap' }}>
+                      <tr style={{ background: drillRealAberto ? 'var(--bg-warning-soft)' : rowBg, borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ ...tdBase, fontWeight: 500, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>
                           {linha.categoria}
                         </td>
-                        <td style={{ ...tdNum, color: '#6b7280' }}>{fmt(linha.limiteMensal)}</td>
+                        <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteMensal)}</td>
                         <td
                           style={{ ...tdNum, fontWeight: 700, color: corReal(linha.totalReal, linha.limiteMensal), cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}
                           onClick={() => toggleDrill(linha.categoriaId, 0, linha.totalReal)}
@@ -325,7 +325,7 @@ export default function ControleSemanal() {
                         <td style={{ ...tdNum, color: corDivergencia(linha.divergencia), fontWeight: 600 }}>
                           {fmt(linha.divergencia)}
                         </td>
-                        <td style={{ ...tdNum, color: '#6b7280' }}>{fmt(linha.limiteSemanal)}</td>
+                        <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteSemanal)}</td>
                         {[1, 2, 3, 4, 5].map(s => {
                           const val = linha.semanas[s] || 0
                           const { color, bg } = corSemanaCell(val, linha.limiteSemanal)
@@ -338,8 +338,8 @@ export default function ControleSemanal() {
                               style={{
                                 ...tdNum, fontWeight: 600,
                                 cursor: val > 0 ? 'pointer' : 'default',
-                                background: aberto ? '#fffbeb' : 'transparent',
-                                borderBottom: aberto ? '2px solid #f59e0b' : 'none',
+                                background: aberto ? 'var(--bg-warning-soft)' : 'transparent',
+                                borderBottom: aberto ? '2px solid var(--border-warning)' : 'none',
                               }}
                             >
                               {val === 0
@@ -370,22 +370,22 @@ export default function ControleSemanal() {
 
                         return (
                           <tr>
-                            <td colSpan={10} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+                            <td colSpan={10} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
                               <div style={{ padding: '12px 16px 14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                   <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
                                     📋 {titulo}
-                                    <span style={{ fontWeight: 400, color: '#9ca3af', marginLeft: '8px', fontSize: '12px' }}>
+                                    <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                                       {movsDrill.length} lançamento{movsDrill.length !== 1 ? 's' : ''}
                                     </span>
                                   </div>
                                   <button
                                     onClick={() => setDrill(null)}
-                                    style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#9ca3af' }}
+                                    style={{ background: 'none', border: 'none', fontSize: '16px', cursor: 'pointer', color: 'var(--text-3)' }}
                                   >×</button>
                                 </div>
                                 {movsDrill.length === 0 ? (
-                                  <div style={{ color: '#9ca3af', fontSize: '12px' }}>Nenhum lançamento.</div>
+                                  <div style={{ color: 'var(--text-3)', fontSize: '12px' }}>Nenhum lançamento.</div>
                                 ) : (
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                     <thead>
@@ -413,8 +413,8 @@ export default function ControleSemanal() {
                                                 {m.situacao}
                                               </span>
                                             </td>
-                                            <td style={{ ...tdDrill, color: '#6b7280' }}>{m.metodo_pagamento || '—'}</td>
-                                            <td style={{ ...tdDrill, color: '#6b7280' }}>{m.numero_parcela || '—'}</td>
+                                            <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.metodo_pagamento || '—'}</td>
+                                            <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.numero_parcela || '—'}</td>
                                           </tr>
                                         ))}
                                     </tbody>
@@ -443,7 +443,7 @@ export default function ControleSemanal() {
                   <td style={{ ...tdNum, color: '#d1d5db', fontWeight: 700 }}>{fmt(totalLimiteMensal)}</td>
                   <td style={{ ...tdNum, fontWeight: 700, color: corReal(totalReal, totalLimiteMensal) }}>{fmt(totalReal)}</td>
                   <td style={{ ...tdNum, fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>{fmt(totalDivergencia)}</td>
-                  <td style={{ ...tdNum, color: '#9ca3af' }}>{fmt(totalLimiteSemanal)}</td>
+                  <td style={{ ...tdNum, color: 'var(--text-3)' }}>{fmt(totalLimiteSemanal)}</td>
                   {[1, 2, 3, 4, 5].map(s => {
                     const val = totalSemanas[s] || 0
                     return (
@@ -460,7 +460,7 @@ export default function ControleSemanal() {
       </div>
 
       {!loading && linhas.length > 0 && (
-        <div style={{ marginTop: '10px', fontSize: '11px', color: '#9ca3af', textAlign: 'right' }}>
+        <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-3)', textAlign: 'right' }}>
           * Inclui: Débito/PIX/Dinheiro (Pago) · Cartão à vista e parcelado (Pendente) &nbsp;|&nbsp; Exclui: Faturado · Previsto
         </div>
       )}
@@ -482,11 +482,11 @@ const tdNum: React.CSSProperties = {
 
 const tdDrill: React.CSSProperties = {
   padding: '5px 10px',
-  color: '#374151',
+  color: 'var(--text-4)',
   verticalAlign: 'middle',
 }
 
 const selectStyle: React.CSSProperties = {
-  border: '1px solid #d1d5db', borderRadius: '8px', padding: '7px 10px',
-  fontSize: '13px', background: '#fff', color: '#111827', cursor: 'pointer', height: '38px'
+  border: '1px solid var(--border-input)', borderRadius: '8px', padding: '7px 10px',
+  fontSize: '13px', background: 'var(--bg-input)', color: 'var(--text-1)', cursor: 'pointer', height: '38px'
 }

@@ -188,8 +188,8 @@ export default function ConfirmarDebito() {
   return (
     <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px' }}>
       <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, color: '#111827', margin: 0 }}>Confirmar Débitos</h1>
-        <p style={{ color: '#6b7280', fontSize: 13, marginTop: 4 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>Confirmar Débitos</h1>
+        <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 4 }}>
           Confirme lançamentos previstos para incluí-los no controle financeiro.
         </p>
       </div>
@@ -199,7 +199,7 @@ export default function ConfirmarDebito() {
         <select
           value={filtroMes.split('-')[1]}
           onChange={e => { setFiltroMes(`${filtroMes.split('-')[0]}-${e.target.value}`); setModo(null); setCartaoSelecionado(null) }}
-          style={{ padding: '7px 12px', background: '#fff', border: '1px solid #d1d5db', color: '#111827', borderRadius: 6, fontSize: 13 }}>
+          style={{ padding: '7px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-input)', color: 'var(--text-1)', borderRadius: 6, fontSize: 13 }}>
           {nomesMeses.map((m, i) => (
             <option key={i} value={String(i + 1).padStart(2, '0')}>{m}</option>
           ))}
@@ -207,7 +207,7 @@ export default function ConfirmarDebito() {
         <input
           type="number" value={filtroMes.split('-')[0]}
           onChange={e => { setFiltroMes(`${e.target.value}-${filtroMes.split('-')[1]}`); setModo(null); setCartaoSelecionado(null) }}
-          style={{ width: 80, padding: '7px 12px', background: '#fff', border: '1px solid #d1d5db', color: '#111827', borderRadius: 6, fontSize: 13 }}
+          style={{ width: 80, padding: '7px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-input)', color: 'var(--text-1)', borderRadius: 6, fontSize: 13 }}
         />
       </div>
 
@@ -217,28 +217,28 @@ export default function ConfirmarDebito() {
           onClick={() => { setModo('debito'); setCartaoSelecionado(null) }}
           style={{
             padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
-            border: `2px solid ${modo === 'debito' ? '#f59e0b' : '#e5e7eb'}`,
-            background: modo === 'debito' ? '#fffbeb' : '#f9fafb',
+            border: `2px solid ${modo === 'debito' ? '#f59e0b' : 'var(--border)'}`,
+            background: modo === 'debito' ? '#fffbeb' : 'var(--bg-row2)',
             transition: 'all 0.15s',
           }}
         >
           <div style={{ fontSize: 28, marginBottom: 8 }}>💳</div>
           <div style={{ fontWeight: 700, fontSize: 15, color: '#92400e' }}>Débito / PIX</div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Lançamentos de conta bancária</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Lançamentos de conta bancária</div>
         </div>
 
         <div
           onClick={() => { setModo('credito'); setCartaoSelecionado(null) }}
           style={{
             padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
-            border: `2px solid ${modo === 'credito' ? '#2563eb' : '#e5e7eb'}`,
-            background: modo === 'credito' ? '#eff6ff' : '#f9fafb',
+            border: `2px solid ${modo === 'credito' ? '#2563eb' : 'var(--border)'}`,
+            background: modo === 'credito' ? '#eff6ff' : 'var(--bg-row2)',
             transition: 'all 0.15s',
           }}
         >
           <div style={{ fontSize: 28, marginBottom: 8 }}>💰</div>
           <div style={{ fontWeight: 700, fontSize: 15, color: '#1d4ed8' }}>Cartão de Crédito</div>
-          <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>Selecione o cartão para confirmar</div>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Selecione o cartão para confirmar</div>
         </div>
       </div>
 
@@ -246,7 +246,7 @@ export default function ConfirmarDebito() {
       {modo === 'credito' && (
         <div style={{ marginBottom: 24 }}>
           {cartoesComPrevisto.length === 0 ? (
-            <div style={{ background: '#ede8df', padding: 20, borderRadius: 10, border: '1px solid #e5e7eb', textAlign: 'center', color: '#9ca3af', fontSize: 13 }}>
+            <div style={{ background: 'var(--bg-row)', padding: 20, borderRadius: 10, border: '1px solid var(--border)', textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>
               Nenhum cartão com lançamentos previstos neste mês.
             </div>
           ) : (
@@ -257,13 +257,13 @@ export default function ConfirmarDebito() {
                   onClick={() => setCartaoSelecionado(c.id)}
                   style={{
                     padding: '12px 18px', borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${cartaoSelecionado === c.id ? '#2563eb' : '#e5e7eb'}`,
-                    background: cartaoSelecionado === c.id ? '#eff6ff' : '#fff',
+                    border: `2px solid ${cartaoSelecionado === c.id ? '#2563eb' : 'var(--border)'}`,
+                    background: cartaoSelecionado === c.id ? '#eff6ff' : 'var(--bg-card)',
                     transition: 'all 0.15s',
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 13, color: '#111827' }}>{c.nome}</div>
-                  <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-1)' }}>{c.nome}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 2 }}>
                     {c.quantidade} lançamento{c.quantidade !== 1 ? 's' : ''} · {formatarValor(c.total)}
                   </div>
                 </div>
@@ -286,16 +286,16 @@ export default function ConfirmarDebito() {
       {modo && (modo === 'debito' || cartaoSelecionado) && (
         <>
           {previstos.length === 0 ? (
-            <div style={{ background: '#ede8df', padding: 40, borderRadius: 12, textAlign: 'center', border: '1px solid #e5e7eb' }}>
-              <p style={{ color: '#9ca3af', fontSize: 15 }}>Nenhum lançamento previsto para este filtro.</p>
+            <div style={{ background: 'var(--bg-row)', padding: 40, borderRadius: 12, textAlign: 'center', border: '1px solid var(--border)' }}>
+              <p style={{ color: 'var(--text-3)', fontSize: 15 }}>Nenhum lançamento previsto para este filtro.</p>
             </div>
           ) : (
             <>
               <div style={{ background: '#f5f3ff', padding: '12px 16px', borderRadius: 8, marginBottom: 16, border: '1px solid #ddd6fe', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                  <span style={{ color: '#6b7280', fontSize: 13 }}>Total previsto:</span>
+                  <span style={{ color: 'var(--text-2)', fontSize: 13 }}>Total previsto:</span>
                   <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: 16 }}>{formatarValor(totalPrevistos)}</span>
-                  <span style={{ color: '#9ca3af', fontSize: 13 }}>{previstos.length} lançamento(s)</span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 13 }}>{previstos.length} lançamento(s)</span>
                 </div>
                 <button onClick={confirmarTodos} disabled={loading} style={{
                   padding: '8px 16px', backgroundColor: '#7c3aed', color: 'white',
@@ -310,15 +310,15 @@ export default function ConfirmarDebito() {
                   const metodo = getMetodoInfo(p)
                   return (
                     <div key={p.id} style={{
-                      background: '#fff', padding: '14px 16px', borderRadius: 8,
-                      border: '1px solid #e5e7eb', display: 'flex', justifyContent: 'space-between',
+                      background: 'var(--bg-card)', padding: '14px 16px', borderRadius: 8,
+                      border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between',
                       alignItems: 'center', gap: 12
                     }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                          <span style={{ color: '#111827', fontWeight: 600, fontSize: 14 }}>{p.descricao}</span>
+                          <span style={{ color: 'var(--text-1)', fontWeight: 600, fontSize: 14 }}>{p.descricao}</span>
                           {p.categoria_nome && (
-                            <span style={{ color: '#6b7280', fontSize: 11, background: '#f3f4f6', padding: '2px 6px', borderRadius: 4 }}>
+                            <span style={{ color: 'var(--text-2)', fontSize: 11, background: 'var(--bg-row2)', padding: '2px 6px', borderRadius: 4 }}>
                               {p.categoria_nome}
                             </span>
                           )}
@@ -327,7 +327,7 @@ export default function ConfirmarDebito() {
                           </span>
                         </div>
                         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                          <span style={{ color: '#6b7280', fontSize: 12 }}>
+                          <span style={{ color: 'var(--text-2)', fontSize: 12 }}>
                             Vence: <strong>{formatarData(p.data_pagamento)}</strong>
                           </span>
                           <span style={{ fontSize: 12, color: metodo.color, background: metodo.bg, padding: '2px 8px', borderRadius: 4 }}>
@@ -341,7 +341,7 @@ export default function ConfirmarDebito() {
                       {editandoId === p.id ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end', flexShrink: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                            <span style={{ fontSize: 12, color: '#6b7280' }}>R$</span>
+                            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>R$</span>
                             <input
                               type="text"
                               value={valorEditado}
@@ -350,7 +350,7 @@ export default function ConfirmarDebito() {
                               style={{
                                 width: 90, padding: '6px 8px', border: '2px solid #22c55e',
                                 borderRadius: 6, fontSize: 14, fontWeight: 700,
-                                color: '#111827', outline: 'none', textAlign: 'right',
+                                color: 'var(--text-1)', outline: 'none', textAlign: 'right',
                               }}
                             />
                           </div>
@@ -358,8 +358,8 @@ export default function ConfirmarDebito() {
                             <button
                               onClick={cancelarEdicao}
                               style={{
-                                padding: '5px 10px', backgroundColor: '#f3f4f6', color: '#6b7280',
-                                border: '1px solid #d1d5db', borderRadius: 6, cursor: 'pointer',
+                                padding: '5px 10px', backgroundColor: 'var(--bg-row2)', color: 'var(--text-2)',
+                                border: '1px solid var(--border-input)', borderRadius: 6, cursor: 'pointer',
                                 fontWeight: 600, fontSize: 12,
                               }}>
                               Cancelar

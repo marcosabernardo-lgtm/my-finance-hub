@@ -44,12 +44,12 @@ function calcularDataPagamento(dataCompra: string, cartao: Cartao): string {
 }
 
 const cor = {
-  bg: '#f5f0e8',
-  card: '#ffffff',
-  texto: '#1a202c',
-  sub: '#64748b',
-  borda: '#e2e8f0',
-  input: '#f7fafc',
+  bg: 'var(--bg-page)',
+  card: 'var(--bg-card)',
+  texto: 'var(--text-1)',
+  sub: 'var(--text-2)',
+  borda: 'var(--border)',
+  input: 'var(--bg-input)',
 }
 
 export default function ConferenciaWhatsApp() {

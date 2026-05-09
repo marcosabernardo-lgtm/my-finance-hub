@@ -220,10 +220,10 @@ export default function UploadPlanilha() {
 
   return (
     <div style={{ padding: 32, maxWidth: 640, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, color: '#111827', marginBottom: 6 }}>
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text-1)', marginBottom: 6 }}>
         Importar Planilha
       </h1>
-      <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 28 }}>
+      <p style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 28 }}>
         Faca upload da planilha padrao Finance Hub (.xlsx) para importar categorias, cartoes, contas e movimentacoes.
       </p>
 
@@ -253,15 +253,15 @@ export default function UploadPlanilha() {
           padding: '48px 32px',
           textAlign: 'center',
           cursor: loading ? 'default' : 'pointer',
-          background: hovered ? '#eff6ff' : '#f5f0e8',
+          background: hovered ? 'var(--bg-info-soft)' : 'var(--bg-page)',
           transition: 'all 0.2s',
         }}
       >
         <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
-        <p style={{ fontWeight: 600, fontSize: 16, color: '#374151', marginBottom: 6 }}>
+        <p style={{ fontWeight: 600, fontSize: 16, color: 'var(--text-4)', marginBottom: 6 }}>
           {loading ? etapa : 'Clique para selecionar a planilha'}
         </p>
-        <p style={{ fontSize: 12, color: '#9ca3af' }}>Formato aceito: .xlsx</p>
+        <p style={{ fontSize: 12, color: 'var(--text-3)' }}>Formato aceito: .xlsx</p>
         <input
           ref={fileRef}
           type="file"
@@ -275,11 +275,11 @@ export default function UploadPlanilha() {
       {/* Barra de progresso */}
       {loading && (
         <div style={{ marginTop: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#6b7280', marginBottom: 4 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-2)', marginBottom: 4 }}>
             <span>{etapa}</span>
             <span>{progresso}%</span>
           </div>
-          <div style={{ width: '100%', background: '#e5e7eb', borderRadius: 99, height: 8 }}>
+          <div style={{ width: '100%', background: 'var(--border)', borderRadius: 99, height: 8 }}>
             <div style={{
               width: `${progresso}%`, background: '#2563eb',
               borderRadius: 99, height: 8, transition: 'width 0.5s',
@@ -316,14 +316,14 @@ export default function UploadPlanilha() {
                 { label: 'Movimentacoes', valor: resultado.movimentacoes, icon: '💰' },
               ].map(item => (
                 <div key={item.label} style={{
-                  background: '#fff', borderRadius: 10, padding: '12px 16px',
+                  background: 'var(--bg-card)', borderRadius: 10, padding: '12px 16px',
                   display: 'flex', alignItems: 'center', gap: 12,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
                 }}>
                   <span style={{ fontSize: 24 }}>{item.icon}</span>
                   <div>
-                    <p style={{ fontSize: 11, color: '#9ca3af', marginBottom: 2 }}>{item.label}</p>
-                    <p style={{ fontWeight: 700, fontSize: 20, color: '#111827' }}>{item.valor}</p>
+                    <p style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 2 }}>{item.label}</p>
+                    <p style={{ fontWeight: 700, fontSize: 20, color: 'var(--text-1)' }}>{item.valor}</p>
                   </div>
                 </div>
               ))}
@@ -332,7 +332,7 @@ export default function UploadPlanilha() {
 
           {resultado.erros.length > 0 && (
             <div style={{
-              background: '#fffbeb', border: '1px solid #fde68a',
+              background: '#fffbeb', border: '1px solid var(--border-warning)',
               borderRadius: 12, padding: 16, marginBottom: 16,
             }}>
               <p style={{ fontWeight: 600, color: '#92400e', marginBottom: 8, fontSize: 13 }}>
@@ -349,8 +349,8 @@ export default function UploadPlanilha() {
           <button
             onClick={() => { setResultado(null); if (fileRef.current) fileRef.current.value = '' }}
             style={{
-              width: '100%', background: '#f3f4f6', border: '1px solid #e5e7eb',
-              borderRadius: 10, padding: '12px 0', fontSize: 13, color: '#374151',
+              width: '100%', background: 'var(--bg-row2)', border: '1px solid var(--border)',
+              borderRadius: 10, padding: '12px 0', fontSize: 13, color: 'var(--text-4)',
               cursor: 'pointer', fontWeight: 500,
             }}
           >

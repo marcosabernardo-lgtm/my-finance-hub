@@ -2,13 +2,89 @@
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0b1120;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* ── dark theme (default) ── */
+  --bg-page:   #0b1120;
+  --bg-card:   #0d1526;
+  --bg-row:    #131d30;
+  --bg-row2:   #111827;
+  --bg-input:  #0d1526;
+  --border:    #1e2d45;
+  --border-2:  #2a3f5f;
+  --border-input: #2a3f5f;
+  --text-1:    #f1f5f9;
+  --text-2:    #94a3b8;
+  --text-3:    #64748b;
+  --text-4:    #cbd5e1;
+
+  /* soft card backgrounds */
+  --bg-danger-soft:  #2d1515;
+  --border-danger:   #7f1d1d;
+  --bg-info-soft:    #0f1f3d;
+  --border-info:     #1e3a6e;
+  --bg-success-soft: #052e16;
+  --border-success:  #14532d;
+  --bg-purple-soft:  #1f1040;
+  --border-purple:   #4c1d95;
+  --bg-warning-soft: #2d1f00;
+  --border-warning:  #78350f;
+
+  /* status badges */
+  --badge-pago-bg:     #052e16;
+  --badge-pago-fg:     #6ee7b7;
+  --badge-pendente-bg: #422006;
+  --badge-pendente-fg: #fcd34d;
+  --badge-faturado-bg: #1e3a6e;
+  --badge-faturado-fg: #93c5fd;
+  --badge-previsto-bg: #2d1b69;
+  --badge-previsto-fg: #c4b5fd;
+  --badge-neutral-bg:  #1e2d45;
+  --badge-neutral-fg:  #94a3b8;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --bg-page:   #f5f0e8;
+  --bg-card:   #ffffff;
+  --bg-row:    #f5f0e8;
+  --bg-row2:   #f3f4f6;
+  --bg-input:  #ffffff;
+  --border:    #e2e8f0;
+  --border-2:  #d1d5db;
+  --border-input: #d1d5db;
+  --text-1:    #111827;
+  --text-2:    #6b7280;
+  --text-3:    #9ca3af;
+  --text-4:    #374151;
+
+  --bg-danger-soft:  #fff5f5;
+  --border-danger:   #fecaca;
+  --bg-info-soft:    #eff6ff;
+  --border-info:     #bfdbfe;
+  --bg-success-soft: #f0fdf4;
+  --border-success:  #bbf7d0;
+  --bg-purple-soft:  #fdf4ff;
+  --border-purple:   #e9d5ff;
+  --bg-warning-soft: #fffbeb;
+  --border-warning:  #fde68a;
+
+  --badge-pago-bg:     #d1fae5;
+  --badge-pago-fg:     #065f46;
+  --badge-pendente-bg: #fef3c7;
+  --badge-pendente-fg: #92400e;
+  --badge-faturado-bg: #dbeafe;
+  --badge-faturado-fg: #1e40af;
+  --badge-previsto-bg: #f3e8ff;
+  --badge-previsto-fg: #6b21a8;
+  --badge-neutral-bg:  #f3f4f6;
+  --badge-neutral-fg:  #374151;
+
+  color-scheme: light;
 }
 
 *, *::before, *::after {
@@ -20,6 +96,8 @@ body {
   padding: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-page);
+  color: var(--text-1);
 }
 
 #root {
