@@ -19,13 +19,14 @@ import ConferenciaWhatsApp from "./components/ConferenciaWhatsApp";
 import Endividamento from "./components/Endividamento";
 import HomePanel from "./components/HomePanel"
 import Calendario from "./components/Calendario";
+import ConsumoMensal from "./components/ConsumoMensal";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  TrendingDown,
+  TrendingDown, ShoppingCart,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -87,7 +88,7 @@ type Pagina =
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
   | "alertas" | "notificacoes" | "consultor" | "conferencia"
-  | "endividamento" | "calendario"
+  | "endividamento" | "calendario" | "consumo"
 
 const grupos: {
   label: string
@@ -117,6 +118,7 @@ const grupos: {
       { label: "Resumo",         key: "resumo",         icon: BarChart3                       },
       { label: "Semanal",        key: "semanal",        icon: Calendar                        },
       { label: "DRE",            key: "dre",            icon: FileText                        },
+      { label: "Consumo Mensal", key: "consumo",        icon: ShoppingCart                    },
       { label: "Endividamento",  key: "endividamento",  icon: TrendingDown                    },
       { label: "Calendário",     key: "calendario",     icon: Calendar                            },
     ],
@@ -272,6 +274,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "conferencia":   return <ConferenciaWhatsApp />
       case "endividamento": return <Endividamento />
       case "calendario":    return <Calendario />
+      case "consumo":       return <ConsumoMensal />
       default:              return null
     }
   }
