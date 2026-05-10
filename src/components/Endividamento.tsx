@@ -474,22 +474,28 @@ export default function Endividamento() {
       const pendOrd        = [...todasPendentes].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0             = gs[0].p0;
 
-      // Total: use max denominator from parcel strings (e.g. "5/6" → 6)
-      // instead of summing across groups, which inflates when multiple grupo_ids share the same description
       const maxDenom = todasParcelas.reduce((m, p) => {
         const parsed = parseP(p.numero_parcela);
         return parsed ? Math.max(m, parsed.total) : m;
       }, 0);
-      const totalReal = maxDenom > 0 ? maxDenom : todasParcelas.length;
 
-      // Pagas: use DB count OR infer from earliest pending parcel number
-      // (handles missing earlier parcelas that were paid outside this grupo_id)
-      const minAtualPend = todasPendentes.reduce((m, p) => {
-        const parsed = parseP(p.numero_parcela);
-        return parsed ? Math.min(m, parsed.atual) : m;
-      }, Infinity);
-      const pagasInferidas = isFinite(minAtualPend) ? minAtualPend - 1 : 0;
-      const pagasReal = Math.min(Math.max(totalPagasDB, pagasInferidas), totalReal - totalPend);
+      let totalReal: number;
+      let pagasReal: number;
+
+      if (maxDenom > 0 && totalPend < maxDenom) {
+        // Single purchase with possibly missing early parcelas — infer paid count
+        totalReal = maxDenom;
+        const minAtualPend = todasPendentes.reduce((m, p) => {
+          const parsed = parseP(p.numero_parcela);
+          return parsed ? Math.min(m, parsed.atual) : m;
+        }, Infinity);
+        const pagasInferidas = isFinite(minAtualPend) ? minAtualPend - 1 : 0;
+        pagasReal = Math.max(0, Math.min(Math.max(totalPagasDB, pagasInferidas), totalReal - totalPend));
+      } else {
+        // Multiple overlapping purchases — use actual counts, no inference
+        totalReal = todasParcelas.length;
+        pagasReal = totalPagasDB;
+      }
 
       return {
         chave,
