@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../hooks/useAuth"
+import Alertas from "./Alertas"
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 const MESES_CURTOS = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
@@ -371,9 +372,9 @@ export default function HomePanel() {
           </div>
           <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
         </div>
-        <div style={{...SC,borderLeft:"4px solid #ef4444",background:"#fff5f5"}}>
-          <div style={{fontSize:10,fontWeight:700,color:"#991b1b",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total Gasto</div>
-          <div style={{fontSize:17,fontWeight:700,color:"#991b1b",margin:"6px 0 2px"}}>
+        <div style={{...SC,borderLeft:"4px solid #ef4444",background:"var(--bg-danger-soft)"}}>
+          <div style={{fontSize:10,fontWeight:700,color:"var(--text-danger)",textTransform:"uppercase",letterSpacing:"0.05em"}}>Total Gasto</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--text-danger)",margin:"6px 0 2px"}}>
             {fmt(totalDespesas+pagtoFaturaMes)}<Variacao atual={totalDespesas+pagtoFaturaMes} anterior={totalDespesasAnt+pagtoFaturaAnt} boaSeSubir={false}/>
           </div>
           <div style={{fontSize:10,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt+pagtoFaturaAnt)}</div>
@@ -557,6 +558,12 @@ export default function HomePanel() {
           </div>
         </div>
       )}
+
+      {/* Alertas compactos */}
+      <div style={{...S,marginBottom:24}}>
+        <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)",marginBottom:12}}>🔔 Alertas de Pagamentos</div>
+        <Alertas compact />
+      </div>
 
     </div>
   )

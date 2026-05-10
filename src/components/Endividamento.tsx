@@ -83,10 +83,10 @@ const COR_ABA: Record<AbaLista, string> = {
 const SITUACOES_OPCOES: SituacaoOpcao[] = ['Pendente', 'Previsto', 'Pago', 'Faturado'];
 
 const COR_SITUACAO: Record<string, { bg: string; color: string; border: string }> = {
-  'Pago':     { bg: '#dcfce7', color: '#16a34a', border: '#86efac' },
-  'Faturado': { bg: '#dbeafe', color: '#1d4ed8', border: '#93c5fd' },
-  'Pendente': { bg: '#fef3c7', color: '#d97706', border: '#fcd34d' },
-  'Previsto': { bg: '#f3e8ff', color: '#7c3aed', border: '#c4b5fd' },
+  'Pago':     { bg: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)',     border: 'var(--badge-pago-fg)'     },
+  'Faturado': { bg: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)', border: 'var(--badge-faturado-fg)' },
+  'Pendente': { bg: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)', border: 'var(--badge-pendente-fg)' },
+  'Previsto': { bg: 'var(--badge-previsto-bg)', color: 'var(--badge-previsto-fg)', border: 'var(--badge-previsto-fg)' },
 };
 
 const fmt   = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -145,7 +145,7 @@ function CardParcela({
 
   return (
     <div style={{
-      backgroundColor: pago ? '#f0fdf4' : situacaoLocal === 'Previsto' ? '#fdf4ff' : '#fff',
+      backgroundColor: pago ? 'var(--bg-success-soft)' : situacaoLocal === 'Previsto' ? 'var(--bg-purple-soft)' : 'var(--bg-card)',
       border: `1.5px solid ${cores.border}`,
       borderRadius: '10px',
       padding: '12px',
@@ -244,13 +244,13 @@ function LinhaDivida({
           {d.categoria_nome && <div style={{ fontSize: '11px', color: CORES.textoSecundario, marginTop: '2px' }}>{d.categoria_nome}</div>}
         </div>
         <div>
-          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, backgroundColor: d.is_parcelamento ? '#f3e8ff' : '#e8f0fe', color: d.is_parcelamento ? CORES.parcelamento : CORES.debito }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 700, backgroundColor: d.is_parcelamento ? 'var(--bg-purple-soft)' : 'var(--bg-info-soft)', color: d.is_parcelamento ? CORES.parcelamento : CORES.debito }}>
             {d.metodo_pagamento}
           </span>
         </div>
         <div>
           <div style={{ fontSize: '13px', fontWeight: 600, color: CORES.texto }}>{d.parcelas_pagas}/{d.total_parcelas}</div>
-          <div style={{ width: '100%', height: '6px', backgroundColor: '#e9ecef', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
+          <div style={{ width: '100%', height: '6px', backgroundColor: 'var(--border)', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
             <div style={{ width: `${Math.min(100,pct)}%`, height: '100%', backgroundColor: corBarra, borderRadius: '3px' }} />
           </div>
           <div style={{ fontSize: '10px', color: CORES.textoSecundario, marginTop: '2px' }}>{pct.toFixed(0)}% pago</div>
@@ -264,7 +264,7 @@ function LinhaDivida({
           {d.proxima_parcela && <div style={{ fontSize: '10px', color: CORES.textoSecundario }}>Próx: {fmtD(d.proxima_parcela)}</div>}
         </div>
         <div style={{ textAlign: 'center' as const }}>
-          <span style={{ display: 'inline-block', width: '28px', height: '28px', lineHeight: '28px', borderRadius: '50%', backgroundColor: open ? CORES.sidebar : '#e2e8f0', color: open ? '#fff' : CORES.textoSecundario, fontSize: '13px', fontWeight: 700, userSelect: 'none' as const }}>
+          <span style={{ display: 'inline-block', width: '28px', height: '28px', lineHeight: '28px', borderRadius: '50%', backgroundColor: open ? CORES.sidebar : 'var(--bg-row2)', color: open ? '#fff' : CORES.textoSecundario, fontSize: '13px', fontWeight: 700, userSelect: 'none' as const }}>
             {open ? '▲' : '▼'}
           </span>
         </div>
@@ -325,7 +325,7 @@ function TabelaCredito({
             {/* Cabeçalho cartão */}
             <div
               onClick={() => { setCartaoAberto(aberto ? null : cg.cartao_nome); setDividaAberta(null); }}
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? '#fff5f5' : 'var(--bg-row)', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', backgroundColor: aberto ? 'var(--bg-danger-soft)' : 'var(--bg-row)', borderBottom: aberto ? `1px solid ${CORES.borda}` : 'none', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: CORES.credito, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>💳</div>
@@ -339,7 +339,7 @@ function TabelaCredito({
                   <div style={{ fontSize: '18px', fontWeight: 800, color: CORES.credito }}>{fmt(cg.valor_restante)}</div>
                   <div style={{ fontSize: '11px', color: CORES.textoSecundario }}>saldo devedor</div>
                 </div>
-                <span style={{ display: 'inline-block', width: '28px', height: '28px', lineHeight: '28px', borderRadius: '50%', backgroundColor: aberto ? CORES.credito : '#e2e8f0', color: aberto ? '#fff' : CORES.textoSecundario, fontSize: '13px', fontWeight: 700, textAlign: 'center' as const, userSelect: 'none' as const }}>
+                <span style={{ display: 'inline-block', width: '28px', height: '28px', lineHeight: '28px', borderRadius: '50%', backgroundColor: aberto ? CORES.credito : 'var(--bg-row2)', color: aberto ? '#fff' : CORES.textoSecundario, fontSize: '13px', fontWeight: 700, textAlign: 'center' as const, userSelect: 'none' as const }}>
                   {aberto ? '▲' : '▼'}
                 </span>
               </div>
@@ -367,7 +367,7 @@ function TabelaCredito({
                         </div>
                         <div>
                           <div style={{ fontSize: '13px', fontWeight: 600, color: CORES.texto }}>{d.parcelas_pagas}/{d.total_parcelas}</div>
-                          <div style={{ width: '100%', height: '5px', backgroundColor: '#e9ecef', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
+                          <div style={{ width: '100%', height: '5px', backgroundColor: 'var(--border)', borderRadius: '3px', overflow: 'hidden', marginTop: '4px' }}>
                             <div style={{ width: `${Math.min(100,pct)}%`, height: '100%', backgroundColor: CORES.credito, borderRadius: '3px' }} />
                           </div>
                           <div style={{ fontSize: '10px', color: CORES.textoSecundario, marginTop: '2px' }}>{pct.toFixed(0)}% pago</div>
@@ -375,7 +375,7 @@ function TabelaCredito({
                         <div style={{ fontSize: '13px', fontWeight: 600, color: CORES.texto }}>{fmt(d.valor_parcela)}</div>
                         <div style={{ fontSize: '14px', fontWeight: 700, color: CORES.credito }}>{fmt(d.valor_restante)}</div>
                         <div style={{ textAlign: 'center' as const }}>
-                          <span style={{ display: 'inline-block', width: '24px', height: '24px', lineHeight: '24px', borderRadius: '50%', backgroundColor: open ? CORES.credito : '#e2e8f0', color: open ? '#fff' : CORES.textoSecundario, fontSize: '12px', userSelect: 'none' as const }}>
+                          <span style={{ display: 'inline-block', width: '24px', height: '24px', lineHeight: '24px', borderRadius: '50%', backgroundColor: open ? CORES.credito : 'var(--bg-row2)', color: open ? '#fff' : CORES.textoSecundario, fontSize: '12px', userSelect: 'none' as const }}>
                             {open ? '▲' : '▼'}
                           </span>
                         </div>
@@ -651,7 +651,7 @@ export default function Endividamento() {
             <button key={a.key} onClick={() => setAbaAtiva(a.key)}
               style={{ padding: '10px 22px', fontSize: '14px', fontWeight: 600, cursor: 'pointer', border: 'none', background: 'none', color: ativo ? cor : CORES.textoSecundario, borderBottom: `2px solid ${ativo ? cor : 'transparent'}`, marginBottom: '-2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
               {a.emoji} {a.label}
-              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '10px', backgroundColor: ativo ? cor : '#e2e8f0', color: ativo ? '#fff' : CORES.textoSecundario, fontSize: '11px', fontWeight: 700 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: '20px', height: '20px', padding: '0 6px', borderRadius: '10px', backgroundColor: ativo ? cor : 'var(--bg-row2)', color: ativo ? '#fff' : CORES.textoSecundario, fontSize: '11px', fontWeight: 700 }}>
                 {cnt}
               </span>
             </button>
