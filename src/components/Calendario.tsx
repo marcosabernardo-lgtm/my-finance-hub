@@ -178,12 +178,72 @@ function SecaoTipo({ icone, titulo, cor, movs, modo }: {
   )
 }
 
+function DetalheDia({ movsExibir, totalReceitas, totalDebito, totalCredito, modo, compact }: {
+  movsExibir: Movimentacao[]
+  totalReceitas: number
+  totalDebito: number
+  totalCredito: number
+  modo: Modo
+  compact?: boolean
+}) {
+  return (
+    <div style={{
+      background:CORES.sepia,
+      border:`2px solid ${CORES.hoje}`,
+      borderTop: compact ? `2px solid ${CORES.hoje}` : 'none',
+      borderRadius: compact ? 10 : '0 0 10px 10px',
+      padding: compact ? '10px 8px 12px' : '12px 10px 14px',
+      display:'flex',
+      flexDirection:'column' as const,
+      gap:10,
+      boxShadow:'0 4px 12px rgba(0,0,0,0.08)',
+      minWidth:0,
+      overflow:'hidden',
+    }}>
+      <div style={{
+        display:'grid',
+        gridTemplateColumns: compact ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))',
+        gap:6,
+      }}>
+        {[
+          { label:'Receitas',    valor:totalReceitas,             cor:CORES.receita, sinal:'+' },
+          { label:'Déb/PIX',     valor:totalDebito,               cor:CORES.debito,  sinal:'-' },
+          { label:'Crédito',     valor:totalCredito,              cor:CORES.credito, sinal:'-' },
+          { label:'Tot. Desp.',  valor:totalDebito+totalCredito,  cor:CORES.texto,   sinal:'-' },
+        ].map(c => (
+          <div key={c.label} style={{ background:CORES.card, borderRadius:8, padding:'5px 8px', borderLeft:`3px solid ${c.cor}`, minWidth:0 }}>
+            <div style={{ fontSize:9, fontWeight:700, color:CORES.sub, textTransform:'uppercase' as const, whiteSpace:'nowrap' as const, overflow:'hidden', textOverflow:'ellipsis' }}>{c.label}</div>
+            <div style={{ fontSize:12, fontWeight:800, color:c.cor, whiteSpace:'nowrap' as const, overflow:'hidden', textOverflow:'ellipsis' }}>{c.sinal}{fmt(c.valor)}</div>
+          </div>
+        ))}
+      </div>
+
+      {modo === 'movimentacoes' && (
+        <>
+          <SecaoTipo icone="📈" titulo="Receitas"     cor={CORES.receita} movs={movsExibir.filter(m => m.tipo === 'Receita')}                          modo={modo} />
+          <SecaoTipo icone="🏦" titulo="Débito / PIX" cor={CORES.debito}  movs={movsExibir.filter(m => m.tipo === 'Despesa' && !isCredito(m))}          modo={modo} />
+          <SecaoTipo icone="💳" titulo="Crédito"      cor={CORES.credito} movs={movsExibir.filter(m => m.tipo === 'Despesa' && isCredito(m))}           modo={modo} />
+        </>
+      )}
+
+      {modo === 'pendentes' && (
+        <>
+          <SecaoTipo icone="🏦" titulo="Débito / PIX" cor={CORES.debito}  movs={movsExibir.filter(m => !isCredito(m))} modo={modo} />
+          <SecaoTipo icone="💳" titulo="Crédito"      cor={CORES.credito} movs={movsExibir.filter(m =>  isCredito(m))} modo={modo} />
+        </>
+      )}
+    </div>
+  )
+}
+
 // ── Célula do dia ─────────────────────────────────────────────────────────────
-function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo, compact }: {
+function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo, compact, aberto: abertoControlado, onToggle, esconderDetalhe }: {
   dia: number; movs: Movimentacao[]; semana: number
   isHoje: boolean; isMesAtual: boolean; modo: Modo; compact?: boolean
+  aberto?: boolean; onToggle?: () => void; esconderDetalhe?: boolean
 }) {
-  const [aberto, setAberto] = useState(false)
+  const [abertoInterno, setAbertoInterno] = useState(false)
+  const aberto = abertoControlado ?? abertoInterno
 
   const movsExibir = useMemo(() => {
     if (modo === 'pendentes') return movs // já filtrado na query
@@ -198,7 +258,11 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo, compact }: {
   return (
     <div style={{ display:'flex', flexDirection:'column' as const }}>
       <div
-        onClick={() => temMovs && setAberto(a => !a)}
+        onClick={() => {
+          if (!temMovs) return
+          if (onToggle) onToggle()
+          else setAbertoInterno(a => !a)
+        }}
         style={{
           minHeight: compact ? 52 : 92, padding: compact ? '5px 4px' : '7px 8px',
           background: isHoje ? CORES.hoje : aberto ? 'var(--bg-info-soft)' : isMesAtual ? CORES.card : 'var(--bg-page)',
@@ -237,7 +301,7 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo, compact }: {
         {temMovs && !compact && <div style={{ position:'absolute' as const, bottom:4, right:6, fontSize:9, color: isHoje ? 'rgba(255,255,255,0.4)' : '#c0c4cc' }}>{aberto ? '▲' : '▼'}</div>}
       </div>
 
-      {aberto && (
+      {aberto && !esconderDetalhe && (
         <div style={{ background:CORES.sepia, border:`2px solid ${CORES.hoje}`, borderTop:'none', borderRadius:'0 0 10px 10px', padding:'12px 10px 14px', display:'flex', flexDirection:'column' as const, gap:10, boxShadow:'0 4px 12px rgba(0,0,0,0.08)' }}>
 
           {/* 4 mini-cards totais */}
@@ -285,6 +349,7 @@ export default function Calendario() {
   const [movs, setMovs]               = useState<Movimentacao[]>([])
   const [movsPend, setMovsPend]       = useState<Movimentacao[]>([])
   const [modo, setModo]               = useState<Modo>('movimentacoes')
+  const [diaAberto, setDiaAberto]     = useState<number | null>(null)
 
   const hoje = new Date()
   const [mes, setMes] = useState(hoje.getMonth())
@@ -376,6 +441,7 @@ export default function Calendario() {
   for (let i = 0; i < celulas.length; i += 7) semanas.push(celulas.slice(i, i + 7))
 
   function navMes(dir: number) {
+    setDiaAberto(null)
     const n = mes + dir
     if (n < 0)       { setMes(11); setAno(a => a - 1) }
     else if (n > 11) { setMes(0);  setAno(a => a + 1) }
@@ -395,7 +461,7 @@ export default function Calendario() {
         <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' as const }}>
           <div style={{ display:'flex', borderRadius:8, border:`1.5px solid ${CORES.borda}`, overflow:'hidden' }}>
             {([['movimentacoes', isMobile ? '📋 Mov.' : '📋 Movimentações'],['pendentes', isMobile ? '⏳ Pend.' : '⏳ Pendentes']] as [Modo,string][]).map(([val, label], i) => (
-              <button key={val} onClick={() => setModo(val)} style={{
+              <button key={val} onClick={() => { setModo(val); setDiaAberto(null) }} style={{
                 padding: isMobile ? '6px 12px' : '7px 16px', fontSize: isMobile ? 12 : 13, fontWeight:600, cursor:'pointer', border:'none',
                 borderRight: i === 0 ? `1px solid ${CORES.borda}` : 'none',
                 background: modo === val ? CORES.sidebar : CORES.card,
@@ -418,7 +484,7 @@ export default function Calendario() {
           <button onClick={() => navMes(-1)} style={{ width:32, height:32, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>‹</button>
           <div style={{ fontSize: isMobile ? 15 : 20, fontWeight:800, color:CORES.texto, minWidth: isMobile ? 130 : 200, textAlign:'center' as const }}>{MESES[mes]} {ano}</div>
           <button onClick={() => navMes(1)}  style={{ width:32, height:32, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>›</button>
-          <button onClick={() => { setMes(hoje.getMonth()); setAno(hoje.getFullYear()) }} style={{ fontSize:11, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:6, padding:'3px 8px', cursor:'pointer', fontWeight:600 }}>Hoje</button>
+          <button onClick={() => { setDiaAberto(null); setMes(hoje.getMonth()); setAno(hoje.getFullYear()) }} style={{ fontSize:11, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:6, padding:'3px 8px', cursor:'pointer', fontWeight:600 }}>Hoje</button>
         </div>
 
         {/* Cards de totais — mudam conforme o modo */}
@@ -473,31 +539,60 @@ export default function Calendario() {
         {loading ? (
           <div style={{ padding:60, textAlign:'center' as const, color:'var(--text-3)', fontSize:15 }}>Carregando...</div>
         ) : (
-          semanas.map((semana, si) => (
-            <div key={si} style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', borderBottom:si<semanas.length-1?`1px solid ${CORES.borda}`:'none' }}>
-              {semana.map((cel, di) => {
-                const isMesAtual = cel.mes === 'atual'
-                const isHoje     = isMesAtual && cel.dia === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear()
-                const isWeekend  = di === 0 || di === 6
-                const movsCell   = isMesAtual
-                  ? (modo === 'movimentacoes' ? movsPorDia[cel.dia] || [] : movsPendPorDia[cel.dia] || [])
-                  : []
-                return (
-                  <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding: isMobile ? 2 : 5, background:isWeekend&&isMesAtual?'var(--bg-row2)':'transparent' }}>
-                    <CelulaDia
-                      dia={cel.dia}
-                      movs={movsCell}
-                      semana={isMesAtual ? semanaDomes(new Date(ano, mes, cel.dia)) : 0}
-                      isHoje={isHoje}
-                      isMesAtual={isMesAtual}
+          semanas.map((semana, si) => {
+            const diaAbertoNaSemana = isMobile && diaAberto !== null && semana.some(cel => cel.mes === 'atual' && cel.dia === diaAberto)
+            const movsDetalhe = diaAbertoNaSemana
+              ? (modo === 'movimentacoes' ? movsPorDia[diaAberto] || [] : movsPendPorDia[diaAberto] || [])
+              : []
+            const movsExibirDetalhe = modo === 'pendentes' ? movsDetalhe : movsDetalhe.filter(deveExibir)
+            const totalReceitasDetalhe = movsExibirDetalhe.filter(m => m.tipo === 'Receita').reduce((s,m) => s + Number(m.valor), 0)
+            const totalDebitoDetalhe   = movsExibirDetalhe.filter(m => m.tipo === 'Despesa' && !isCredito(m)).reduce((s,m) => s + Number(m.valor), 0)
+            const totalCreditoDetalhe  = movsExibirDetalhe.filter(m => m.tipo === 'Despesa' && isCredito(m)).reduce((s,m) => s + (modo === 'pendentes' ? Number(m.valor) : valorExibir(m)), 0)
+
+            return (
+              <div key={si} style={{ borderBottom:si<semanas.length-1?`1px solid ${CORES.borda}`:'none' }}>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
+                  {semana.map((cel, di) => {
+                    const isMesAtual = cel.mes === 'atual'
+                    const isHoje     = isMesAtual && cel.dia === hoje.getDate() && mes === hoje.getMonth() && ano === hoje.getFullYear()
+                    const isWeekend  = di === 0 || di === 6
+                    const movsCell   = isMesAtual
+                      ? (modo === 'movimentacoes' ? movsPorDia[cel.dia] || [] : movsPendPorDia[cel.dia] || [])
+                      : []
+                    return (
+                      <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding: isMobile ? 2 : 5, background:isWeekend&&isMesAtual?'var(--bg-row2)':'transparent', minWidth:0 }}>
+                        <CelulaDia
+                          dia={cel.dia}
+                          movs={movsCell}
+                          semana={isMesAtual ? semanaDomes(new Date(ano, mes, cel.dia)) : 0}
+                          isHoje={isHoje}
+                          isMesAtual={isMesAtual}
+                          modo={modo}
+                          compact={isMobile}
+                          aberto={isMobile ? diaAberto === cel.dia && isMesAtual : undefined}
+                          onToggle={isMobile && isMesAtual ? () => setDiaAberto(d => d === cel.dia ? null : cel.dia) : undefined}
+                          esconderDetalhe={isMobile}
+                        />
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {diaAbertoNaSemana && movsExibirDetalhe.length > 0 && (
+                  <div style={{ padding:'0 8px 10px', background:CORES.card }}>
+                    <DetalheDia
+                      movsExibir={movsExibirDetalhe}
+                      totalReceitas={totalReceitasDetalhe}
+                      totalDebito={totalDebitoDetalhe}
+                      totalCredito={totalCreditoDetalhe}
                       modo={modo}
-                      compact={isMobile}
+                      compact
                     />
                   </div>
-                )
-              })}
-            </div>
-          ))
+                )}
+              </div>
+            )
+          })
         )}
       </div>
 
