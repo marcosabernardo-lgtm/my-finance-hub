@@ -266,19 +266,6 @@ export default function HomePanel() {
     ]
   }, [movsAll])
 
-  const limitesCats = useMemo(() => {
-    const gastos: Record<number,number> = {}
-    for (const m of movsMes) {
-      if (!m.categoria_id) continue
-      const isRecorrenteFaturado = m.situacao==="Faturado" && m.data_movimentacao && m.data_pagamento && m.data_movimentacao===m.data_pagamento
-      if (m.situacao==="Pago"||(m.situacao==="Pendente"&&m.numero_parcela==="Parcela 1/1")||isRecorrenteFaturado)
-        gastos[m.categoria_id] = (gastos[m.categoria_id]||0)+Number(m.valor)
-    }
-    return categorias
-      .filter(c=>c.limite_gastos>0&&gastos[c.id]>0)
-      .map(c=>({ nome:c.nome, gasto:gastos[c.id]||0, limite:c.limite_gastos, pct:Math.round((gastos[c.id]||0)/c.limite_gastos*100) }))
-      .sort((a,b)=>b.pct-a.pct)
-  }, [movsMes,categorias])
 
   const dadosReceitas = useMemo(() => Array.from({length:12},(_,i)=>({
     label:MESES_CURTOS[i],
