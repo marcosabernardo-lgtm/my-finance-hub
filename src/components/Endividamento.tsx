@@ -444,7 +444,7 @@ export default function Endividamento() {
       porGrupo[m.grupo_id].push(m);
     }
 
-    const grupos = Object.entries(porGrupo).map(([, parcelas]) => {
+    return Object.entries(porGrupo).flatMap(([grupoId, parcelas]) => {
       parcelas.sort((a, b) => parseP(a.numero_parcela).atual - parseP(b.numero_parcela).atual);
       const p0         = parcelas[0];
       const isCredito  = !!p0.cartao_id || p0.metodo_pagamento === 'Crédito';
@@ -452,29 +452,14 @@ export default function Endividamento() {
       const isParc     = !isCredito && (catNome || '').toLowerCase() === 'parcelamento';
       const cartaoNome = (p0 as any).cartoes?.nome || null;
       const pendentes  = parcelas.filter((p) => entraNaContagem(p, filtroSit));
-      const pagas      = parcelas.filter((p) => foiQuitada(p, isCredito)).length;
-      const { total }  = parseP(p0.numero_parcela);
-      return { p0, parcelas, isCredito, isParc, cartaoNome, catNome, pendentes, pagas, total };
-    }).filter((g) => g.pendentes.length > 0);
 
-    const porDesc: Record<string, typeof grupos> = {};
-    for (const g of grupos) {
-      const chave = g.isCredito
-        ? `${g.cartaoNome}||${g.p0.descricao.trim().toLowerCase()}`
-        : g.p0.descricao.trim().toLowerCase();
-      if (!porDesc[chave]) porDesc[chave] = [];
-      porDesc[chave].push(g);
-    }
+      if (pendentes.length === 0) return [];
 
-    return Object.entries(porDesc).map(([chave, gs]) => {
-      const todasParcelas  = gs.flatMap((g) => g.parcelas);
-      const todasPendentes = gs.flatMap((g) => g.pendentes);
-      const totalPagasDB   = gs.reduce((s, g) => s + g.pagas, 0);
-      const totalPend      = gs.reduce((s, g) => s + g.pendentes.length, 0);
-      const pendOrd        = [...todasPendentes].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
-      const p0             = gs[0].p0;
+      const pagasDB   = parcelas.filter((p) => foiQuitada(p, isCredito)).length;
+      const totalPend = pendentes.length;
+      const pendOrd   = [...pendentes].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
 
-      const maxDenom = todasParcelas.reduce((m, p) => {
+      const maxDenom = parcelas.reduce((m, p) => {
         const parsed = parseP(p.numero_parcela);
         return parsed ? Math.max(m, parsed.total) : m;
       }, 0);
@@ -483,29 +468,27 @@ export default function Endividamento() {
       let pagasReal: number;
 
       if (maxDenom > 0 && totalPend < maxDenom) {
-        // Single purchase with possibly missing early parcelas — infer paid count
         totalReal = maxDenom;
-        const minAtualPend = todasPendentes.reduce((m, p) => {
+        const minAtualPend = pendentes.reduce((m, p) => {
           const parsed = parseP(p.numero_parcela);
           return parsed ? Math.min(m, parsed.atual) : m;
         }, Infinity);
         const pagasInferidas = isFinite(minAtualPend) ? minAtualPend - 1 : 0;
-        pagasReal = Math.max(0, Math.min(Math.max(totalPagasDB, pagasInferidas), totalReal - totalPend));
+        pagasReal = Math.max(0, Math.min(Math.max(pagasDB, pagasInferidas), totalReal - totalPend));
       } else {
-        // Multiple overlapping purchases — use actual counts, no inference
-        totalReal = todasParcelas.length;
-        pagasReal = totalPagasDB;
+        totalReal = parcelas.length;
+        pagasReal = pagasDB;
       }
 
-      return {
-        chave,
+      return [{
+        chave:              grupoId,
         descricao:          p0.descricao,
-        metodo_pagamento:   gs[0].isCredito ? 'Crédito' : p0.metodo_pagamento,
-        cartao_nome:        gs[0].cartaoNome,
+        metodo_pagamento:   isCredito ? 'Crédito' : p0.metodo_pagamento,
+        cartao_nome:        cartaoNome,
         conta_nome:         p0.conta_origem_destino || null,
-        categoria_nome:     gs[0].catNome,
-        is_credito:         gs[0].isCredito,
-        is_parcelamento:    gs[0].isParc,
+        categoria_nome:     catNome,
+        is_credito:         isCredito,
+        is_parcelamento:    isParc,
         total_parcelas:     totalReal,
         parcelas_pagas:     pagasReal,
         parcelas_pendentes: totalPend,
@@ -514,8 +497,8 @@ export default function Endividamento() {
         valor_restante:     p0.valor * totalPend,
         proxima_parcela:    pendOrd[0]?.data_pagamento || '',
         ultima_parcela:     pendOrd[pendOrd.length - 1]?.data_pagamento || '',
-        parcelas:           todasParcelas,
-      } as DividaDesc;
+        parcelas,
+      } as DividaDesc];
     });
   }, [movimentacoes, filtroSit]);
 
