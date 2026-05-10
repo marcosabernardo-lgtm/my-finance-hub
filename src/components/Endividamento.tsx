@@ -467,14 +467,30 @@ export default function Endividamento() {
     }
 
     return Object.entries(porDesc).map(([chave, gs]) => {
-      const todasParcelas = gs.flatMap((g) => g.parcelas);
-      const totalPagas    = gs.reduce((s, g) => s + g.pagas, 0);
-      const totalPend     = gs.reduce((s, g) => s + g.pendentes.length, 0);
-      const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
-      const p0            = gs[0].p0;
-      // Use actual DB count, not string denominator (avoids inflating when
-      // multiple grupo_ids share the same description)
-      const totalReal = todasParcelas.length;
+      const todasParcelas  = gs.flatMap((g) => g.parcelas);
+      const todasPendentes = gs.flatMap((g) => g.pendentes);
+      const totalPagasDB   = gs.reduce((s, g) => s + g.pagas, 0);
+      const totalPend      = gs.reduce((s, g) => s + g.pendentes.length, 0);
+      const pendOrd        = [...todasPendentes].sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
+      const p0             = gs[0].p0;
+
+      // Total: use max denominator from parcel strings (e.g. "5/6" → 6)
+      // instead of summing across groups, which inflates when multiple grupo_ids share the same description
+      const maxDenom = todasParcelas.reduce((m, p) => {
+        const parsed = parseP(p.numero_parcela);
+        return parsed ? Math.max(m, parsed.total) : m;
+      }, 0);
+      const totalReal = maxDenom > 0 ? maxDenom : todasParcelas.length;
+
+      // Pagas: use DB count OR infer from earliest pending parcel number
+      // (handles missing earlier parcelas that were paid outside this grupo_id)
+      const minAtualPend = todasPendentes.reduce((m, p) => {
+        const parsed = parseP(p.numero_parcela);
+        return parsed ? Math.min(m, parsed.atual) : m;
+      }, Infinity);
+      const pagasInferidas = isFinite(minAtualPend) ? minAtualPend - 1 : 0;
+      const pagasReal = Math.min(Math.max(totalPagasDB, pagasInferidas), totalReal - totalPend);
+
       return {
         chave,
         descricao:          p0.descricao,
@@ -485,7 +501,7 @@ export default function Endividamento() {
         is_credito:         gs[0].isCredito,
         is_parcelamento:    gs[0].isParc,
         total_parcelas:     totalReal,
-        parcelas_pagas:     totalPagas,
+        parcelas_pagas:     pagasReal,
         parcelas_pendentes: totalPend,
         valor_parcela:      p0.valor,
         valor_total:        p0.valor * totalReal,
