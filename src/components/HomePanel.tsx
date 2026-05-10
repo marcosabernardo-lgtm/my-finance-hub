@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import { supabase } from "../lib/supabase"
 import { useAuth } from "../hooks/useAuth"
+import { useMobile } from "../hooks/useMobile"
 import Alertas from "./Alertas"
 
 const fmt = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
@@ -74,6 +75,7 @@ function MiniGrafico({ dados, cor, meta }: { dados: { label: string; valor: numb
 
 export default function HomePanel() {
   const { user } = useAuth()
+  const isMobile = useMobile()
   const [householdId, setHouseholdId] = useState<string|null>(null)
   const [loading, setLoading]         = useState(true)
   const [contas,          setContas]          = useState<any[]>([])
@@ -308,6 +310,89 @@ export default function HomePanel() {
   if (loading) return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"var(--bg-page)",fontFamily:"'Segoe UI',system-ui,sans-serif"}}>
       <div style={{color:"var(--text-2)",fontSize:15}}>Carregando visão geral...</div>
+    </div>
+  )
+
+  if (isMobile) return (
+    <div style={{background:"var(--bg-page)",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:"14px 12px 76px"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:14}}>
+        <div>
+          <h1 style={{fontSize:22,fontWeight:800,color:"var(--text-1)",margin:0,lineHeight:1.1}}>VisÃ£o Geral</h1>
+          <p style={{color:"var(--text-2)",fontSize:12,margin:"5px 0 0"}}>{mesFormatado}</p>
+        </div>
+        <button onClick={fetchDados} style={{fontSize:12,color:"#0d7280",background:"none",border:"1px solid #0d7280",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>
+          â†» Atualizar
+        </button>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8,marginBottom:12}}>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #6ee7b7",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Saldo</div>
+          <div style={{fontSize:15,fontWeight:800,color:totalSaldo>=0?"#065f46":"#991b1b",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalSaldo)}</div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>Contas correntes</div>
+        </div>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #6ee7b7",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Receitas</div>
+          <div style={{fontSize:15,fontWeight:800,color:"var(--text-1)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalReceitas)}<Variacao atual={totalReceitas} anterior={totalReceitasAnt} boaSeSubir={true}/></div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalReceitasAnt)}</div>
+        </div>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #fca5a5",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Despesas</div>
+          <div style={{fontSize:15,fontWeight:800,color:"var(--text-1)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalDespesas)}<Variacao atual={totalDespesas} anterior={totalDespesasAnt} boaSeSubir={false}/></div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt)}</div>
+        </div>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #fbbf24",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Pag. Fatura</div>
+          <div style={{fontSize:15,fontWeight:800,color:"var(--text-1)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(pagtoFaturaMes)}<Variacao atual={pagtoFaturaMes} anterior={pagtoFaturaAnt} boaSeSubir={false}/></div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)}</div>
+        </div>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #c4b5fd",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>CartÃ£o</div>
+          <div style={{fontSize:15,fontWeight:800,color:"var(--text-1)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/></div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
+        </div>
+        <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #ef4444",background:"var(--bg-danger-soft)",minWidth:0}}>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-danger)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Total Gasto</div>
+          <div style={{fontSize:15,fontWeight:800,color:"var(--text-danger)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalDespesas+pagtoFaturaMes)}<Variacao atual={totalDespesas+pagtoFaturaMes} anterior={totalDespesasAnt+pagtoFaturaAnt} boaSeSubir={false}/></div>
+          <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalDespesasAnt+pagtoFaturaAnt)}</div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:8,marginBottom:12}}>
+        {fluxo.map((f,i) => (
+          <div key={i} style={{background:f.cor,borderRadius:10,padding:"10px 8px",color:"#fff",minWidth:0}}>
+            <div style={{fontSize:11,fontWeight:800,marginBottom:8,lineHeight:1.1}}>{f.titulo}</div>
+            <div style={{fontSize:16,fontWeight:800,marginBottom:3,lineHeight:1.1,wordBreak:"break-word"}}>{fmt(f.soma)}</div>
+            <div style={{fontSize:9,opacity:0.78,lineHeight:1.2}}>{f.qtd} pendente{f.qtd!==1?"s":""}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{...S,padding:"12px",marginBottom:12}}>
+        <div style={{fontSize:13,fontWeight:800,color:"var(--text-1)",marginBottom:10}}>Endividamento</div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
+          <div style={{background:"var(--bg-row)",border:"1px solid var(--border)",borderRadius:9,padding:"10px",minWidth:0}}>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Total em DÃ­vidas</div>
+            <div style={{fontSize:16,fontWeight:800,color:"var(--text-1)"}}>{fmt(totalDividas)}</div>
+            <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.length} parcelamento(s)</div>
+          </div>
+          <div style={{background:"var(--bg-danger-soft)",border:"1px solid var(--border-danger)",borderLeft:"4px solid #e05252",borderRadius:9,padding:"10px",minWidth:0}}>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>CrÃ©dito</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
+            <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
+          </div>
+          <div style={{background:"var(--bg-info-soft)",border:"1px solid var(--border-info)",borderLeft:"4px solid #4a9eff",borderRadius:9,padding:"10px",minWidth:0}}>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>DÃ©bito / PIX</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
+            <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
+          </div>
+          <div style={{background:"var(--bg-purple-soft)",border:"1px solid var(--border-purple)",borderLeft:"4px solid #9b59b6",borderRadius:9,padding:"10px",minWidth:0}}>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Parcelamento</div>
+            <div style={{fontSize:16,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
+            <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 

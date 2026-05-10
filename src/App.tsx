@@ -139,12 +139,12 @@ const grupos: {
     label: "Análises",
     items: [
       { label: "Consultor IA",   key: "consultor",      icon: Sparkles,    accent: "#667eea"  },
+      { label: "Visão Geral",    key: "home",           icon: HomeIcon                       },
       { label: "Resumo",         key: "resumo",         icon: BarChart3                       },
       { label: "Semanal",        key: "semanal",        icon: Calendar                        },
       { label: "DRE",            key: "dre",            icon: FileText                        },
       { label: "Consumo Mensal", key: "consumo",        icon: ShoppingCart                    },
       { label: "Endividamento",  key: "endividamento",  icon: TrendingDown                    },
-      { label: "Calendário",     key: "calendario",     icon: Calendar                            },
     ],
   },
   {
@@ -180,7 +180,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
     }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: recolhida ? "center" : "space-between", padding: recolhida ? "14px 0" : "14px 14px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
         {!recolhida && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPagina("home")}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => setPagina("calendario")}>
             <div style={{ width: 28, height: 28, background: tokens.sidebarAccent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Layers size={14} color="white" />
             </div>
@@ -191,7 +191,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
           </div>
         )}
         {recolhida && (
-          <div style={{ width: 28, height: 28, background: tokens.sidebarAccent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("home")}>
+          <div style={{ width: 28, height: 28, background: tokens.sidebarAccent, borderRadius: 7, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }} onClick={() => setPagina("calendario")}>
             <Layers size={14} color="white" />
           </div>
         )}
@@ -201,7 +201,7 @@ function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }:
       </div>
 
       <div style={{ padding: recolhida ? "8px 0" : "8px 8px", borderBottom: `1px solid ${tokens.sidebarBorder}`, flexShrink: 0 }}>
-        <SidebarItem icon={HomeIcon} label="Início" ativa={pagina === "home"} recolhida={recolhida} onClick={() => setPagina("home")} />
+        <SidebarItem icon={Calendar} label="Calendário" ativa={pagina === "calendario"} recolhida={recolhida} onClick={() => setPagina("calendario")} />
       </div>
 
       <SidebarGrupos pagina={pagina} setPagina={setPagina} recolhida={recolhida} />
@@ -279,6 +279,7 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
 const MOBILE_PAGES: { label: string; key: Pagina; icon: React.ElementType }[] = [
   { label: "Lançar",     key: "lancamento",  icon: PlusCircle  },
   { label: "Calendário", key: "calendario",  icon: Calendar    },
+  { label: "Visão Geral", key: "home",        icon: HomeIcon    },
   { label: "Confirmar Débitos", key: "confirmar", icon: CheckCircle },
   { label: "Resumo",     key: "resumo",      icon: BarChart3   },
   { label: "Semanal",    key: "semanal",     icon: List        },
