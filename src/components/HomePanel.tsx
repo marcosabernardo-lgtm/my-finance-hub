@@ -530,35 +530,6 @@ export default function HomePanel() {
         </div>
       </div>
 
-      {/* Limites por Categoria */}
-      {limitesCats.length>0&&(
-        <div style={{...S,marginBottom:24}}>
-          <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)",marginBottom:16}}>
-            🏷️ Limites por Categoria — {MESES_CURTOS[mesAtual-1]}
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
-            {limitesCats.map((c,i)=>{
-              const cor=c.pct>100?"#ef4444":c.pct>80?"#f59e0b":"#10b981"
-              return (
-                <div key={i} style={{background:"var(--bg-row)",borderRadius:10,padding:"12px 14px",border:"1px solid var(--border)"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:6}}>
-                    <span style={{fontSize:13,fontWeight:600,color:"var(--text-4)"}}>{c.nome}</span>
-                    <span style={{fontSize:12,color:cor,fontWeight:700,whiteSpace:"nowrap",marginLeft:8}}>{fmt(c.gasto)} / {fmt(c.limite)}</span>
-                  </div>
-                  <div style={{background:"var(--border)",borderRadius:99,height:7}}>
-                    <div style={{background:cor,borderRadius:99,height:7,width:`${Math.min(c.pct,100)}%`,transition:"width 0.4s"}}/>
-                  </div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:4}}>
-                    <span style={{fontSize:10,color:cor,fontWeight:700}}>{c.pct}% do limite</span>
-                    <span style={{fontSize:10,color:"var(--text-3)"}}>{c.pct>100?`⚠️ ${fmt(c.gasto-c.limite)} acima`:`${fmt(c.limite-c.gasto)} restante`}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {/* Alertas compactos */}
       <div style={{...S,marginBottom:24}}>
         <div style={{fontSize:14,fontWeight:700,color:"var(--text-1)",marginBottom:12}}>🔔 Alertas de Pagamentos</div>

@@ -82,10 +82,10 @@ function labelCredito(m: Movimentacao): string {
 }
 
 function corSituacao(sit: string) {
-  if (sit === 'Pago')     return { bg: '#dcfce7', color: '#16a34a' }
-  if (sit === 'Faturado') return { bg: '#dbeafe', color: '#1d4ed8' }
-  if (sit === 'Pendente') return { bg: '#fef3c7', color: '#d97706' }
-  return { bg: '#f3f4f6', color: '#6b7280' }
+  if (sit === 'Pago')     return { bg: 'var(--badge-pago-bg)',     color: 'var(--badge-pago-fg)'     }
+  if (sit === 'Faturado') return { bg: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+  if (sit === 'Pendente') return { bg: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+  return { bg: 'var(--bg-row)', color: 'var(--text-2)' }
 }
 
 // ── Card movimentação (modo Movimentações) ────────────────────────────────────
@@ -104,7 +104,7 @@ function CardMov({ m }: { m: Movimentacao }) {
           {m.categorias?.nome && <span style={{ fontSize:10, color:CORES.sub, background:CORES.sepia, borderRadius:4, padding:'1px 6px' }}>{m.categorias.nome}</span>}
           <span style={{ fontSize:10, fontWeight:700, background:sit.bg, color:sit.color, borderRadius:4, padding:'1px 6px' }}>{m.situacao}</span>
           {cred
-            ? <span style={{ fontSize:10, fontWeight:700, color:CORES.credito, background:'#fff7ed', borderRadius:4, padding:'1px 6px' }}>💳 {m.cartoes?.nome || 'Crédito'} · {labelCredito(m)}</span>
+            ? <span style={{ fontSize:10, fontWeight:700, color:CORES.credito, background:'var(--bg-warning-soft)', borderRadius:4, padding:'1px 6px' }}>💳 {m.cartoes?.nome || 'Crédito'} · {labelCredito(m)}</span>
             : m.metodo_pagamento && <span style={{ fontSize:10, color:CORES.sub }}>{m.metodo_pagamento}</span>
           }
         </div>
@@ -125,7 +125,7 @@ function CardPendente({ m }: { m: Movimentacao }) {
 
   if (cred) {
     return (
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:CORES.card, borderRadius:8, border:`1px solid #fed7aa`, borderLeft:`3px solid ${CORES.credito}` }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 12px', background:CORES.card, borderRadius:8, border:`1px solid var(--border-warning)`, borderLeft:`3px solid ${CORES.credito}` }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <span style={{ fontSize:14 }}>💳</span>
           <div>
@@ -139,7 +139,7 @@ function CardPendente({ m }: { m: Movimentacao }) {
   }
 
   return (
-    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:CORES.card, borderRadius:8, border:`1px solid #fecaca`, borderLeft:`3px solid ${CORES.debito}` }}>
+    <div style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:CORES.card, borderRadius:8, border:`1px solid var(--border-danger)`, borderLeft:`3px solid ${CORES.debito}` }}>
       <div style={{ flex:1, minWidth:0 }}>
         <div style={{ fontSize:13, fontWeight:600, color:CORES.texto, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{m.descricao}</div>
         <div style={{ display:'flex', gap:5, marginTop:2 }}>
@@ -200,7 +200,7 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
         onClick={() => temMovs && setAberto(a => !a)}
         style={{
           minHeight:92, padding:'7px 8px',
-          background: isHoje ? CORES.hoje : aberto ? '#f0f9ff' : isMesAtual ? CORES.card : '#f9f7f4',
+          background: isHoje ? CORES.hoje : aberto ? 'var(--bg-info-soft)' : isMesAtual ? CORES.card : 'var(--bg-page)',
           border: isHoje ? `2px solid ${CORES.hoje}` : aberto ? `2px solid ${CORES.hoje}` : `1px solid ${CORES.borda}`,
           borderRadius: aberto ? '10px 10px 0 0' : 10,
           cursor: temMovs ? 'pointer' : 'default',

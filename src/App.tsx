@@ -274,7 +274,7 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
 // ─── AppContent ───────────────────────────────────────────────────────────────
 
 function AppContent({ signOut, email }: { signOut: () => void; email: string }) {
-  const [pagina, setPagina] = useState<Pagina>("home")
+  const [pagina, setPagina] = useState<Pagina>("calendario")
   const [recolhida, setRecolhida] = useState(false)
   const { tokens } = useTheme()
 
