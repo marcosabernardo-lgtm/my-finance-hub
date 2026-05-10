@@ -256,7 +256,7 @@ export default function ConsumoMensal() {
                     )
                   })}
                   <th style={{ ...thBase, minWidth: '90px', background: '#1f2937' }}>Total</th>
-                  <th style={{ ...thBase, minWidth: '80px', background: '#1f2937', color: '#fbbf24' }}>Média/mês</th>
+                  <th style={{ ...thBase, minWidth: '80px', background: '#1f2937' }}>Média/mês</th>
                 </tr>
               </thead>
 
@@ -321,7 +321,7 @@ export default function ConsumoMensal() {
                                   </div>
                                 )}
                               </td>
-                              <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: 'var(--text-warning)', fontSize: '12px' }}>
+                              <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: '#991b1b', fontSize: '12px' }}>
                                 <div>{mesesCorrente > 0 ? fmt(mediaMes) : '—'}</div>
                                 {linha.limite > 0 && mesesCorrente > 0 && (
                                   <div style={{ fontSize: '10px', color: mediaMes > linha.limite ? '#ef4444' : '#9ca3af', fontWeight: 400 }}>
@@ -399,7 +399,7 @@ export default function ConsumoMensal() {
                           return <td key={m} style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: isAtual ? 'var(--bg-info-soft)' : 'transparent' }}>{v > 0 ? fmt(v) : <span style={{ color: 'var(--border)' }}>—</span>}</td>
                         })}
                         <td style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: 'var(--bg-row2)' }}>{fmt(totalClassif)}</td>
-                        <td style={{ ...tdNum, fontWeight: 700, color: '#92400e', background: 'var(--bg-warning-soft)', fontSize: '12px' }}>{mesesCorrente > 0 ? fmt(mediaClassif) : '—'}</td>
+                        <td style={{ ...tdNum, fontWeight: 700, color: 'var(--text-4)', background: 'var(--bg-row2)', fontSize: '12px' }}>{mesesCorrente > 0 ? fmt(mediaClassif) : '—'}</td>
                       </tr>
                     </>
                   )
