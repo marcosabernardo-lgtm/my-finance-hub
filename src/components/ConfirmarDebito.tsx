@@ -179,10 +179,10 @@ export default function ConfirmarDebito() {
   const totalPrevistos = previstos.reduce((acc, p) => acc + p.valor, 0)
 
   const getMetodoInfo = (p: Previsto) => {
-    if (p.cartao_nome) return { label: p.cartao_nome, bg: '#dbeafe', color: '#1e40af' }
-    if (p.metodo_pagamento === 'Débito') return { label: `Débito — ${p.conta_origem_destino || ''}`, bg: '#fef3c7', color: '#92400e' }
-    if (p.metodo_pagamento === 'PIX') return { label: `PIX — ${p.conta_origem_destino || ''}`, bg: '#dcfce7', color: '#166534' }
-    return { label: p.metodo_pagamento, bg: '#f3f4f6', color: '#374151' }
+    if (p.cartao_nome) return { label: p.cartao_nome, bg: 'var(--badge-faturado-bg)', color: 'var(--badge-faturado-fg)' }
+    if (p.metodo_pagamento === 'Débito') return { label: `Débito — ${p.conta_origem_destino || ''}`, bg: 'var(--badge-pendente-bg)', color: 'var(--badge-pendente-fg)' }
+    if (p.metodo_pagamento === 'PIX') return { label: `PIX — ${p.conta_origem_destino || ''}`, bg: 'var(--badge-pago-bg)', color: 'var(--badge-pago-fg)' }
+    return { label: p.metodo_pagamento, bg: 'var(--badge-neutral-bg)', color: 'var(--badge-neutral-fg)' }
   }
 
   return (
@@ -217,13 +217,13 @@ export default function ConfirmarDebito() {
           onClick={() => { setModo('debito'); setCartaoSelecionado(null) }}
           style={{
             padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
-            border: `2px solid ${modo === 'debito' ? '#f59e0b' : 'var(--border)'}`,
-            background: modo === 'debito' ? '#fffbeb' : 'var(--bg-row2)',
+            border: `2px solid ${modo === 'debito' ? 'var(--border-warning)' : 'var(--border)'}`,
+            background: modo === 'debito' ? 'var(--bg-warning-soft)' : 'var(--bg-row2)',
             transition: 'all 0.15s',
           }}
         >
           <div style={{ fontSize: 28, marginBottom: 8 }}>💳</div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: '#92400e' }}>Débito / PIX</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-warning)' }}>Débito / PIX</div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Lançamentos de conta bancária</div>
         </div>
 
@@ -231,13 +231,13 @@ export default function ConfirmarDebito() {
           onClick={() => { setModo('credito'); setCartaoSelecionado(null) }}
           style={{
             padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
-            border: `2px solid ${modo === 'credito' ? '#2563eb' : 'var(--border)'}`,
-            background: modo === 'credito' ? '#eff6ff' : 'var(--bg-row2)',
+            border: `2px solid ${modo === 'credito' ? 'var(--border-info)' : 'var(--border)'}`,
+            background: modo === 'credito' ? 'var(--bg-info-soft)' : 'var(--bg-row2)',
             transition: 'all 0.15s',
           }}
         >
           <div style={{ fontSize: 28, marginBottom: 8 }}>💰</div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: '#1d4ed8' }}>Cartão de Crédito</div>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-info)' }}>Cartão de Crédito</div>
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>Selecione o cartão para confirmar</div>
         </div>
       </div>
@@ -257,8 +257,8 @@ export default function ConfirmarDebito() {
                   onClick={() => setCartaoSelecionado(c.id)}
                   style={{
                     padding: '12px 18px', borderRadius: 10, cursor: 'pointer',
-                    border: `2px solid ${cartaoSelecionado === c.id ? '#2563eb' : 'var(--border)'}`,
-                    background: cartaoSelecionado === c.id ? '#eff6ff' : 'var(--bg-card)',
+                    border: `2px solid ${cartaoSelecionado === c.id ? 'var(--border-info)' : 'var(--border)'}`,
+                    background: cartaoSelecionado === c.id ? 'var(--bg-info-soft)' : 'var(--bg-card)',
                     transition: 'all 0.15s',
                   }}
                 >
@@ -275,9 +275,9 @@ export default function ConfirmarDebito() {
 
       {mensagem && (
         <div style={{
-          color: mensagem.startsWith('Erro') ? '#991b1b' : '#166534',
-          background: mensagem.startsWith('Erro') ? '#fee2e2' : '#dcfce7',
-          border: `1px solid ${mensagem.startsWith('Erro') ? '#fca5a5' : '#86efac'}`,
+          color: mensagem.startsWith('Erro') ? 'var(--text-danger)' : 'var(--text-success)',
+          background: mensagem.startsWith('Erro') ? 'var(--bg-danger-soft)' : 'var(--bg-success-soft)',
+          border: `1px solid ${mensagem.startsWith('Erro') ? 'var(--border-danger)' : 'var(--border-success)'}`,
           marginBottom: 16, padding: '10px 14px', borderRadius: 6, fontSize: 13
         }}>{mensagem}</div>
       )}
@@ -291,10 +291,10 @@ export default function ConfirmarDebito() {
             </div>
           ) : (
             <>
-              <div style={{ background: '#f5f3ff', padding: '12px 16px', borderRadius: 8, marginBottom: 16, border: '1px solid #ddd6fe', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+              <div style={{ background: 'var(--bg-purple-soft)', padding: '12px 16px', borderRadius: 8, marginBottom: 16, border: '1px solid var(--border-purple)', display: 'flex', gap: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
                 <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                   <span style={{ color: 'var(--text-2)', fontSize: 13 }}>Total previsto:</span>
-                  <span style={{ color: '#7c3aed', fontWeight: 700, fontSize: 16 }}>{formatarValor(totalPrevistos)}</span>
+                  <span style={{ color: 'var(--text-purple)', fontWeight: 700, fontSize: 16 }}>{formatarValor(totalPrevistos)}</span>
                   <span style={{ color: 'var(--text-3)', fontSize: 13 }}>{previstos.length} lançamento(s)</span>
                 </div>
                 <button onClick={confirmarTodos} disabled={loading} style={{
@@ -322,7 +322,7 @@ export default function ConfirmarDebito() {
                               {p.categoria_nome}
                             </span>
                           )}
-                          <span style={{ color: '#7c3aed', fontSize: 11, background: '#f5f3ff', padding: '2px 6px', borderRadius: 4 }}>
+                          <span style={{ color: 'var(--text-purple)', fontSize: 11, background: 'var(--bg-purple-soft)', padding: '2px 6px', borderRadius: 4 }}>
                             {p.numero_parcela}
                           </span>
                         </div>
@@ -333,7 +333,7 @@ export default function ConfirmarDebito() {
                           <span style={{ fontSize: 12, color: metodo.color, background: metodo.bg, padding: '2px 8px', borderRadius: 4 }}>
                             {metodo.label}
                           </span>
-                          <span style={{ color: '#d97706', fontWeight: 700, fontSize: 14 }}>
+                          <span style={{ color: 'var(--text-warning)', fontWeight: 700, fontSize: 14 }}>
                             {formatarValor(p.valor)}
                           </span>
                         </div>
