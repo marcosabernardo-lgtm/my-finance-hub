@@ -699,7 +699,7 @@ export default function DRE() {
                     )
                   })}
                   <th style={{ ...thBase, minWidth: '90px', background: '#1f2937' }}>Total</th>
-                  <th style={{ ...thBase, minWidth: '80px', background: '#1f2937', color: '#fbbf24' }}>Média/mês</th>
+                  <th style={{ ...thBase, minWidth: '80px', background: '#1f2937' }}>Média/mês</th>
                 </tr>
               </thead>
 
@@ -885,7 +885,7 @@ function LinhaComDrill({ linha, meses, mesAtual, anoAtual, ano, isReceita, showL
           )}
         </td>
 
-        <td style={{ ...tdNum, background: 'var(--bg-warning-soft)', fontWeight: 600, color: 'var(--text-warning)', fontSize: '12px' }}>
+        <td style={{ ...tdNum, background: 'var(--bg-row)', fontWeight: 700, color: cor, fontSize: '12px' }}>
           {mesesCorrente > 0 ? (() => {
             const soma = Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => linha.meses[meses[i]] || 0).reduce((s, v) => s + v, 0)
             const med = soma / Math.min(mesesCorrente, meses.length)
@@ -992,7 +992,7 @@ function SubtotalRow({ label, meses, mesAtual, anoSel, anoAtual, valorMes, total
         return <td key={m} style={{ ...tdNum, fontWeight: 700, color: cor, opacity: isFuturo && !isAtual ? 0.7 : 1 }}>{fmt(v)}</td>
       })}
       <td style={{ ...tdNum, fontWeight: 700, color: cor, background: bg }}>{fmt(total)}</td>
-      <td style={{ ...tdNum, fontWeight: 700, color: cor, background: 'var(--bg-warning-soft)', fontSize: '12px' }}>
+      <td style={{ ...tdNum, fontWeight: 700, color: cor, background: bg, fontSize: '12px' }}>
         {mesesCorrente > 0 ? fmt(Array.from({ length: Math.min(mesesCorrente, meses.length) }, (_, i) => valorMes(meses[i])).reduce((s, v) => s + v, 0) / Math.min(mesesCorrente, meses.length)) : '—'}
       </td>
     </tr>
