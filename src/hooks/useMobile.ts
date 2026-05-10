@@ -1,12 +1,27 @@
 import { useState, useEffect } from 'react'
 
 export function useMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  const getIsMobile = () => {
+    const width = window.innerWidth
+    const isTouch = window.matchMedia('(pointer: coarse)').matches
+    return width <= 1024 || (isTouch && width <= 1180)
+  }
+
+  const [isMobile, setIsMobile] = useState(getIsMobile)
+
   useEffect(() => {
-    const mq = window.matchMedia('(max-width: 767px)')
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mq.addEventListener('change', handler)
-    return () => mq.removeEventListener('change', handler)
+    const update = () => setIsMobile(getIsMobile())
+    const mq = window.matchMedia('(pointer: coarse)')
+
+    update()
+    window.addEventListener('resize', update)
+    mq.addEventListener('change', update)
+
+    return () => {
+      window.removeEventListener('resize', update)
+      mq.removeEventListener('change', update)
+    }
   }, [])
+
   return isMobile
 }

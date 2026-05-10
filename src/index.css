@@ -137,7 +137,7 @@ button {
 }
 
 /* ── Mobile responsive ── */
-@media (max-width: 767px) {
+@media (max-width: 1024px) {
   /* Any scrollable table wrapper */
   .table-scroll {
     overflow-x: auto;

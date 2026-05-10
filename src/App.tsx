@@ -27,7 +27,7 @@ import {
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  TrendingDown, ShoppingCart, Sun, Moon, MoreHorizontal, X,
+  TrendingDown, ShoppingCart, Sun, Moon,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -277,15 +277,16 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
 // ─── Mobile Bottom Nav + Settings Drawer ─────────────────────────────────────
 
 const MOBILE_PAGES: { label: string; key: Pagina; icon: React.ElementType }[] = [
-  { label: "Calendário", key: "calendario",  icon: Calendar    },
   { label: "Lançar",     key: "lancamento",  icon: PlusCircle  },
-  { label: "Confirmar",  key: "confirmar",   icon: CheckCircle },
+  { label: "Calendário", key: "calendario",  icon: Calendar    },
+  { label: "Confirmar Débitos", key: "confirmar", icon: CheckCircle },
   { label: "Resumo",     key: "resumo",      icon: BarChart3   },
   { label: "Semanal",    key: "semanal",     icon: List        },
 ]
+const MOBILE_PAGE_KEYS = new Set<Pagina>(MOBILE_PAGES.map(page => page.key))
 
-function BottomNav({ pagina, setPagina, onMenuOpen }: {
-  pagina: Pagina; setPagina: (p: Pagina) => void; onMenuOpen: () => void
+function BottomNav({ pagina, setPagina }: {
+  pagina: Pagina; setPagina: (p: Pagina) => void
 }) {
   const { tokens, theme } = useTheme()
   const accent = "#667eea"
@@ -309,23 +310,15 @@ function BottomNav({ pagina, setPagina, onMenuOpen }: {
             color: ativa ? accent : tokens.sidebarText,
           }}>
             <Icon size={19} />
-            <span style={{ fontSize: 9, fontWeight: ativa ? 600 : 400 }}>{label}</span>
+            <span style={{ fontSize: 9, fontWeight: ativa ? 600 : 400, lineHeight: 1.1, textAlign: "center" }}>{label}</span>
           </button>
         )
       })}
-      <button onClick={onMenuOpen} style={{
-        flex: "0 0 44px", display: "flex", flexDirection: "column", alignItems: "center",
-        justifyContent: "center", gap: 3, background: "none", border: "none",
-        borderLeft: `1px solid ${border}`,
-        cursor: "pointer", padding: "6px 0", color: tokens.sidebarText,
-      }}>
-        <MoreHorizontal size={17} />
-      </button>
     </div>
   )
 }
 
-function MobileDrawer({ onClose, signOut, email }: {
+export function MobileDrawer({ onClose, signOut, email }: {
   onClose: () => void; signOut: () => void; email: string
 }) {
   const { tokens, theme, toggle } = useTheme()
@@ -371,12 +364,12 @@ function MobileDrawer({ onClose, signOut, email }: {
 function AppContent({ signOut, email }: { signOut: () => void; email: string }) {
   const [pagina, setPagina] = useState<Pagina>("calendario")
   const [recolhida, setRecolhida] = useState(false)
-  const [drawerAberto, setDrawerAberto] = useState(false)
   const { tokens } = useTheme()
   const isMobile = useIsMobile()
+  const paginaAtiva = isMobile && !MOBILE_PAGE_KEYS.has(pagina) ? "calendario" : pagina
 
   const renderConteudo = () => {
-    switch (pagina) {
+    switch (paginaAtiva) {
       case "home":          return <HomePanel />
       case "alertas":       return <Alertas />
       case "lancamento":    return <Lancamento />
@@ -404,14 +397,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
     return (
       <div style={{ minHeight: "100vh", background: tokens.contentBg, paddingBottom: 60 }}>
         {renderConteudo()}
-        <BottomNav pagina={pagina} setPagina={setPagina} onMenuOpen={() => setDrawerAberto(true)} />
-        {drawerAberto && (
-          <MobileDrawer
-            onClose={() => setDrawerAberto(false)}
-            signOut={signOut}
-            email={email}
-          />
-        )}
+        <BottomNav pagina={paginaAtiva} setPagina={setPagina} />
       </div>
     )
   }
