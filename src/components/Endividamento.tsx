@@ -99,6 +99,8 @@ const parseP = (s: string) => {
   const m = s?.match(/Parcela (\d+)\/(\d+)/i);
   return m ? { atual: +m[1], total: +m[2] } : { atual: 0, total: 0 };
 };
+const normalizaChave = (s: string | null | undefined) =>
+  (s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const foiQuitada = (p: Movimentacao, isCredito: boolean) =>
   isCredito ? (p.situacao === 'Faturado' || p.situacao === 'Pago') : p.situacao === 'Pago';
 
@@ -440,8 +442,21 @@ export default function Endividamento() {
   const dividasAgrupadas = useMemo<DividaDesc[]>(() => {
     const porGrupo: Record<string, Movimentacao[]> = {};
     for (const m of movimentacoes) {
-      if (!porGrupo[m.grupo_id]) porGrupo[m.grupo_id] = [];
-      porGrupo[m.grupo_id].push(m);
+      const isCredito = !!m.cartao_id || m.metodo_pagamento === 'Crédito';
+      const catNome = (m as any).categorias?.nome || '';
+      const isParc = !isCredito && normalizaChave(catNome) === 'parcelamento';
+      const chave = isParc
+        ? [
+            'parcelamento',
+            normalizaChave(m.descricao),
+            normalizaChave(m.metodo_pagamento),
+            normalizaChave(m.conta_origem_destino),
+            normalizaChave(catNome),
+          ].join('|')
+        : m.grupo_id;
+
+      if (!porGrupo[chave]) porGrupo[chave] = [];
+      porGrupo[chave].push(m);
     }
 
     return Object.entries(porGrupo).flatMap(([grupoId, parcelas]) => {
