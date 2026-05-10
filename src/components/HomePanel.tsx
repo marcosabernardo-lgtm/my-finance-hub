@@ -317,11 +317,11 @@ export default function HomePanel() {
     <div style={{background:"var(--bg-page)",minHeight:"100vh",fontFamily:"'Segoe UI',system-ui,sans-serif",padding:"14px 12px 76px"}}>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10,marginBottom:14}}>
         <div>
-          <h1 style={{fontSize:22,fontWeight:800,color:"var(--text-1)",margin:0,lineHeight:1.1}}>VisÃ£o Geral</h1>
+          <h1 style={{fontSize:22,fontWeight:800,color:"var(--text-1)",margin:0,lineHeight:1.1}}>Visão Geral</h1>
           <p style={{color:"var(--text-2)",fontSize:12,margin:"5px 0 0"}}>{mesFormatado}</p>
         </div>
         <button onClick={fetchDados} style={{fontSize:12,color:"#0d7280",background:"none",border:"1px solid #0d7280",borderRadius:8,padding:"6px 10px",cursor:"pointer",fontWeight:600,whiteSpace:"nowrap"}}>
-          â†» Atualizar
+          ↻ Atualizar
         </button>
       </div>
 
@@ -347,7 +347,7 @@ export default function HomePanel() {
           <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(pagtoFaturaAnt)}</div>
         </div>
         <div style={{...SC,padding:"10px 11px",borderLeft:"4px solid #c4b5fd",minWidth:0}}>
-          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>CartÃ£o</div>
+          <div style={{fontSize:9,fontWeight:700,color:"var(--text-2)",textTransform:"uppercase",letterSpacing:"0.04em"}}>Cartão</div>
           <div style={{fontSize:15,fontWeight:800,color:"var(--text-1)",margin:"5px 0 2px",lineHeight:1.15}}>{fmt(totalCartao)}<Variacao atual={totalCartao} anterior={totalCartaoAnt} boaSeSubir={false}/></div>
           <div style={{fontSize:9,color:"var(--text-3)"}}>vs {MESES_CURTOS[mesAnterior-1]}: {fmt(totalCartaoAnt)}</div>
         </div>
@@ -372,17 +372,17 @@ export default function HomePanel() {
         <div style={{fontSize:13,fontWeight:800,color:"var(--text-1)",marginBottom:10}}>Endividamento</div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(2,minmax(0,1fr))",gap:8}}>
           <div style={{background:"var(--bg-row)",border:"1px solid var(--border)",borderRadius:9,padding:"10px",minWidth:0}}>
-            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Total em DÃ­vidas</div>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Total em Dívidas</div>
             <div style={{fontSize:16,fontWeight:800,color:"var(--text-1)"}}>{fmt(totalDividas)}</div>
             <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.length} parcelamento(s)</div>
           </div>
           <div style={{background:"var(--bg-danger-soft)",border:"1px solid var(--border-danger)",borderLeft:"4px solid #e05252",borderRadius:9,padding:"10px",minWidth:0}}>
-            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>CrÃ©dito</div>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Crédito</div>
             <div style={{fontSize:16,fontWeight:800,color:"#e05252"}}>{fmt(totalDivCredito)}</div>
             <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>d.isCredito).length} item(s)</div>
           </div>
           <div style={{background:"var(--bg-info-soft)",border:"1px solid var(--border-info)",borderLeft:"4px solid #4a9eff",borderRadius:9,padding:"10px",minWidth:0}}>
-            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>DÃ©bito / PIX</div>
+            <div style={{fontSize:9,fontWeight:700,textTransform:"uppercase" as const,color:"var(--text-2)",marginBottom:5}}>Débito / PIX</div>
             <div style={{fontSize:16,fontWeight:800,color:"#4a9eff"}}>{fmt(totalDivDebito)}</div>
             <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>!d.isCredito&&!d.isParc).length} item(s)</div>
           </div>
@@ -391,6 +391,62 @@ export default function HomePanel() {
             <div style={{fontSize:16,fontWeight:800,color:"#9b59b6"}}>{fmt(totalDivParc)}</div>
             <div style={{fontSize:9,color:"var(--text-3)"}}>{dividas.filter(d=>d.isParc).length} item(s)</div>
           </div>
+        </div>
+      </div>
+
+      <div style={{...S,padding:"12px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+          <div style={{fontSize:13,fontWeight:800,color:"var(--text-1)"}}>Contas</div>
+          <div style={{fontSize:12,fontWeight:800,color:totalSaldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(totalSaldo)}</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+          {contas.filter(c=>c.tipo==="corrente").map(c=>{
+            const saldo=saldosContas[c.id]??0; const logo=logoBanco(c.nome)
+            return (
+              <div key={c.id} style={{display:"flex",alignItems:"center",gap:9,background:"var(--bg-row)",borderRadius:9,padding:"9px 10px",minWidth:0}}>
+                <div style={{width:32,height:32,borderRadius:7,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:800,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:12,fontWeight:700,color:"var(--text-1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                  <div style={{fontSize:10,color:"var(--text-3)"}}>Conta corrente</div>
+                </div>
+                <div style={{fontSize:12,fontWeight:800,color:saldo>=0?"#065f46":"#991b1b",whiteSpace:"nowrap"}}>{fmt(saldo)}</div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      <div style={{...S,padding:"12px",marginBottom:12}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10,gap:8}}>
+          <div style={{fontSize:13,fontWeight:800,color:"var(--text-1)"}}>Cartões de Crédito</div>
+          <div style={{fontSize:10,color:"var(--text-2)",whiteSpace:"nowrap"}}>{cartoes.length} cartão(ões)</div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr",gap:8}}>
+          {cartoes.map(c=>{
+            const usado=compCartoes[c.id]||0; const disp=c.limite_total-usado
+            const pct=c.limite_total>0?(usado/c.limite_total)*100:0
+            const cor=pct>80?"#ef4444":pct>50?"#f59e0b":"#10b981"
+            const logo=logoBanco(c.nome)
+            return (
+              <div key={c.id} style={{background:"var(--bg-row)",borderRadius:9,padding:"9px 10px",minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
+                  <div style={{width:30,height:30,borderRadius:7,background:logo.bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:logo.color,flexShrink:0}}>{logo.sigla}</div>
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontSize:11,fontWeight:700,color:"var(--text-1)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.nome}</div>
+                    <div style={{fontSize:9,color:"var(--text-2)"}}>Vence dia {c.data_vencimento}</div>
+                  </div>
+                  <div style={{textAlign:"right" as const,flexShrink:0}}>
+                    <div style={{fontSize:11,fontWeight:800,color:disp>=0?"#065f46":"#991b1b"}}>{fmt(disp)}</div>
+                    <div style={{fontSize:8,color:"var(--text-3)"}}>disponível</div>
+                  </div>
+                </div>
+                <div style={{background:"var(--border)",borderRadius:99,height:5}}>
+                  <div style={{background:cor,borderRadius:99,height:5,width:`${Math.min(pct,100)}%`}}/>
+                </div>
+                <div style={{fontSize:9,color:cor,fontWeight:800,marginTop:3}}>{pct.toFixed(0)}% usado · {fmt(usado)}</div>
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
