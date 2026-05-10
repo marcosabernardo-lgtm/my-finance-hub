@@ -135,3 +135,32 @@ button {
   cursor: pointer;
   transition: border-color 0.25s;
 }
+
+/* ── Mobile responsive ── */
+@media (max-width: 767px) {
+  /* Any scrollable table wrapper */
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Tables too wide for mobile — force horizontal scroll */
+  table {
+    min-width: 100%;
+  }
+
+  /* Cards row that wraps on mobile */
+  .cards-row {
+    flex-direction: column !important;
+  }
+
+  /* Padding inside page containers */
+  .page-content {
+    padding: 12px !important;
+  }
+
+  /* Hide elements explicitly marked desktop-only */
+  .desktop-only {
+    display: none !important;
+  }
+}

@@ -26,7 +26,7 @@ import {
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  TrendingDown, ShoppingCart, Sun, Moon,
+  TrendingDown, ShoppingCart, Sun, Moon, MoreHorizontal, X,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -159,6 +159,17 @@ const grupos: {
 const SIDEBAR_EXPANDED  = 220
 const SIDEBAR_COLLAPSED = 56
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)")
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
+    mq.addEventListener("change", handler)
+    return () => mq.removeEventListener("change", handler)
+  }, [])
+  return isMobile
+}
+
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function Sidebar({ pagina, setPagina, signOut, email, recolhida, setRecolhida }: {
@@ -271,12 +282,152 @@ function SidebarItem({ icon: Icon, label, ativa, recolhida, onClick, accent }: {
   )
 }
 
+// ─── Mobile Bottom Nav + Drawer ───────────────────────────────────────────────
+
+const BOTTOM_NAV_ITEMS: { label: string; key: Pagina; icon: React.ElementType }[] = [
+  { label: "Início",      key: "home",         icon: HomeIcon    },
+  { label: "Calendário",  key: "calendario",   icon: Calendar    },
+  { label: "Lançar",      key: "lancamento",   icon: PlusCircle  },
+  { label: "Moviment.",   key: "movimentacoes",icon: List        },
+]
+
+function BottomNav({ pagina, setPagina, onMenuOpen }: {
+  pagina: Pagina; setPagina: (p: Pagina) => void; onMenuOpen: () => void
+}) {
+  const { tokens, theme } = useTheme()
+  const accent = "#667eea"
+  const bg     = theme === "dark" ? "#0d1526" : "#ffffff"
+  const border = tokens.sidebarBorder
+
+  return (
+    <div style={{
+      position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1000,
+      background: bg, borderTop: `1px solid ${border}`,
+      display: "flex", alignItems: "stretch", height: 60,
+      paddingBottom: "env(safe-area-inset-bottom)",
+    }}>
+      {BOTTOM_NAV_ITEMS.map(({ label, key, icon: Icon }) => {
+        const ativa = pagina === key
+        return (
+          <button key={key} onClick={() => setPagina(key)} style={{
+            flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+            justifyContent: "center", gap: 3, background: "none", border: "none",
+            cursor: "pointer", padding: "6px 0",
+            color: ativa ? accent : tokens.sidebarText,
+          }}>
+            <Icon size={20} />
+            <span style={{ fontSize: 10, fontWeight: ativa ? 600 : 400 }}>{label}</span>
+          </button>
+        )
+      })}
+      <button onClick={onMenuOpen} style={{
+        flex: 1, display: "flex", flexDirection: "column", alignItems: "center",
+        justifyContent: "center", gap: 3, background: "none", border: "none",
+        cursor: "pointer", padding: "6px 0", color: tokens.sidebarText,
+      }}>
+        <MoreHorizontal size={20} />
+        <span style={{ fontSize: 10, fontWeight: 400 }}>Menu</span>
+      </button>
+    </div>
+  )
+}
+
+function MobileDrawer({ pagina, setPagina, onClose, signOut, email }: {
+  pagina: Pagina; setPagina: (p: Pagina) => void
+  onClose: () => void; signOut: () => void; email: string
+}) {
+  const { tokens, theme, toggle } = useTheme()
+  const bg     = theme === "dark" ? "#0d1526" : "#ffffff"
+  const border = tokens.sidebarBorder
+  const accent = "#667eea"
+
+  function navigate(key: Pagina) { setPagina(key); onClose() }
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 2000,
+      display: "flex", flexDirection: "column",
+    }}>
+      {/* backdrop */}
+      <div onClick={onClose} style={{ flex: 1, background: "rgba(0,0,0,0.5)" }} />
+      {/* sheet */}
+      <div style={{
+        background: bg, borderTop: `1px solid ${border}`,
+        borderRadius: "16px 16px 0 0", maxHeight: "80vh",
+        display: "flex", flexDirection: "column",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px 10px", borderBottom: `1px solid ${border}`, flexShrink: 0 }}>
+          <span style={{ fontWeight: 700, fontSize: 15, color: tokens.sidebarText }}>Menu</span>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: tokens.sidebarText, padding: 4, display: "flex" }}>
+            <X size={18} />
+          </button>
+        </div>
+        <div style={{ overflowY: "auto", padding: "8px 12px" }}>
+          {grupos.map(grupo => (
+            <div key={grupo.label} style={{ marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px", color: tokens.sidebarGroupLabel, padding: "6px 4px 4px" }}>
+                {grupo.label}
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                {grupo.items.map(item => {
+                  const ativa = pagina === item.key
+                  const Icon  = item.icon
+                  const cor   = item.accent || accent
+                  return (
+                    <button key={item.key} onClick={() => navigate(item.key)} style={{
+                      display: "flex", alignItems: "center", gap: 8,
+                      padding: "10px 12px", borderRadius: 10, cursor: "pointer",
+                      background: ativa ? `${cor}18` : tokens.sidebarItemHover,
+                      border: `1px solid ${ativa ? cor + "40" : border}`,
+                      color: ativa ? cor : item.accent ? item.accent : tokens.sidebarText,
+                      fontSize: 13, fontWeight: ativa ? 600 : 400, textAlign: "left",
+                    }}>
+                      <Icon size={15} style={{ flexShrink: 0 }} />
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.label}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+          <div style={{ borderTop: `1px solid ${border}`, marginTop: 8, paddingTop: 8, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            <button onClick={() => { toggle(); onClose() }} style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
+              borderRadius: 10, cursor: "pointer", background: tokens.sidebarItemHover,
+              border: `1px solid ${border}`, color: tokens.sidebarText, fontSize: 13,
+            }}>
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
+              <span>{theme === "dark" ? "Modo Claro" : "Modo Escuro"}</span>
+            </button>
+            <button onClick={signOut} style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "10px 12px",
+              borderRadius: 10, cursor: "pointer", background: "#ef444415",
+              border: "1px solid #ef444440", color: "#ef4444", fontSize: 13,
+            }}>
+              <LogOut size={15} />
+              <span>Sair</span>
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: tokens.sidebarSubtext, padding: "8px 4px 4px", textAlign: "center", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {email}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── AppContent ───────────────────────────────────────────────────────────────
 
 function AppContent({ signOut, email }: { signOut: () => void; email: string }) {
   const [pagina, setPagina] = useState<Pagina>("calendario")
   const [recolhida, setRecolhida] = useState(false)
+  const [drawerAberto, setDrawerAberto] = useState(false)
   const { tokens } = useTheme()
+  const isMobile = useIsMobile()
 
   const renderConteudo = () => {
     switch (pagina) {
@@ -301,6 +452,24 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "consumo":       return <ConsumoMensal />
       default:              return null
     }
+  }
+
+  if (isMobile) {
+    return (
+      <div style={{ minHeight: "100vh", background: tokens.contentBg, paddingBottom: 60 }}>
+        {renderConteudo()}
+        <BottomNav pagina={pagina} setPagina={setPagina} onMenuOpen={() => setDrawerAberto(true)} />
+        {drawerAberto && (
+          <MobileDrawer
+            pagina={pagina}
+            setPagina={setPagina}
+            onClose={() => setDrawerAberto(false)}
+            signOut={signOut}
+            email={email}
+          />
+        )}
+      </div>
+    )
   }
 
   return (
