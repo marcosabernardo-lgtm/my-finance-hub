@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useMobile } from '../hooks/useMobile'
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const DIAS_SEMANA = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb']
@@ -178,9 +179,9 @@ function SecaoTipo({ icone, titulo, cor, movs, modo }: {
 }
 
 // ── Célula do dia ─────────────────────────────────────────────────────────────
-function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
+function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo, compact }: {
   dia: number; movs: Movimentacao[]; semana: number
-  isHoje: boolean; isMesAtual: boolean; modo: Modo
+  isHoje: boolean; isMesAtual: boolean; modo: Modo; compact?: boolean
 }) {
   const [aberto, setAberto] = useState(false)
 
@@ -199,26 +200,26 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
       <div
         onClick={() => temMovs && setAberto(a => !a)}
         style={{
-          minHeight:92, padding:'7px 8px',
+          minHeight: compact ? 52 : 92, padding: compact ? '5px 4px' : '7px 8px',
           background: isHoje ? CORES.hoje : aberto ? 'var(--bg-info-soft)' : isMesAtual ? CORES.card : 'var(--bg-page)',
           border: isHoje ? `2px solid ${CORES.hoje}` : aberto ? `2px solid ${CORES.hoje}` : `1px solid ${CORES.borda}`,
-          borderRadius: aberto ? '10px 10px 0 0' : 10,
+          borderRadius: aberto ? '8px 8px 0 0' : 8,
           cursor: temMovs ? 'pointer' : 'default',
           transition:'background 0.12s', position:'relative' as const,
         }}
       >
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:5 }}>
-          <div style={{ width:26, height:26, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, background: isHoje ? 'rgba(255,255,255,0.2)' : 'transparent', color: isHoje ? '#fff' : isMesAtual ? CORES.texto : 'var(--text-3)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom: compact ? 3 : 5 }}>
+          <div style={{ width: compact ? 20 : 26, height: compact ? 20 : 26, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize: compact ? 11 : 13, fontWeight:700, background: isHoje ? 'rgba(255,255,255,0.2)' : 'transparent', color: isHoje ? '#fff' : isMesAtual ? CORES.texto : 'var(--text-3)' }}>
             {dia}
           </div>
-          {isMesAtual && (
+          {!compact && isMesAtual && (
             <span style={{ fontSize:9, fontWeight:700, color: isHoje ? 'rgba(255,255,255,0.65)' : '#b0b8c4', background: isHoje ? 'rgba(255,255,255,0.12)' : CORES.sepia, borderRadius:4, padding:'1px 5px' }}>
               S{semana}
             </span>
           )}
         </div>
 
-        {temMovs && (
+        {temMovs && !compact && (
           <div style={{ display:'flex', flexDirection:'column' as const, gap:2 }}>
             {totalReceitas > 0 && <div style={{ fontSize:10, fontWeight:700, color: isHoje ? '#a7f3d0' : CORES.receita }}>+{fmt(totalReceitas)}</div>}
             {totalDebito   > 0 && <div style={{ fontSize:10, fontWeight:700, color: isHoje ? '#fca5a5' : CORES.debito }}>-{fmt(totalDebito)}</div>}
@@ -226,7 +227,14 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
             <div style={{ fontSize:9, color: isHoje ? 'rgba(255,255,255,0.5)' : '#b0b8c4', marginTop:1 }}>{movsExibir.length} mov.</div>
           </div>
         )}
-        {temMovs && <div style={{ position:'absolute' as const, bottom:4, right:6, fontSize:9, color: isHoje ? 'rgba(255,255,255,0.4)' : '#c0c4cc' }}>{aberto ? '▲' : '▼'}</div>}
+        {temMovs && compact && (
+          <div style={{ display:'flex', gap:3, flexWrap:'wrap' as const, marginTop:2 }}>
+            {totalReceitas > 0 && <span style={{ width:7, height:7, borderRadius:'50%', background: CORES.receita, display:'inline-block' }} />}
+            {totalDebito   > 0 && <span style={{ width:7, height:7, borderRadius:'50%', background: CORES.debito,  display:'inline-block' }} />}
+            {totalCredito  > 0 && <span style={{ width:7, height:7, borderRadius:'50%', background: CORES.credito, display:'inline-block' }} />}
+          </div>
+        )}
+        {temMovs && !compact && <div style={{ position:'absolute' as const, bottom:4, right:6, fontSize:9, color: isHoje ? 'rgba(255,255,255,0.4)' : '#c0c4cc' }}>{aberto ? '▲' : '▼'}</div>}
       </div>
 
       {aberto && (
@@ -271,6 +279,7 @@ function CelulaDia({ dia, movs, semana, isHoje, isMesAtual, modo }: {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function Calendario() {
   const { user } = useAuth()
+  const isMobile = useMobile()
   const [householdId, setHouseholdId] = useState<string|null>(null)
   const [loading, setLoading]         = useState(true)
   const [movs, setMovs]               = useState<Movimentacao[]>([])
@@ -374,24 +383,20 @@ export default function Calendario() {
   }
 
   return (
-    <div style={{ background:CORES.fundo, minHeight:'100vh', fontFamily:"'Segoe UI',system-ui,sans-serif", padding:'28px 32px' }}>
+    <div style={{ background:CORES.fundo, minHeight:'100vh', fontFamily:"'Segoe UI',system-ui,sans-serif", padding: isMobile ? '10px 8px' : '28px 32px' }}>
 
       {/* Cabeçalho */}
-      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:24 }}>
-        <div>
-          <h1 style={{ fontSize:26, fontWeight:800, color:CORES.texto, margin:0 }}>📅 Calendário</h1>
-          <p style={{ color:CORES.sub, fontSize:13, margin:'4px 0 0' }}>
-            {modo === 'movimentacoes'
-              ? 'Débito/PIX: Pago · Crédito: data ≠ data pagamento · Receita: Pago'
-              : 'Despesas pendentes por data de vencimento'}
-          </p>
-        </div>
-        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {/* Botões modo */}
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: isMobile ? 10 : 24, gap:8 }}>
+        {!isMobile && (
+          <div>
+            <h1 style={{ fontSize:26, fontWeight:800, color:CORES.texto, margin:0 }}>📅 Calendário</h1>
+          </div>
+        )}
+        <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' as const }}>
           <div style={{ display:'flex', borderRadius:8, border:`1.5px solid ${CORES.borda}`, overflow:'hidden' }}>
-            {([['movimentacoes','📋 Movimentações'],['pendentes','⏳ Pendentes']] as [Modo,string][]).map(([val, label], i) => (
+            {([['movimentacoes', isMobile ? '📋 Mov.' : '📋 Movimentações'],['pendentes', isMobile ? '⏳ Pend.' : '⏳ Pendentes']] as [Modo,string][]).map(([val, label], i) => (
               <button key={val} onClick={() => setModo(val)} style={{
-                padding:'7px 16px', fontSize:13, fontWeight:600, cursor:'pointer', border:'none',
+                padding: isMobile ? '6px 12px' : '7px 16px', fontSize: isMobile ? 12 : 13, fontWeight:600, cursor:'pointer', border:'none',
                 borderRight: i === 0 ? `1px solid ${CORES.borda}` : 'none',
                 background: modo === val ? CORES.sidebar : CORES.card,
                 color: modo === val ? '#fff' : CORES.texto,
@@ -401,35 +406,35 @@ export default function Calendario() {
               </button>
             ))}
           </div>
-          <button onClick={fetchDados} style={{ fontSize:13, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:8, padding:'6px 14px', cursor:'pointer', fontWeight:600 }}>
-            ↻ Atualizar
+          <button onClick={fetchDados} style={{ fontSize: isMobile ? 12 : 13, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:8, padding: isMobile ? '5px 10px' : '6px 14px', cursor:'pointer', fontWeight:600 }}>
+            ↻
           </button>
         </div>
       </div>
 
       {/* Navegação + totais */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20, flexWrap:'wrap' as const, gap:12 }}>
-        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-          <button onClick={() => navMes(-1)} style={{ width:36, height:36, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>‹</button>
-          <div style={{ fontSize:20, fontWeight:800, color:CORES.texto, minWidth:200, textAlign:'center' as const }}>{MESES[mes]} {ano}</div>
-          <button onClick={() => navMes(1)}  style={{ width:36, height:36, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:18, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>›</button>
-          <button onClick={() => { setMes(hoje.getMonth()); setAno(hoje.getFullYear()) }} style={{ fontSize:12, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:6, padding:'4px 10px', cursor:'pointer', fontWeight:600 }}>Hoje</button>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: isMobile ? 10 : 20, flexWrap:'wrap' as const, gap:8 }}>
+        <div style={{ display:'flex', alignItems:'center', gap: isMobile ? 8 : 12 }}>
+          <button onClick={() => navMes(-1)} style={{ width:32, height:32, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>‹</button>
+          <div style={{ fontSize: isMobile ? 15 : 20, fontWeight:800, color:CORES.texto, minWidth: isMobile ? 130 : 200, textAlign:'center' as const }}>{MESES[mes]} {ano}</div>
+          <button onClick={() => navMes(1)}  style={{ width:32, height:32, borderRadius:'50%', border:`1px solid ${CORES.borda}`, background:CORES.card, fontSize:16, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:CORES.sidebar, fontWeight:700 }}>›</button>
+          <button onClick={() => { setMes(hoje.getMonth()); setAno(hoje.getFullYear()) }} style={{ fontSize:11, color:CORES.sidebar, background:'none', border:`1px solid ${CORES.sidebar}`, borderRadius:6, padding:'3px 8px', cursor:'pointer', fontWeight:600 }}>Hoje</button>
         </div>
 
         {/* Cards de totais — mudam conforme o modo */}
-        <div style={{ display:'flex', gap:10 }}>
+        <div style={{ display:'flex', gap: isMobile ? 6 : 10, flexWrap:'wrap' as const }}>
           {modo === 'movimentacoes' ? (
             <>
               {[
-                { label:'Receitas',   valor:totalReceitas, cor:CORES.receita, sinal:'+' },
-                { label:'Déb / PIX',  valor:totalDebito,   cor:CORES.debito,  sinal:'-' },
-                { label:'Crédito',    valor:totalCredito,  cor:CORES.credito, sinal:'-' },
-                { label:'Saldo',      valor:saldo, cor:saldo>=0?CORES.sidebar:CORES.debito, sinal:saldo>=0?'+':'' },
-                { label:'Movs',       valor:-1,            cor:CORES.texto,   sinal:'' },
-              ].map(c => (
-                <div key={c.label} style={{ background:CORES.card, border:`1px solid ${CORES.borda}`, borderLeft:`3px solid ${c.cor}`, borderRadius:10, padding:'8px 14px', textAlign:'center' as const }}>
+                { label:'Receitas',   valor:totalReceitas, cor:CORES.receita, sinal:'+',  mobile:false },
+                { label:'Déb / PIX',  valor:totalDebito,   cor:CORES.debito,  sinal:'-',  mobile:false },
+                { label:'Crédito',    valor:totalCredito,  cor:CORES.credito, sinal:'-',  mobile:false },
+                { label:'Saldo',      valor:saldo, cor:saldo>=0?CORES.sidebar:CORES.debito, sinal:saldo>=0?'+':'', mobile:true },
+                { label:'Movs',       valor:-1,            cor:CORES.texto,   sinal:'',   mobile:true  },
+              ].filter(c => !isMobile || c.mobile).map(c => (
+                <div key={c.label} style={{ background:CORES.card, border:`1px solid ${CORES.borda}`, borderLeft:`3px solid ${c.cor}`, borderRadius:10, padding: isMobile ? '6px 10px' : '8px 14px', textAlign:'center' as const }}>
                   <div style={{ fontSize:10, fontWeight:700, color:CORES.sub, textTransform:'uppercase' as const, letterSpacing:'0.4px' }}>{c.label}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:c.cor, marginTop:2 }}>
+                  <div style={{ fontSize: isMobile ? 13 : 15, fontWeight:800, color:c.cor, marginTop:2 }}>
                     {c.label === 'Movs' ? movsValidas.length : `${c.sinal}${fmt(Math.abs(c.valor))}`}
                   </div>
                 </div>
@@ -438,14 +443,14 @@ export default function Calendario() {
           ) : (
             <>
               {[
-                { label:'A Pagar',     valor:totalPend,                                                         cor:CORES.debito  },
-                { label:'Déb / PIX',   valor:movsPend.filter(m=>!isCredito(m)).reduce((s,m)=>s+Number(m.valor),0), cor:CORES.debito  },
-                { label:'Crédito',     valor:movsPend.filter(m=>isCredito(m)).reduce((s,m)=>s+Number(m.valor),0),  cor:CORES.credito },
-                { label:'Lançamentos', valor:-1,                                                                cor:CORES.texto   },
-              ].map(c => (
-                <div key={c.label} style={{ background:CORES.card, border:`1px solid ${CORES.borda}`, borderLeft:`3px solid ${c.cor}`, borderRadius:10, padding:'8px 14px', textAlign:'center' as const }}>
+                { label:'A Pagar',     valor:totalPend,                                                             cor:CORES.debito,  mobile:true  },
+                { label:'Déb / PIX',   valor:movsPend.filter(m=>!isCredito(m)).reduce((s,m)=>s+Number(m.valor),0), cor:CORES.debito,  mobile:false },
+                { label:'Crédito',     valor:movsPend.filter(m=>isCredito(m)).reduce((s,m)=>s+Number(m.valor),0),  cor:CORES.credito, mobile:false },
+                { label:'Lançamentos', valor:-1,                                                                    cor:CORES.texto,   mobile:true  },
+              ].filter(c => !isMobile || c.mobile).map(c => (
+                <div key={c.label} style={{ background:CORES.card, border:`1px solid ${CORES.borda}`, borderLeft:`3px solid ${c.cor}`, borderRadius:10, padding: isMobile ? '6px 10px' : '8px 14px', textAlign:'center' as const }}>
                   <div style={{ fontSize:10, fontWeight:700, color:CORES.sub, textTransform:'uppercase' as const, letterSpacing:'0.4px' }}>{c.label}</div>
-                  <div style={{ fontSize:15, fontWeight:800, color:c.cor, marginTop:2 }}>
+                  <div style={{ fontSize: isMobile ? 13 : 15, fontWeight:800, color:c.cor, marginTop:2 }}>
                     {c.label === 'Lançamentos' ? movsPend.length : `-${fmt(c.valor)}`}
                   </div>
                 </div>
@@ -478,7 +483,7 @@ export default function Calendario() {
                   ? (modo === 'movimentacoes' ? movsPorDia[cel.dia] || [] : movsPendPorDia[cel.dia] || [])
                   : []
                 return (
-                  <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding:5, background:isWeekend&&isMesAtual?'var(--bg-row2)':'transparent' }}>
+                  <div key={di} style={{ borderRight:di<6?`1px solid ${CORES.borda}`:'none', padding: isMobile ? 2 : 5, background:isWeekend&&isMesAtual?'var(--bg-row2)':'transparent' }}>
                     <CelulaDia
                       dia={cel.dia}
                       movs={movsCell}
@@ -486,6 +491,7 @@ export default function Calendario() {
                       isHoje={isHoje}
                       isMesAtual={isMesAtual}
                       modo={modo}
+                      compact={isMobile}
                     />
                   </div>
                 )

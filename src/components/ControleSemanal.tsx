@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useMobile } from '../hooks/useMobile'
 
 interface MovimentacaoDetalhe {
   id: number
@@ -75,6 +76,7 @@ const deveEntrar = (m: {
 
 export default function ControleSemanal() {
   const { user } = useAuth()
+  const isMobile = useMobile()
   const [householdId, setHouseholdId] = useState<string | null>(null)
 
   const hoje = new Date()
@@ -225,7 +227,7 @@ export default function ControleSemanal() {
   }
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: isMobile ? '12px' : '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
       <div style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '12px' }}>
         <div>
@@ -244,22 +246,21 @@ export default function ControleSemanal() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
-        {[
-          { cor: '#10B981', label: 'Dentro do limite (< 80%)' },
-          { cor: '#F59E0B', label: 'Atenção (80–100%)' },
-          { cor: '#EF4444', label: 'Ultrapassou (> 100%)' },
-          { cor: '#9CA3AF', label: 'Sem gasto' },
-        ].map(l => (
-          <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-2)' }}>
-            <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: l.cor, display: 'inline-block' }} />
-            {l.label}
-          </div>
-        ))}
-        <div style={{ fontSize: '12px', color: 'var(--text-3)', marginLeft: 'auto' }}>
-          💡 Clique em qualquer valor para ver os lançamentos
+      {!isMobile && (
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {[
+            { cor: '#10B981', label: 'Dentro do limite (< 80%)' },
+            { cor: '#F59E0B', label: 'Atenção (80–100%)' },
+            { cor: '#EF4444', label: 'Ultrapassou (> 100%)' },
+            { cor: '#9CA3AF', label: 'Sem gasto' },
+          ].map(l => (
+            <div key={l.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-2)' }}>
+              <span style={{ width: '12px', height: '12px', borderRadius: '3px', background: l.cor, display: 'inline-block' }} />
+              {l.label}
+            </div>
+          ))}
         </div>
-      </div>
+      )}
 
       <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
         {loading ? (
@@ -273,15 +274,18 @@ export default function ControleSemanal() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#111827', position: 'sticky', top: 0, zIndex: 10 }}>
-                  {['Categoria', 'Limite Mensal', 'Real', 'Divergência', 'Limite Semanal', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5'].map(col => (
-                    <th key={col} style={{
-                      padding: '10px 10px', textAlign: col === 'Categoria' ? 'left' : 'right',
-                      fontWeight: 600, color: '#f9fafb', fontSize: '12px',
-                      borderBottom: '2px solid #374151', whiteSpace: 'nowrap'
-                    }}>
-                      {col}
-                    </th>
-                  ))}
+                  {(isMobile
+                  ? ['Categoria', 'Real', 'Divergência']
+                  : ['Categoria', 'Limite Mensal', 'Real', 'Divergência', 'Limite Semanal', 'Semana 1', 'Semana 2', 'Semana 3', 'Semana 4', 'Semana 5']
+                ).map(col => (
+                  <th key={col} style={{
+                    padding: '10px 10px', textAlign: col === 'Categoria' ? 'left' : 'right',
+                    fontWeight: 600, color: '#f9fafb', fontSize: '12px',
+                    borderBottom: '2px solid #374151', whiteSpace: 'nowrap'
+                  }}>
+                    {col}
+                  </th>
+                ))}
                 </tr>
               </thead>
               <tbody>
@@ -291,7 +295,7 @@ export default function ControleSemanal() {
                     classificacaoAtual.value = linha.classificacao
                     separador = (
                       <tr key={`sep-${linha.classificacao}`}>
-                        <td colSpan={10} style={{
+                        <td colSpan={isMobile ? 3 : 10} style={{
                           padding: '6px 10px', background: 'var(--bg-row2)',
                           fontSize: '11px', fontWeight: 700, color: 'var(--text-2)',
                           textTransform: 'uppercase', letterSpacing: '0.06em',
@@ -314,19 +318,19 @@ export default function ControleSemanal() {
                         <td style={{ ...tdBase, fontWeight: 500, color: 'var(--text-1)', whiteSpace: 'nowrap' }}>
                           {linha.categoria}
                         </td>
-                        <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteMensal)}</td>
+                        {!isMobile && <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteMensal)}</td>}
                         <td
                           style={{ ...tdNum, fontWeight: 700, color: corReal(linha.totalReal, linha.limiteMensal), cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}
                           onClick={() => toggleDrill(linha.categoriaId, 0, linha.totalReal)}
-                          title="Ver lançamentos do mês"
+                          title="Ver lançamentos"
                         >
                           {fmt(linha.totalReal)}
                         </td>
                         <td style={{ ...tdNum, color: corDivergencia(linha.divergencia), fontWeight: 600 }}>
                           {fmt(linha.divergencia)}
                         </td>
-                        <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteSemanal)}</td>
-                        {[1, 2, 3, 4, 5].map(s => {
+                        {!isMobile && <td style={{ ...tdNum, color: 'var(--text-2)' }}>{fmt(linha.limiteSemanal)}</td>}
+                        {!isMobile && [1, 2, 3, 4, 5].map(s => {
                           const val = linha.semanas[s] || 0
                           const { color, bg } = corSemanaCell(val, linha.limiteSemanal)
                           const aberto = drill?.categoriaId === linha.categoriaId && drill?.semana === s
@@ -358,6 +362,7 @@ export default function ControleSemanal() {
                             </td>
                           )
                         })}
+                        {isMobile && null}
                       </tr>
 
                       {(drill?.categoriaId === linha.categoriaId) && drill !== null && (() => {
@@ -370,7 +375,7 @@ export default function ControleSemanal() {
 
                         return (
                           <tr>
-                            <td colSpan={10} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
+                            <td colSpan={isMobile ? 3 : 10} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
                               <div style={{ padding: '12px 16px 14px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                   <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-1)' }}>
@@ -390,7 +395,7 @@ export default function ControleSemanal() {
                                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                     <thead>
                                       <tr style={{ background: 'var(--bg-row2)', borderBottom: '1px solid var(--border)' }}>
-                                        {['Data','Descrição','Valor','Situação','Método','Parcela'].map(h => (
+                                        {(isMobile ? ['Data','Descrição','Valor'] : ['Data','Descrição','Valor','Situação','Método','Parcela']).map(h => (
                                           <th key={h} style={{
                                             padding: '5px 10px',
                                             textAlign: h === 'Valor' ? 'right' : 'left',
@@ -406,15 +411,15 @@ export default function ControleSemanal() {
                                         .map((m, i) => (
                                           <tr key={m.id} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                                             <td style={tdDrill}>{fmtDate(m.data_movimentacao)}</td>
-                                            <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</td>
+                                            <td style={{ ...tdDrill, fontWeight: 500, maxWidth: isMobile ? 120 : 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.descricao}</td>
                                             <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>{fmt(Number(m.valor))}</td>
-                                            <td style={tdDrill}>
+                                            {!isMobile && <td style={tdDrill}>
                                               <span style={{ ...corSituacao(m.situacao), padding: '2px 7px', borderRadius: '99px', fontSize: '11px', fontWeight: 600 }}>
                                                 {m.situacao}
                                               </span>
-                                            </td>
-                                            <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.metodo_pagamento || '—'}</td>
-                                            <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.numero_parcela || '—'}</td>
+                                            </td>}
+                                            {!isMobile && <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.metodo_pagamento || '—'}</td>}
+                                            {!isMobile && <td style={{ ...tdDrill, color: 'var(--text-2)' }}>{m.numero_parcela || '—'}</td>}
                                           </tr>
                                         ))}
                                     </tbody>
@@ -440,11 +445,11 @@ export default function ControleSemanal() {
 
                 <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
                   <td style={{ ...tdBase, fontWeight: 700, color: '#f9fafb' }}>TOTAL</td>
-                  <td style={{ ...tdNum, color: '#d1d5db', fontWeight: 700 }}>{fmt(totalLimiteMensal)}</td>
+                  {!isMobile && <td style={{ ...tdNum, color: '#d1d5db', fontWeight: 700 }}>{fmt(totalLimiteMensal)}</td>}
                   <td style={{ ...tdNum, fontWeight: 700, color: corReal(totalReal, totalLimiteMensal) }}>{fmt(totalReal)}</td>
                   <td style={{ ...tdNum, fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>{fmt(totalDivergencia)}</td>
-                  <td style={{ ...tdNum, color: 'var(--text-3)' }}>{fmt(totalLimiteSemanal)}</td>
-                  {[1, 2, 3, 4, 5].map(s => {
+                  {!isMobile && <td style={{ ...tdNum, color: 'var(--text-3)' }}>{fmt(totalLimiteSemanal)}</td>}
+                  {!isMobile && [1, 2, 3, 4, 5].map(s => {
                     const val = totalSemanas[s] || 0
                     return (
                       <td key={s} style={{ ...tdNum, fontWeight: 700, color: val > 0 ? corReal(val, totalLimiteSemanal) : '#4b5563' }}>

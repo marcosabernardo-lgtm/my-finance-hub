@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useMobile } from '../hooks/useMobile'
 
 interface Movimentacao {
   id: number
@@ -73,6 +74,7 @@ const entraNoReal = (m: {
 
 export default function Resumo() {
   const { user } = useAuth()
+  const isMobile = useMobile()
   const [householdId, setHouseholdId] = useState<string | null>(null)
 
   const hoje = new Date()
@@ -200,7 +202,7 @@ export default function Resumo() {
   const totalDivergencia = totalPrevisto - totalReal
 
   return (
-    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '1100px', margin: '0 auto' }}>
+    <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: isMobile ? '12px' : '24px', maxWidth: '1100px', margin: '0 auto' }}>
 
       <div style={{ marginBottom: '20px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Resumo Financeiro</h1>
@@ -224,7 +226,7 @@ export default function Resumo() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: isMobile ? '8px' : '14px', marginBottom: isMobile ? '16px' : '24px' }}>
         <CardInfo label='Receitas' valor={fmt(totalReceitas)} sub='Pago no mês' cor='var(--text-success)' bg='var(--bg-success-soft)' borda='var(--text-success)'/>
         <CardInfo label='Despesas Débito / PIX' valor={fmt(totalDespesasDebito)} sub='Pago no mês' cor='var(--text-danger)' bg='var(--bg-danger-soft)' borda='var(--text-danger)'/>
         <CardInfo label='Despesas Crédito' valor={fmt(totalDespesasCredito)} sub='Compras realizadas no mês' cor='var(--text-warning)' bg='var(--bg-warning-soft)' borda='var(--text-warning)'/>
@@ -235,14 +237,15 @@ export default function Resumo() {
         <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
         <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: isMobile ? '12px' : '13px' }}>
             <thead>
               <tr style={{ background: '#111827' }}>
                 <th style={{ ...thStyle, textAlign: 'left', width: '30%' }}>Classificação</th>
-                <th style={thStyle}>Previsto</th>
-                <th style={{ ...thStyle, width: '60px' }}>%</th>
+                {!isMobile && <th style={thStyle}>Previsto</th>}
+                {!isMobile && <th style={{ ...thStyle, width: '60px' }}>%</th>}
                 <th style={thStyle}>Real</th>
-                <th style={{ ...thStyle, width: '60px' }}>%</th>
+                {!isMobile && <th style={{ ...thStyle, width: '60px' }}>%</th>}
                 <th style={thStyle}>Divergência</th>
               </tr>
             </thead>
@@ -266,20 +269,20 @@ export default function Resumo() {
                           <div style={{ background: ultrapassou ? '#ef4444' : '#10b981', borderRadius: '99px', height: '4px', width: `${Math.min(linha.previsto > 0 ? (linha.real / linha.previsto) * 100 : 0, 100)}%`, transition: 'width 0.3s' }} />
                         </div>
                       </td>
-                      <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-4)' }}>{fmt(linha.previsto)}</td>
-                      <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctPrevisto)}</td>
+                      {!isMobile && <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-4)' }}>{fmt(linha.previsto)}</td>}
+                      {!isMobile && <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctPrevisto)}</td>}
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 700 }}>
                         <span style={{ background: ultrapassou ? 'var(--bg-danger-soft)' : linha.real > 0 ? 'var(--bg-success-soft)' : 'transparent', color: ultrapassou ? 'var(--text-danger)' : linha.real > 0 ? 'var(--text-success)' : 'var(--text-3)', padding: linha.real > 0 ? '2px 8px' : '0', borderRadius: '6px', display: 'inline-block' }}>
                           {fmt(linha.real)}
                         </span>
                       </td>
-                      <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctReal)}</td>
+                      {!isMobile && <td style={{ ...tdStyle, textAlign: 'right', color: 'var(--text-3)', fontSize: '12px' }}>{fmtPct(pctReal)}</td>}
                       <td style={{ ...tdStyle, textAlign: 'right', fontWeight: 600, color: linha.divergencia >= 0 ? 'var(--text-success)' : 'var(--text-danger)' }}>{fmt(linha.divergencia)}</td>
                     </tr>
 
                     {aberta && (
                       <tr key={`drill-${linha.classif}`}>
-                        <td colSpan={6} style={{ padding: 0, background: 'var(--bg-card)', borderBottom: '2px solid var(--border)' }}>
+                        <td colSpan={isMobile ? 3 : 6} style={{ padding: 0, background: 'var(--bg-card)', borderBottom: '2px solid var(--border)' }}>
                           <div style={{ padding: '0 0 8px' }}>
                             <div style={{ background: 'var(--bg-row2)', padding: '8px 16px', borderBottom: '1px solid var(--border)', display: 'flex', gap: '8px', alignItems: 'center' }}>
                               <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-1)' }}>📂 {linha.classif}</span>
@@ -363,18 +366,19 @@ export default function Resumo() {
 
               <tr style={{ background: '#111827', borderTop: '2px solid #374151' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 700, color: '#f9fafb', fontSize: '13px' }}>TOTAL</td>
-                <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#d1d5db' }}>{fmt(totalPrevisto)}</td>
-                <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>
+                {!isMobile && <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#d1d5db' }}>{fmt(totalPrevisto)}</td>}
+                {!isMobile && <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>}
                 <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: '#f9fafb' }}>{fmt(totalReal)}</td>
-                <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>
+                {!isMobile && <td style={{ padding: '10px 10px', textAlign: 'right', color: '#6b7280', fontSize: '12px' }}>100%</td>}
                 <td style={{ padding: '10px 10px', textAlign: 'right', fontWeight: 700, color: totalDivergencia >= 0 ? '#34d399' : '#f87171' }}>{fmt(totalDivergencia)}</td>
               </tr>
             </tbody>
           </table>
+          </div>{/* overflow-x scroll */}
         </div>
       )}
 
-      {!loading && (
+      {!loading && !isMobile && (
         <div style={{ marginTop: '10px', fontSize: '11px', color: 'var(--text-3)', display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
           <span>💡 Clique em uma classificação para ver as categorias e lançamentos</span>
           <span>* Real = Pago Débito/PIX + Crédito Pendente (compras do mês) · Previsto = soma dos limites mensais</span>

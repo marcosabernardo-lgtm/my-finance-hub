@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from "react";
+import { useMobile } from "./hooks/useMobile";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./components/Login";
 import Resumo from "./components/Resumo";
@@ -159,16 +160,7 @@ const grupos: {
 const SIDEBAR_EXPANDED  = 220
 const SIDEBAR_COLLAPSED = 56
 
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)")
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
-    mq.addEventListener("change", handler)
-    return () => mq.removeEventListener("change", handler)
-  }, [])
-  return isMobile
-}
+const useIsMobile = useMobile
 
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 

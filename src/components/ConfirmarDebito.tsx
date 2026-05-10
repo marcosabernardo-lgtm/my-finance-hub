@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { useMobile } from '../hooks/useMobile'
 
 type Previsto = {
   id: number
@@ -39,6 +40,7 @@ const nomesMeses = [
 ]
 
 export default function ConfirmarDebito() {
+  const isMobile = useMobile()
   const [modo, setModo] = useState<'debito' | 'credito' | null>(null)
   const [cartaoSelecionado, setCartaoSelecionado] = useState<number | null>(null)
   const [cartoesComPrevisto, setCartoesComPrevisto] = useState<CartaoComTotal[]>([])
@@ -186,7 +188,7 @@ export default function ConfirmarDebito() {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', padding: '24px' }}>
+    <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '12px' : '24px' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>Confirmar Débitos</h1>
         <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 4 }}>
@@ -216,7 +218,7 @@ export default function ConfirmarDebito() {
         <div
           onClick={() => { setModo('debito'); setCartaoSelecionado(null) }}
           style={{
-            padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+            padding: isMobile ? '12px' : '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
             border: `2px solid ${modo === 'debito' ? 'var(--border-warning)' : 'var(--border)'}`,
             background: modo === 'debito' ? 'var(--bg-warning-soft)' : 'var(--bg-row2)',
             transition: 'all 0.15s',
@@ -230,7 +232,7 @@ export default function ConfirmarDebito() {
         <div
           onClick={() => { setModo('credito'); setCartaoSelecionado(null) }}
           style={{
-            padding: '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
+            padding: isMobile ? '12px' : '20px 24px', borderRadius: 12, cursor: 'pointer', textAlign: 'center',
             border: `2px solid ${modo === 'credito' ? 'var(--border-info)' : 'var(--border)'}`,
             background: modo === 'credito' ? 'var(--bg-info-soft)' : 'var(--bg-row2)',
             transition: 'all 0.15s',
@@ -310,30 +312,32 @@ export default function ConfirmarDebito() {
                   const metodo = getMetodoInfo(p)
                   return (
                     <div key={p.id} style={{
-                      background: 'var(--bg-card)', padding: '14px 16px', borderRadius: 8,
+                      background: 'var(--bg-card)', padding: isMobile ? '10px 12px' : '14px 16px', borderRadius: 8,
                       border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between',
-                      alignItems: 'center', gap: 12
+                      alignItems: 'center', gap: 8
                     }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 6 }}>
-                          <span style={{ color: 'var(--text-1)', fontWeight: 600, fontSize: 14 }}>{p.descricao}</span>
-                          {p.categoria_nome && (
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
+                          <span style={{ color: 'var(--text-1)', fontWeight: 600, fontSize: isMobile ? 13 : 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: isMobile ? 160 : 'none' }}>{p.descricao}</span>
+                          {!isMobile && p.categoria_nome && (
                             <span style={{ color: 'var(--text-2)', fontSize: 11, background: 'var(--bg-row2)', padding: '2px 6px', borderRadius: 4 }}>
                               {p.categoria_nome}
                             </span>
                           )}
-                          <span style={{ color: 'var(--text-purple)', fontSize: 11, background: 'var(--bg-purple-soft)', padding: '2px 6px', borderRadius: 4 }}>
-                            {p.numero_parcela}
-                          </span>
+                          {p.numero_parcela && p.numero_parcela !== 'Parcela 1/1' && (
+                            <span style={{ color: 'var(--text-purple)', fontSize: 11, background: 'var(--bg-purple-soft)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>
+                              {p.numero_parcela}
+                            </span>
+                          )}
                         </div>
-                        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', gap: isMobile ? 6 : 12, flexWrap: 'wrap', alignItems: 'center' }}>
                           <span style={{ color: 'var(--text-2)', fontSize: 12 }}>
-                            Vence: <strong>{formatarData(p.data_pagamento)}</strong>
+                            {formatarData(p.data_pagamento)}
                           </span>
-                          <span style={{ fontSize: 12, color: metodo.color, background: metodo.bg, padding: '2px 8px', borderRadius: 4 }}>
-                            {metodo.label}
+                          <span style={{ fontSize: 11, color: metodo.color, background: metodo.bg, padding: '1px 6px', borderRadius: 4 }}>
+                            {isMobile ? (metodo.label.split(' —')[0]) : metodo.label}
                           </span>
-                          <span style={{ color: 'var(--text-warning)', fontWeight: 700, fontSize: 14 }}>
+                          <span style={{ color: 'var(--text-warning)', fontWeight: 700, fontSize: 13 }}>
                             {formatarValor(p.valor)}
                           </span>
                         </div>

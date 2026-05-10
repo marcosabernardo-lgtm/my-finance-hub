@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useMobile } from '../hooks/useMobile'
 import LancamentoDespesa from './LancamentoDespesa'
 import LancamentoReceita from './LancamentoReceita'
 import LancamentoFatura from './LancamentoFatura'
@@ -12,6 +13,7 @@ type Conta = { id: number; nome: string }
 
 export default function Lancamento() {
   const { user } = useAuth()
+  const isMobile = useMobile()
   const [aba, setAba] = useState<'despesa' | 'receita' | 'transferencia' | 'fatura'>('despesa')
   const [householdId, setHouseholdId] = useState<string>('')
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -54,7 +56,7 @@ export default function Lancamento() {
   ] as const
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto', padding: '24px 24px' }}>
+    <div style={{ maxWidth: 600, margin: '0 auto', padding: isMobile ? '12px' : '24px' }}>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, color: 'var(--text-1)', margin: 0 }}>Lançamentos</h1>
         <p style={{ color: 'var(--text-2)', fontSize: 13, marginTop: 4 }}>Registre despesas, receitas e transferências</p>
