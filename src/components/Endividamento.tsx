@@ -468,11 +468,13 @@ export default function Endividamento() {
 
     return Object.entries(porDesc).map(([chave, gs]) => {
       const todasParcelas = gs.flatMap((g) => g.parcelas);
-      const totalParcelas = gs.reduce((s, g) => s + g.total, 0);
       const totalPagas    = gs.reduce((s, g) => s + g.pagas, 0);
       const totalPend     = gs.reduce((s, g) => s + g.pendentes.length, 0);
       const pendOrd       = gs.flatMap((g) => g.pendentes).sort((a, b) => (a.data_pagamento||'').localeCompare(b.data_pagamento||''));
       const p0            = gs[0].p0;
+      // Use actual DB count, not string denominator (avoids inflating when
+      // multiple grupo_ids share the same description)
+      const totalReal = todasParcelas.length;
       return {
         chave,
         descricao:          p0.descricao,
@@ -482,11 +484,11 @@ export default function Endividamento() {
         categoria_nome:     gs[0].catNome,
         is_credito:         gs[0].isCredito,
         is_parcelamento:    gs[0].isParc,
-        total_parcelas:     totalParcelas,
+        total_parcelas:     totalReal,
         parcelas_pagas:     totalPagas,
         parcelas_pendentes: totalPend,
         valor_parcela:      p0.valor,
-        valor_total:        p0.valor * totalParcelas,
+        valor_total:        p0.valor * totalReal,
         valor_restante:     p0.valor * totalPend,
         proxima_parcela:    pendOrd[0]?.data_pagamento || '',
         ultima_parcela:     pendOrd[pendOrd.length - 1]?.data_pagamento || '',
