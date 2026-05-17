@@ -407,7 +407,7 @@ export default function CartoesView() {
                               style={{
                                 ...tdNum,
                                 cursor:       v > 0 ? 'pointer' : 'default',
-                                background:   aberto ? '#fffbeb' : isAtual ? '#eff6ff' : isFuturo ? '#faf5ff' : 'transparent',
+                                background:   aberto ? 'var(--bg-warning-soft)' : isAtual ? 'var(--bg-info-soft)' : isFuturo ? 'var(--bg-purple-soft)' : 'transparent',
                                 fontWeight:   v > 0 ? 600 : 400,
                                 color:        v === 0 ? '#e5e7eb' : pctMes > 80 ? '#ef4444' : pctMes > 50 ? '#f59e0b' : '#1e40af',
                                 borderBottom: aberto ? '2px solid #f59e0b' : 'none',
