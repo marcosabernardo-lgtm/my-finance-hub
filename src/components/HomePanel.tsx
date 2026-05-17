@@ -82,7 +82,6 @@ export default function HomePanel() {
   const [cartoes,         setCartoes]         = useState<any[]>([])
   const [categorias,      setCategorias]      = useState<any[]>([])
   const [movsMes,         setMovsMes]         = useState<any[]>([])
-  const [movsMesPgto,     setMovsMesPgto]     = useState<any[]>([])
   const [movsMesAnt,      setMovsMesAnt]      = useState<any[]>([])
   const [movsMesAntPgto,  setMovsMesAntPgto]  = useState<any[]>([])
   const [movsAno,         setMovsAno]         = useState<any[]>([])
@@ -112,7 +111,7 @@ export default function HomePanel() {
     const dataIniAnt = `${anoAnterior}-${mesAntStr}-01`
     const dataFimAnt = `${anoAnterior}-${mesAntStr}-${new Date(anoAnterior,mesAnterior,0).getDate()}`
 
-    const [contasR,cartoesR,catsR,mesR,mesPgtoR,mesAntR,mesAntPgtoR,anoR,cartaoAnoR,todasR,pendCartR,diviR,pgtoFatR,pgtoFatAntR,movsAllR] = await Promise.all([
+    const [contasR,cartoesR,catsR,mesR,_mesPgtoR,mesAntR,mesAntPgtoR,anoR,cartaoAnoR,todasR,pendCartR,diviR,pgtoFatR,pgtoFatAntR,movsAllR] = await Promise.all([
       supabase.from("contas").select("id,nome,saldo_inicial,tipo").eq("household_id",householdId).eq("ativo",true),
       supabase.from("cartoes").select("id,nome,limite_total,data_vencimento").eq("household_id",householdId).eq("ativo",true),
       supabase.from("categorias").select("id,nome,limite_gastos,classificacao").eq("household_id",householdId),
@@ -155,7 +154,6 @@ export default function HomePanel() {
     setCartoes(cartoesR.data || [])
     setCategorias(catsR.data || [])
     setMovsMes(mesR.data || [])
-    setMovsMesPgto(mesPgtoR.data || [])
     setMovsMesAnt(mesAntR.data || [])
     setMovsMesAntPgto(mesAntPgtoR.data || [])
     setMovsAno(anoR.data || [])
