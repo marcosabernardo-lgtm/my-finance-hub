@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { supabase } from '../supabaseClient'
+import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
@@ -29,7 +29,7 @@ export default function FluxoCaixa() {
   useEffect(() => {
     if (!user) return
     supabase.from('households').select('id').eq('owner_id', user.id).single()
-      .then(({ data }) => { if (data) setHouseholdId(data.id) })
+      .then(({ data }: { data: { id: string } | null }) => { if (data) setHouseholdId(data.id) })
   }, [user])
 
   const fetchDados = useCallback(async () => {
