@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { PieChart, Pie, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { BarChart, PieChart, Pie, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -115,7 +115,8 @@ export default function DRE() {
   const [ano, setAno] = useState(hoje.getFullYear())
   const [aba, setAba] = useState<Aba>('caixa')
   const [filtroCaixa, setFiltroCaixa] = useState<FiltroSituacaoCaixa>('realizado')
-  const [filtroMensal, setFiltroMensal] = useState<FiltroSituacaoMensal>('todos')
+  const [filtroMensal, setFiltroMensal]           = useState<FiltroSituacaoMensal>('todos')
+  const [mesFiltroGrafico, setMesFiltroGrafico]   = useState(0)
 
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([])
   const [categorias, setCategorias] = useState<Categoria[]>([])
@@ -425,17 +426,21 @@ export default function DRE() {
   const PIE_COLORS = ['#667eea','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#a78bfa','#fb923c']
 
   const pieReceitas = useMemo(() =>
-    linhasControleMensal.filter(l => l.tipo === 'receita' && l.total > 0)
-      .map(l => ({ name: l.nome, value: +l.total.toFixed(2) }))
+    linhasControleMensal
+      .filter(l => l.tipo === 'receita')
+      .map(l => ({ name: l.nome, value: +(mesFiltroGrafico === 0 ? l.total : (l.meses[mesFiltroGrafico] || 0)).toFixed(2) }))
+      .filter(l => l.value > 0)
       .sort((a, b) => b.value - a.value),
-    [linhasControleMensal]
+    [linhasControleMensal, mesFiltroGrafico]
   )
 
   const pieDespesas = useMemo(() =>
-    linhasControleMensal.filter(l => l.tipo === 'despesa' && l.total > 0)
-      .map(l => ({ name: l.nome, value: +l.total.toFixed(2) }))
+    linhasControleMensal
+      .filter(l => l.tipo === 'despesa')
+      .map(l => ({ name: l.nome, value: +(mesFiltroGrafico === 0 ? l.total : (l.meses[mesFiltroGrafico] || 0)).toFixed(2) }))
+      .filter(l => l.value > 0)
       .sort((a, b) => b.value - a.value),
-    [linhasControleMensal]
+    [linhasControleMensal, mesFiltroGrafico]
   )
 
   const comboData = useMemo(() => {
@@ -697,6 +702,18 @@ export default function DRE() {
       {/* Gráficos */}
       {aba === 'graficos' && (() => {
         const fmtK = (v: number) => { const a = Math.abs(v); return a >= 1000 ? `${v < 0 ? '-' : ''}R$ ${(a/1000).toFixed(1)}k` : fmt(v) }
+        const BarTooltip = ({ active, payload }: any) => {
+          if (!active || !payload?.length) return null
+          const total = payload[0]?.payload?.total ?? 0
+          const pct   = total > 0 ? ((payload[0].value / total) * 100).toFixed(1) : '0'
+          return (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 2 }}>{payload[0].payload.name}</div>
+              <div style={{ color: payload[0].fill }}>{fmt(payload[0].value)}</div>
+              <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{pct}% do total</div>
+            </div>
+          )
+        }
         const CustomTooltip = ({ active, payload, label }: any) => {
           if (!active || !payload?.length) return null
           const nomes: Record<string, string> = { receitas: 'Receitas', despesas: 'Despesas', acumulado: 'Acumulado' }
@@ -707,47 +724,58 @@ export default function DRE() {
             </div>
           )
         }
-        const PieTooltip = ({ active, payload }: any) => {
-          if (!active || !payload?.length) return null
-          const total = payload[0]?.payload?.total ?? 0
-          return (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12 }}>
-              <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{payload[0].name}</div>
-              <div style={{ color: payload[0].payload.fill ?? '#667eea' }}>{fmt(payload[0].value)}</div>
-              {total > 0 && <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{((payload[0].value / total) * 100).toFixed(1)}%</div>}
-            </div>
-          )
-        }
         const totalRec  = pieReceitas.reduce((s, d) => s + d.value, 0)
         const totalDesp = pieDespesas.reduce((s, d) => s + d.value, 0)
-        const pieRecWithTotal  = pieReceitas.map(d => ({ ...d, fill: PIE_COLORS[pieReceitas.indexOf(d)  % PIE_COLORS.length], total: totalRec  }))
-        const pieDespWithTotal = pieDespesas.map(d => ({ ...d, fill: PIE_COLORS[pieDespesas.indexOf(d) % PIE_COLORS.length], total: totalDesp }))
+        const barRec  = pieReceitas.map((d, i) => ({ ...d, fill: PIE_COLORS[i % PIE_COLORS.length], total: totalRec  }))
+        const barDesp = pieDespesas.map((d, i) => ({ ...d, fill: PIE_COLORS[i % PIE_COLORS.length], total: totalDesp }))
+        const labelMes = mesFiltroGrafico === 0 ? 'Ano todo' : MESES_CURTOS[mesFiltroGrafico - 1]
         return (
           <div>
+            {/* Filtro de mês */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 20 }}>
+              {[{ v: 0, l: 'Ano todo' }, ...MESES_CURTOS.map((m, i) => ({ v: i + 1, l: m }))].map(({ v, l }) => (
+                <button key={v} onClick={() => setMesFiltroGrafico(v)} style={{
+                  padding: '5px 12px', borderRadius: 7, fontSize: 12, cursor: 'pointer',
+                  border: '1px solid var(--border)',
+                  background: mesFiltroGrafico === v ? '#667eea' : 'var(--bg-card)',
+                  color:      mesFiltroGrafico === v ? '#fff'    : 'var(--text-2)',
+                  fontWeight: mesFiltroGrafico === v ? 700       : 400,
+                }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* Barras lado a lado */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
-              {[
-                { titulo: 'Receitas por Categoria', data: pieRecWithTotal,  total: totalRec  },
-                { titulo: 'Despesas por Categoria', data: pieDespWithTotal, total: totalDesp },
-              ].map(({ titulo, data, total }) => (
+              {([
+                { titulo: 'Receitas por Categoria', data: barRec,  total: totalRec,  cor: '#22c55e' },
+                { titulo: 'Despesas por Categoria', data: barDesp, total: totalDesp, cor: '#ef4444' },
+              ] as { titulo: string; data: typeof barRec; total: number; cor: string }[]).map(({ titulo, data, total, cor }) => (
                 <div key={titulo} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px' }}>
-                  <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>{titulo}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>Total: {fmt(total)}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 2 }}>{titulo}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 16 }}>
+                    {labelMes} · Total: <span style={{ color: cor, fontWeight: 600 }}>{fmt(total)}</span>
+                  </div>
                   {data.length === 0 ? (
                     <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: 40 }}>Sem dados</div>
                   ) : (
-                    <ResponsiveContainer width="100%" height={280}>
-                      <PieChart>
-                        <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={2} dataKey="value">
+                    <ResponsiveContainer width="100%" height={Math.max(180, data.length * 34)}>
+                      <BarChart data={data} layout="vertical" margin={{ top: 0, right: 60, left: 0, bottom: 0 }}>
+                        <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
+                        <Tooltip content={<BarTooltip />} cursor={{ fill: 'var(--bg-row)' }} />
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22} label={{ position: 'right', formatter: (v: number) => fmtK(v), fontSize: 11, fill: 'var(--text-2)' }}>
                           {data.map((d, idx) => <Cell key={idx} fill={d.fill} />)}
-                        </Pie>
-                        <Tooltip content={<PieTooltip />} />
-                        <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 11 }} formatter={(v) => v.length > 22 ? v.substring(0, 22) + '…' : v} />
-                      </PieChart>
+                        </Bar>
+                      </BarChart>
                     </ResponsiveContainer>
                   )}
                 </div>
               ))}
             </div>
+
+            {/* Combo mensal */}
             <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 16px 10px' }}>
               <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 16 }}>Receitas × Despesas × Acumulado</div>
               <ResponsiveContainer width="100%" height={280}>

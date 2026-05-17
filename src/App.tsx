@@ -5,7 +5,6 @@ import Login from "./components/Login";
 import Resumo from "./components/Resumo";
 import Movimentacoes from "./components/Movimentacoes";
 import ControleSemanal from "./components/ControleSemanal";
-import FaturaCartao from "./components/FaturaCartao";
 import DRE from "./components/DRE";
 import Cartoes from "./components/Cartoes";
 import Cadastros from "./components/Cadastros";
@@ -23,7 +22,7 @@ import Calendario from "./components/Calendario";
 import ConsumoMensal from "./components/ConsumoMensal";
 
 import {
-  BarChart3, List, Calendar, CreditCard, Wallet,
+  BarChart3, List, Calendar, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
@@ -110,7 +109,7 @@ const useTheme = () => useContext(ThemeCtx)
 
 type Pagina =
   | "home" | "resumo" | "movimentacoes"
-  | "semanal" | "fatura" | "dre" | "cartoes"
+  | "semanal" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
   | "alertas" | "notificacoes" | "consultor" | "conferencia"
   | "endividamento" | "calendario" | "consumo"
@@ -150,7 +149,6 @@ const grupos: {
   {
     label: "Bancos",
     items: [
-      { label: "Fatura Cartão", key: "fatura",  icon: CreditCard },
       { label: "Extrato Conta", key: "extrato", icon: BookOpen   },
       { label: "Cartões",       key: "cartoes", icon: Wallet     },
     ],
@@ -378,7 +376,6 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "resumo":        return <Resumo />
       case "movimentacoes": return <Movimentacoes />
       case "semanal":       return <ControleSemanal />
-      case "fatura":        return <FaturaCartao />
       case "extrato":       return <ExtratoConta />
       case "cartoes":       return <Cartoes />
       case "dre":           return <DRE />

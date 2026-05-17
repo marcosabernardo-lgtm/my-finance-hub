@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import FaturaCartao from './FaturaCartao'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -80,6 +81,7 @@ const corSituacaoStyle = (s: string): React.CSSProperties => {
 export default function CartoesView() {
   const { user } = useAuth()
   const [householdId, setHouseholdId] = useState<string | null>(null)
+  const [abaCartao, setAbaCartao] = useState<'visao' | 'fatura'>('visao')
 
   const hoje = new Date()
   const mesAtual = hoje.getMonth() + 1
@@ -248,13 +250,28 @@ export default function CartoesView() {
   return (
     <div style={{ fontFamily: "'Segoe UI', system-ui, sans-serif", padding: '24px', maxWidth: '100%', margin: '0 auto' }}>
 
-      {/* Header */}
+      {/* Header + abas */}
       <div style={{ marginBottom: '16px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: 0 }}>Cartões de Crédito</h1>
-        <p style={{ color: 'var(--text-2)', marginTop: '4px', fontSize: '13px' }}>
-          Visão anual por cartão · clique em qualquer célula para ver os lançamentos
-        </p>
+        <h1 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-1)', margin: '0 0 12px' }}>Cartões de Crédito</h1>
+        <div style={{ display: 'flex', gap: 0, borderBottom: '2px solid var(--border)' }}>
+          {([
+            { key: 'visao'  as const, label: 'Visão Anual',   desc: 'Gastos por cartão no ano' },
+            { key: 'fatura' as const, label: 'Fatura Cartão', desc: 'Lançamentos por fatura'   },
+          ]).map(tab => (
+            <button key={tab.key} onClick={() => setAbaCartao(tab.key)} style={{
+              padding: '8px 20px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
+              borderBottom: abaCartao === tab.key ? '3px solid #0d7280' : '3px solid transparent',
+              marginBottom: '-2px',
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: abaCartao === tab.key ? '#0d7280' : 'var(--text-3)' }}>{tab.label}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-3)', marginTop: '2px' }}>{tab.desc}</div>
+            </button>
+          ))}
+        </div>
       </div>
+
+      {abaCartao === 'fatura' && <FaturaCartao />}
+      {abaCartao === 'visao' && <>
 
       {/* ── Cards ─────────────────────────────────────────────────────────────── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
@@ -534,6 +551,8 @@ export default function CartoesView() {
           <span>🟢 &lt;50% · 🟡 50–80% · 🔴 &gt;80% do limite · Disponível calculado apenas sobre Pendentes</span>
         </div>
       )}
+
+      </>}
 
     </div>
   )
