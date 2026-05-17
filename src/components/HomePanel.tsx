@@ -226,7 +226,7 @@ export default function HomePanel() {
   useEffect(() => { fetchDados() }, [fetchDados])
 
   const totalReceitas = useMemo(() =>
-    movsMes.filter(m => m.tipo==="Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento!=="Transferência entre Contas")
+    movsMes.filter(m => m.tipo==="Receita" && m.situacao==="Pago" && m.metodo_pagamento!=="Transferência entre Contas")
       .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
 
   const totalDespesas = useMemo(() =>
@@ -241,7 +241,7 @@ export default function HomePanel() {
   const totalSaldoInv = contas.filter(c=>c.tipo==="investimento").reduce((s,c)=>s+(saldosContas[c.id]||0),0)
 
   const totalReceitasAnt = useMemo(() =>
-    movsMesAnt.filter(m => m.tipo==="Receita" && ["Pago","Pendente"].includes(m.situacao) && m.metodo_pagamento!=="Transferência entre Contas")
+    movsMesAnt.filter(m => m.tipo==="Receita" && m.situacao==="Pago" && m.metodo_pagamento!=="Transferência entre Contas")
       .reduce((s,m) => s+Number(m.valor), 0), [movsMesAnt])
   const totalDespesasAnt = useMemo(() =>
     movsMesAntPgto.filter(m => !m.cartao_id).reduce((s,m) => s+Number(m.valor), 0), [movsMesAntPgto])

@@ -344,14 +344,14 @@ export default function Dashboard() {
   const totalReceitas = useMemo(() =>
     movsmes.filter(m =>
       m.tipo === 'Receita' &&
-      ['Pago', 'Pendente'].includes(m.situacao) &&
+      m.situacao === 'Pago' &&
       m.metodo_pagamento !== 'Transferência entre Contas'
     ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalDespesas = useMemo(() =>
     movsmes.filter(m =>
       m.tipo === 'Despesa' &&
-      ['Pago', 'Pendente'].includes(m.situacao) &&
+      m.situacao === 'Pago' &&
       !m.cartao_id
     ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
