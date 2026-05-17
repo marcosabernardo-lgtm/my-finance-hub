@@ -230,8 +230,8 @@ export default function HomePanel() {
       .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
 
   const totalDespesas = useMemo(() =>
-    movsMesPgto.filter(m => !(m.metodo_pagamento?.startsWith('Crédito') ?? false))
-      .reduce((s,m) => s+Number(m.valor), 0), [movsMesPgto])
+    movsMes.filter(m => m.tipo==="Despesa" && m.situacao==="Pago" && !(m.metodo_pagamento?.startsWith('Crédito') ?? false))
+      .reduce((s,m) => s+Number(m.valor), 0), [movsMes])
 
   const totalCartao = useMemo(() =>
     movsMes.filter(m => m.tipo==="Despesa" && m.situacao==="Pendente" && m.cartao_id)
