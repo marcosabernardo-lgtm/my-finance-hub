@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { useMobile } from '../hooks/useMobile'
 import { BarChart, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -122,6 +123,8 @@ export default function DRE() {
   const [categorias, setCategorias] = useState<Categoria[]>([])
   const [cartoes, setCartoes] = useState<Cartao[]>([])
   const [loading, setLoading] = useState(false)
+
+  const isMobile = useMobile()
 
   const [drillAberto, setDrillAberto] = useState<DrillKey | null>(null)
   const [editandoDrill, setEditandoDrill] = useState<Movimentacao | null>(null)
@@ -572,7 +575,7 @@ export default function DRE() {
       <div style={{ display: 'flex', gap: 0, marginBottom: '20px', borderBottom: '2px solid var(--border)' }}>
         {([
           { key: 'caixa'    as Aba, label: 'DRE — Fluxo de Caixa',   desc: 'O que entrou e saiu da conta' },
-          { key: 'mensal'   as Aba, label: 'Controle Mensal',          desc: 'O que você consumiu por categoria' },
+          ...(!isMobile ? [{ key: 'mensal' as Aba, label: 'Controle Mensal', desc: 'O que você consumiu por categoria' }] : []),
           { key: 'graficos' as Aba, label: 'Gráficos',                 desc: 'Distribuição por categoria' },
         ]).map(tab => (
           <button key={tab.key} onClick={() => { setAba(tab.key); setDrillAberto(null) }} style={{
@@ -747,7 +750,7 @@ export default function DRE() {
             </div>
 
             {/* Barras lado a lado */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20, marginBottom: 20 }}>
               {([
                 { titulo: 'Receitas por Categoria', data: barRec,  total: totalRec,  cor: '#22c55e' },
                 { titulo: 'Despesas por Categoria', data: barDesp, total: totalDesp, cor: '#ef4444' },
@@ -816,8 +819,68 @@ export default function DRE() {
         </div>
       )}
 
-      {/* Tabela */}
-      {aba !== 'graficos' && (loading ? (
+      {/* Tabela mobile — apenas mês atual */}
+      {isMobile && aba === 'caixa' && (loading ? (
+        <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
+      ) : (() => {
+        const recMes  = totalMesCaixa('receita',  mesAtual)
+        const despMes = totalMesCaixa('despesa',  mesAtual)
+        const resMes  = recMes - despMes
+        const itens   = linhasDRECaixa.filter(l => (l.meses[mesAtual] || 0) > 0)
+        const recItens  = itens.filter(l => l.tipo === 'receita').sort((a, b) => (b.meses[mesAtual] || 0) - (a.meses[mesAtual] || 0))
+        const despItens = itens.filter(l => l.tipo === 'despesa').sort((a, b) => (b.meses[mesAtual] || 0) - (a.meses[mesAtual] || 0))
+        return (
+          <div>
+            {/* Cards resumo */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 16 }}>
+              <div style={{ background: 'var(--bg-success-soft)', borderRadius: 10, padding: '12px 14px', borderTop: '3px solid var(--text-success)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-success)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Receitas</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-success)', marginTop: 4 }}>{fmt(recMes)}</div>
+              </div>
+              <div style={{ background: 'var(--bg-danger-soft)', borderRadius: 10, padding: '12px 14px', borderTop: '3px solid var(--text-danger)' }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Despesas</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-danger)', marginTop: 4 }}>{fmt(despMes)}</div>
+              </div>
+              <div style={{ background: resMes >= 0 ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)', borderRadius: 10, padding: '12px 14px', borderTop: `3px solid ${resMes >= 0 ? 'var(--text-success)' : 'var(--text-danger)'}` }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: resMes >= 0 ? 'var(--text-success)' : 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Resultado</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: resMes >= 0 ? 'var(--text-success)' : 'var(--text-danger)', marginTop: 4 }}>{resMes >= 0 ? '+' : ''}{fmt(resMes)}</div>
+              </div>
+            </div>
+
+            {/* Lista de itens */}
+            <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+              {recItens.length > 0 && (
+                <>
+                  <div style={{ background: 'var(--bg-success-soft)', padding: '7px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-success)', letterSpacing: '0.06em' }}>RECEITAS</div>
+                  {recItens.map(l => (
+                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{l.nome}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-success)' }}>{fmt(l.meses[mesAtual] || 0)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {despItens.length > 0 && (
+                <>
+                  <div style={{ background: 'var(--bg-danger-soft)', padding: '7px 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-danger)', letterSpacing: '0.06em', borderTop: recItens.length > 0 ? '2px solid var(--border)' : undefined }}>DESPESAS</div>
+                  {despItens.map(l => (
+                    <div key={l.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', borderTop: '1px solid var(--border)', background: 'var(--bg-card)' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{l.nome}</span>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-danger)' }}>{fmt(l.meses[mesAtual] || 0)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+              {itens.length === 0 && (
+                <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}>Nenhum lançamento em {MESES_CURTOS[mesAtual - 1]}</div>
+              )}
+            </div>
+          </div>
+        )
+      })())}
+
+      {/* Tabela desktop */}
+      {!isMobile && aba !== 'graficos' && (loading ? (
         <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
         <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>

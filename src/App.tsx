@@ -23,7 +23,7 @@ import ConsumoMensal from "./components/ConsumoMensal";
 
 import {
   BarChart3, List, Calendar, Wallet,
-  FileText, Database, PlusCircle, CheckCircle, Layers,
+  FileText, Database, PlusCircle, CheckCircle, Layers, TrendingUp,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
   TrendingDown, ShoppingCart, Sun, Moon,
@@ -278,9 +278,9 @@ const MOBILE_PAGES: { label: string; key: Pagina; icon: React.ElementType }[] = 
   { label: "Lançar",     key: "lancamento",  icon: PlusCircle  },
   { label: "Calendário", key: "calendario",  icon: Calendar    },
   { label: "Visão Geral", key: "home",        icon: HomeIcon    },
-  { label: "Confirmar Débitos", key: "confirmar", icon: CheckCircle },
+  { label: "Confirmar",  key: "confirmar",   icon: CheckCircle },
   { label: "Resumo",     key: "resumo",      icon: BarChart3   },
-  { label: "Semanal",    key: "semanal",     icon: List        },
+  { label: "DRE",        key: "dre",         icon: TrendingUp  },
 ]
 const MOBILE_PAGE_KEYS = new Set<Pagina>(MOBILE_PAGES.map(page => page.key))
 
