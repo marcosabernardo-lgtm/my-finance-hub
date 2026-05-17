@@ -21,14 +21,13 @@ import Endividamento from "./components/Endividamento";
 import HomePanel from "./components/HomePanel"
 import Calendario from "./components/Calendario";
 import ConsumoMensal from "./components/ConsumoMensal";
-import FluxoCaixa from "./components/FluxoCaixa";
 
 import {
   BarChart3, List, Calendar, CreditCard, Wallet,
   FileText, Database, PlusCircle, CheckCircle, Layers,
   BookOpen, Upload, Bell, ChevronLeft, ChevronRight,
   LogOut, Home as HomeIcon, ChevronDown, Sparkles,
-  TrendingDown, ShoppingCart, Sun, Moon, Activity,
+  TrendingDown, ShoppingCart, Sun, Moon,
 } from "lucide-react";
 
 // ─── Theme Context ────────────────────────────────────────────────────────────
@@ -114,7 +113,7 @@ type Pagina =
   | "semanal" | "fatura" | "dre" | "cartoes"
   | "cadastros" | "lancamento" | "confirmar" | "extrato" | "upload"
   | "alertas" | "notificacoes" | "consultor" | "conferencia"
-  | "endividamento" | "calendario" | "consumo" | "fluxo"
+  | "endividamento" | "calendario" | "consumo"
 
 const grupos: {
   label: string
@@ -142,7 +141,6 @@ const grupos: {
       { label: "Consultor IA",   key: "consultor",      icon: Sparkles,    accent: "#667eea"  },
       { label: "Visão Geral",    key: "home",           icon: HomeIcon                       },
       { label: "Resumo",         key: "resumo",         icon: BarChart3                       },
-      { label: "Fluxo de Caixa", key: "fluxo",          icon: Activity                        },
       { label: "Semanal",        key: "semanal",        icon: Calendar                        },
       { label: "DRE",            key: "dre",            icon: FileText                        },
       { label: "Consumo Mensal", key: "consumo",        icon: ShoppingCart                    },
@@ -392,7 +390,7 @@ function AppContent({ signOut, email }: { signOut: () => void; email: string }) 
       case "endividamento": return <Endividamento />
       case "calendario":    return <Calendario />
       case "consumo":       return <ConsumoMensal />
-      case "fluxo":         return <FluxoCaixa />
+
       default:              return null
     }
   }

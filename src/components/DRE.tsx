@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
+import { PieChart, Pie, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +72,7 @@ const corSituacao = (s: string): React.CSSProperties => {
   }
 }
 
-type Aba = 'caixa' | 'mensal'
+type Aba = 'caixa' | 'mensal' | 'graficos'
 type FiltroSituacaoCaixa = 'realizado' | 'pendente'
 type FiltroSituacaoMensal = 'realizado' | 'pendente' | 'previsto' | 'todos' | 'conservadora' | 'inteligente'
 
@@ -419,6 +420,35 @@ export default function DRE() {
     return realizado + projecaoFutura
   }, [linhasControleMensal, movimentacoes, mesesCorrente, mesAtual, ano, resultadoMesMensal])
 
+  // ── Dados para Gráficos ───────────────────────────────────────────────────────
+
+  const PIE_COLORS = ['#667eea','#22c55e','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16','#a78bfa','#fb923c']
+
+  const pieReceitas = useMemo(() =>
+    linhasControleMensal.filter(l => l.tipo === 'receita' && l.total > 0)
+      .map(l => ({ name: l.nome, value: +l.total.toFixed(2) }))
+      .sort((a, b) => b.value - a.value),
+    [linhasControleMensal]
+  )
+
+  const pieDespesas = useMemo(() =>
+    linhasControleMensal.filter(l => l.tipo === 'despesa' && l.total > 0)
+      .map(l => ({ name: l.nome, value: +l.total.toFixed(2) }))
+      .sort((a, b) => b.value - a.value),
+    [linhasControleMensal]
+  )
+
+  const comboData = useMemo(() => {
+    let acum = 0
+    return Array.from({ length: 12 }, (_, i) => {
+      const m    = i + 1
+      const rec  = linhasControleMensal.filter(l => l.tipo === 'receita').reduce((s, l) => s + (l.meses[m] || 0), 0)
+      const desp = linhasControleMensal.filter(l => l.tipo === 'despesa').reduce((s, l) => s + (l.meses[m] || 0), 0)
+      acum += rec - desp
+      return { nome: MESES_CURTOS[i], receitas: +rec.toFixed(2), despesas: +desp.toFixed(2), acumulado: +acum.toFixed(2) }
+    })
+  }, [linhasControleMensal])
+
   // ── Cards ─────────────────────────────────────────────────────────────────────
 
   const totalPendentesMesAtual = useMemo(() =>
@@ -536,8 +566,9 @@ export default function DRE() {
       {/* Abas */}
       <div style={{ display: 'flex', gap: 0, marginBottom: '20px', borderBottom: '2px solid var(--border)' }}>
         {([
-          { key: 'caixa'  as Aba, label: 'DRE — Fluxo de Caixa',   desc: 'O que entrou e saiu da conta' },
-          { key: 'mensal' as Aba, label: 'Controle Mensal',          desc: 'O que você consumiu por categoria' },
+          { key: 'caixa'    as Aba, label: 'DRE — Fluxo de Caixa',   desc: 'O que entrou e saiu da conta' },
+          { key: 'mensal'   as Aba, label: 'Controle Mensal',          desc: 'O que você consumiu por categoria' },
+          { key: 'graficos' as Aba, label: 'Gráficos',                 desc: 'Distribuição por categoria' },
         ]).map(tab => (
           <button key={tab.key} onClick={() => { setAba(tab.key); setDrillAberto(null) }} style={{
             padding: '10px 20px', border: 'none', background: 'none', cursor: 'pointer', textAlign: 'left',
@@ -552,6 +583,28 @@ export default function DRE() {
 
       {/* Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+        {aba === 'caixa' && (() => {
+          const rec  = totalGeralCaixa('receita')
+          const desp = totalGeralCaixa('despesa')
+          const res  = rec - desp
+          return (<>
+            <div style={{ background: 'var(--bg-success-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-success)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-success)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Receitas</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-success)', margin: '6px 0 2px' }}>{fmt(rec)}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-success)', opacity: 0.7 }}>Recebido no ano</div>
+            </div>
+            <div style={{ background: 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-danger)' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Despesas</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-danger)', margin: '6px 0 2px' }}>{fmt(desp)}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-danger)', opacity: 0.7 }}>Pago no ano</div>
+            </div>
+            <div style={{ background: res >= 0 ? 'var(--bg-success-soft)' : 'var(--bg-danger-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: `4px solid ${res >= 0 ? 'var(--text-success)' : 'var(--text-danger)'}` }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: res >= 0 ? 'var(--text-success)' : 'var(--text-danger)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Resultado</div>
+              <div style={{ fontSize: '22px', fontWeight: 700, color: res >= 0 ? 'var(--text-success)' : 'var(--text-danger)', margin: '6px 0 2px' }}>{fmt(res)}</div>
+              <div style={{ fontSize: '11px', color: res >= 0 ? 'var(--text-success)' : 'var(--text-danger)', opacity: 0.7 }}>Receitas − Despesas</div>
+            </div>
+          </>)
+        })()}
         <div style={{ background: 'var(--bg-warning-soft)', borderRadius: '12px', padding: '14px 16px', borderLeft: '4px solid var(--text-warning)' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-warning)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Pendentes — {MESES_CURTOS[mesAtual - 1]}
@@ -602,7 +655,7 @@ export default function DRE() {
       {/* Filtros */}
       <div style={{ marginBottom: '20px' }}>
         <label style={{ ...labelStyle, marginBottom: '8px' }}>
-          {aba === 'caixa' ? 'O que incluir no DRE' : 'O que incluir no Controle Mensal'}
+          {aba === 'caixa' ? 'O que incluir no DRE' : aba === 'mensal' ? 'O que incluir no Controle Mensal' : 'Filtrar dados dos gráficos'}
         </label>
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           {aba === 'caixa' ? (
@@ -641,6 +694,82 @@ export default function DRE() {
         </div>
       </div>
 
+      {/* Gráficos */}
+      {aba === 'graficos' && (() => {
+        const fmtK = (v: number) => { const a = Math.abs(v); return a >= 1000 ? `${v < 0 ? '-' : ''}R$ ${(a/1000).toFixed(1)}k` : fmt(v) }
+        const CustomTooltip = ({ active, payload, label }: any) => {
+          if (!active || !payload?.length) return null
+          const nomes: Record<string, string> = { receitas: 'Receitas', despesas: 'Despesas', acumulado: 'Acumulado' }
+          return (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontSize: 12 }}>
+              <div style={{ fontWeight: 700, marginBottom: 6, color: 'var(--text-1)' }}>{label}</div>
+              {payload.map((p: any) => <div key={p.dataKey} style={{ color: p.color, marginBottom: 2 }}>{nomes[p.dataKey] ?? p.dataKey}: {fmt(p.value)}</div>)}
+            </div>
+          )
+        }
+        const PieTooltip = ({ active, payload }: any) => {
+          if (!active || !payload?.length) return null
+          const total = payload[0]?.payload?.total ?? 0
+          return (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', fontSize: 12 }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-1)' }}>{payload[0].name}</div>
+              <div style={{ color: payload[0].payload.fill ?? '#667eea' }}>{fmt(payload[0].value)}</div>
+              {total > 0 && <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{((payload[0].value / total) * 100).toFixed(1)}%</div>}
+            </div>
+          )
+        }
+        const totalRec  = pieReceitas.reduce((s, d) => s + d.value, 0)
+        const totalDesp = pieDespesas.reduce((s, d) => s + d.value, 0)
+        const pieRecWithTotal  = pieReceitas.map(d => ({ ...d, fill: PIE_COLORS[pieReceitas.indexOf(d)  % PIE_COLORS.length], total: totalRec  }))
+        const pieDespWithTotal = pieDespesas.map(d => ({ ...d, fill: PIE_COLORS[pieDespesas.indexOf(d) % PIE_COLORS.length], total: totalDesp }))
+        return (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+              {[
+                { titulo: 'Receitas por Categoria', data: pieRecWithTotal,  total: totalRec  },
+                { titulo: 'Despesas por Categoria', data: pieDespWithTotal, total: totalDesp },
+              ].map(({ titulo, data, total }) => (
+                <div key={titulo} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 4 }}>{titulo}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 12 }}>Total: {fmt(total)}</div>
+                  {data.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-3)', padding: 40 }}>Sem dados</div>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={280}>
+                      <PieChart>
+                        <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={100} paddingAngle={2} dataKey="value">
+                          {data.map((d, idx) => <Cell key={idx} fill={d.fill} />)}
+                        </Pie>
+                        <Tooltip content={<PieTooltip />} />
+                        <Legend iconType="circle" iconSize={9} wrapperStyle={{ fontSize: 11 }} formatter={(v) => v.length > 22 ? v.substring(0, 22) + '…' : v} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+              ))}
+            </div>
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 16px 10px' }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-1)', marginBottom: 16 }}>Receitas × Despesas × Acumulado</div>
+              <ResponsiveContainer width="100%" height={280}>
+                <ComposedChart data={comboData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="nome" tick={{ fontSize: 11, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="bars"  tickFormatter={fmtK} tick={{ fontSize: 10, fill: 'var(--text-2)' }} width={72} axisLine={false} tickLine={false} />
+                  <YAxis yAxisId="linha" orientation="right" tickFormatter={fmtK} tick={{ fontSize: 10, fill: 'var(--text-2)' }} width={72} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+                    formatter={(v: string) => ({ receitas: 'Receitas', despesas: 'Despesas', acumulado: 'Acumulado' }[v] ?? v)} />
+                  <ReferenceLine yAxisId="linha" y={0} stroke="var(--border)" strokeDasharray="4 4" />
+                  <Bar yAxisId="bars" dataKey="receitas" fill="#22c55e" opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
+                  <Bar yAxisId="bars" dataKey="despesas" fill="#ef4444" opacity={0.85} radius={[3,3,0,0]} maxBarSize={36} />
+                  <Line yAxisId="linha" type="monotone" dataKey="acumulado" stroke="#667eea" strokeWidth={2.5} dot={{ r: 3, fill: '#667eea' }} activeDot={{ r: 5 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Legenda (apenas Controle Mensal) */}
       {aba === 'mensal' && (
         <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--bg-row)', border: '1px solid var(--border)', borderRadius: '8px', padding: '10px 16px', marginBottom: '12px', fontSize: '12px' }}>
@@ -660,7 +789,7 @@ export default function DRE() {
       )}
 
       {/* Tabela */}
-      {loading ? (
+      {aba !== 'graficos' && (loading ? (
         <div style={{ padding: '64px', textAlign: 'center', color: 'var(--text-3)' }}>Carregando...</div>
       ) : (
         <div style={{ border: '1px solid var(--border)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -738,7 +867,7 @@ export default function DRE() {
             </table>
           </div>
         </div>
-      )}
+      ))}
 
       {!loading && (
         <div style={{ marginTop: '10px', display: 'flex', gap: '20px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-3)' }}>
