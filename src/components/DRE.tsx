@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { BarChart, PieChart, Pie, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
+import { BarChart, Cell, ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -765,7 +765,7 @@ export default function DRE() {
                         <XAxis type="number" tickFormatter={fmtK} tick={{ fontSize: 10, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
                         <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 11, fill: 'var(--text-2)' }} axisLine={false} tickLine={false} />
                         <Tooltip content={<BarTooltip />} cursor={{ fill: 'var(--bg-row)' }} />
-                        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22} label={{ position: 'right', formatter: (v: number) => fmtK(v), fontSize: 11, fill: 'var(--text-2)' }}>
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22} label={{ position: 'right', formatter: (v: unknown) => fmtK(Number(v)), fontSize: 11, fill: 'var(--text-2)' }}>
                           {data.map((d, idx) => <Cell key={idx} fill={d.fill} />)}
                         </Bar>
                       </BarChart>
