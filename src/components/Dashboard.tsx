@@ -352,7 +352,7 @@ export default function Dashboard() {
     movsmes.filter(m =>
       m.tipo === 'Despesa' &&
       m.situacao === 'Pago' &&
-      !m.cartao_id
+      !(m.metodo_pagamento?.startsWith('Crédito') ?? false)
     ).reduce((s, m) => s + Number(m.valor), 0), [movsmes])
 
   const totalCartaoCredito = useMemo(() =>
