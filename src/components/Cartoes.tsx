@@ -437,10 +437,10 @@ export default function CartoesView() {
                       {/* ── Drill-down ── */}
                       {drillAberto_ && drillAberto !== null && (
                         <tr>
-                          <td colSpan={17} style={{ padding: 0, background: '#fffbeb', borderBottom: '2px solid #f59e0b' }}>
+                          <td colSpan={17} style={{ padding: 0, background: 'var(--bg-warning-soft)', borderBottom: '2px solid var(--border-warning)' }}>
                             <div style={{ padding: '12px 16px 16px' }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                                <div style={{ fontSize: '13px', fontWeight: 700, color: '#92400e' }}>
+                                <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-2)' }}>
                                   📋 {linha.cartao.nome} — {MESES_CURTOS[drillAberto.mes - 1]}/{ano}
                                   <span style={{ fontWeight: 400, color: 'var(--text-3)', marginLeft: '8px', fontSize: '12px' }}>
                                     {lancamentosDrill.length} lançamento{lancamentosDrill.length !== 1 ? 's' : ''}
@@ -454,20 +454,20 @@ export default function CartoesView() {
                               ) : (
                                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
                                   <thead>
-                                    <tr style={{ background: '#fef3c7', borderBottom: '1px solid #fde68a' }}>
+                                    <tr style={{ background: 'var(--bg-row2)', borderBottom: '1px solid var(--border)' }}>
                                       {['Dt. Movimentação','Dt. Pagamento','Categoria','Descrição','Valor','Parcela','Situação'].map(h => (
-                                        <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: '#92400e', whiteSpace: 'nowrap' }}>{h}</th>
+                                        <th key={h} style={{ padding: '6px 10px', textAlign: h === 'Valor' ? 'right' : 'left', fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap' }}>{h}</th>
                                       ))}
                                     </tr>
                                   </thead>
                                   <tbody>
                                     {lancamentosDrill.map((l, idx) => (
-                                      <tr key={l.id} style={{ background: idx % 2 === 0 ? '#fffdf0' : '#fffbeb', borderBottom: '1px solid #fef3c7' }}>
+                                      <tr key={l.id} style={{ background: idx % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-row)', borderBottom: '1px solid var(--border)' }}>
                                         <td style={tdDrill}>{fmtDate(l.data_movimentacao)}</td>
                                         <td style={tdDrill}>{fmtDate(l.data_pagamento)}</td>
                                         <td style={tdDrill}>{catNome(l.categoria_id)}</td>
                                         <td style={{ ...tdDrill, fontWeight: 500, maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{l.descricao}</td>
-                                        <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>{fmt(Number(l.valor))}</td>
+                                        <td style={{ ...tdDrill, textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>{fmt(Number(l.valor))}</td>
                                         <td style={tdDrill}>{l.numero_parcela || '—'}</td>
                                         <td style={tdDrill}>
                                           <span style={{ ...corSituacaoStyle(l.situacao), padding: '2px 8px', borderRadius: '99px', fontSize: '11px', fontWeight: 600 }}>
@@ -478,9 +478,9 @@ export default function CartoesView() {
                                     ))}
                                   </tbody>
                                   <tfoot>
-                                    <tr style={{ background: '#fef3c7', borderTop: '1px solid #fde68a' }}>
-                                      <td colSpan={4} style={{ padding: '6px 10px', fontWeight: 700, color: '#92400e' }}>Total</td>
-                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: '#991b1b' }}>
+                                    <tr style={{ background: 'var(--bg-row2)', borderTop: '1px solid var(--border)' }}>
+                                      <td colSpan={4} style={{ padding: '6px 10px', fontWeight: 700, color: 'var(--text-2)' }}>Total</td>
+                                      <td style={{ padding: '6px 10px', textAlign: 'right', fontWeight: 700, color: 'var(--text-danger)' }}>
                                         {fmt(lancamentosDrill.reduce((s, l) => s + Number(l.valor), 0))}
                                       </td>
                                       <td colSpan={2} />
